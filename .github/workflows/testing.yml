@@ -16,6 +16,4 @@ jobs:
           pip install pytest
           pip install expecttest
       - name: Do testing
-        run: |
-          pytest test/test_comparison_utils.py
-          pytest test/test_bundled_inputs.py
+        run: pytest test/test_comparison_utils.py test/test_bundled_inputs.py
