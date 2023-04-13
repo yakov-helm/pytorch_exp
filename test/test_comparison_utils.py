@@ -14,23 +14,23 @@ class TestComparisonUtils:
         t = torch.tensor([0.5])
         torch._assert_tensor_metadata(t, None, None, None)
 
-    # def test_assert_dtype(self):
-    #     t = torch.tensor([0.5])
+    def test_assert_dtype(self):
+        t = torch.tensor([0.5])
 
-    #     with self.assertRaises(RuntimeError):
-    #         torch._assert_tensor_metadata(t, None, None, torch.int32)
+        with self.assertRaises(RuntimeError):
+            torch._assert_tensor_metadata(t, None, None, torch.int32)
 
-    # def test_assert_strides(self):
-    #     t = torch.tensor([0.5])
+    def test_assert_strides(self):
+        t = torch.tensor([0.5])
 
-    #     with self.assertRaises(RuntimeError):
-    #         torch._assert_tensor_metadata(t, None, [3], torch.float)
+        with self.assertRaises(RuntimeError):
+            torch._assert_tensor_metadata(t, None, [3], torch.float)
 
-    # def test_assert_sizes(self):
-    #     t = torch.tensor([0.5])
+    def test_assert_sizes(self):
+        t = torch.tensor([0.5])
 
-    #     with self.assertRaises(RuntimeError):
-    #         torch._assert_tensor_metadata(t, [3], [1], torch.float)
+        with self.assertRaises(RuntimeError):
+            torch._assert_tensor_metadata(t, [3], [1], torch.float)
 
 
 if __name__ == "__main__":

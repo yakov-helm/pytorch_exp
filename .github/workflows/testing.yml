@@ -7,6 +7,7 @@ on:
       - completed
 
 jobs:
+  
   pytest:
     runs-on: self-hosted
     steps:
@@ -17,3 +18,14 @@ jobs:
           pip install expecttest
       - name: Do testing
         run: pytest test/test_bundled_inputs.py test/test_comparison_utils.py
+  
+  another-py-test:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install testing dependencies
+        run: |
+          pip install pytest
+          pip install expecttest
+      - name: Do testing
+        run: pytest test/profiler
