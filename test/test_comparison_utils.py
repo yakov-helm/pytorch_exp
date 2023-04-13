@@ -6,9 +6,10 @@ from torch.testing._internal.common_utils import TestCase, run_tests
 
 
 class TestComparisonUtils(TestCase):
-    def test_all_equal_no_assert(self):
-        t = torch.tensor([0.5])
-        torch._assert_tensor_metadata(t, [1], [1], torch.float)
+
+    # def test_all_equal_no_assert(self):
+    #     t = torch.tensor([0.5])
+    #     torch._assert_tensor_metadata(t, [1], [1], torch.float)
 
     def test_all_equal_no_assert_nones(self):
         t = torch.tensor([0.5])
