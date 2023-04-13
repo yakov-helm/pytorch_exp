@@ -20,7 +20,7 @@ jobs:
         id: do_test
         run: pytest test/test_bundled_inputs.py test/test_comparison_utils.py
       -name: Check failures
-        if: job.steps.do_test.status == failure()
+        if: job.steps.do_test.status != 'success'
         run: exit 1
   
   another-py-test:
@@ -35,5 +35,5 @@ jobs:
         id: do_test
         run: pytest test/profiler
       -name: Check failures
-        if: job.steps.do_test.status == failure()
+        if: job.steps.do_test.status != 'success'
         run: exit 1
