@@ -6,6 +6,7 @@ __all__ = [
     "Quantizer",
 ]
 
+
 class Quantizer(ABC):
 
     # annotate nodes in the graph with observer or fake quant constructors

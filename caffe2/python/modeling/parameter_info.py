@@ -1,24 +1,25 @@
-
-
-
-
-
 from caffe2.python import core
 
 import numpy as np
 
 
 class ParameterTags:
-    BIAS = 'BIAS'
-    WEIGHT = 'WEIGHT'
-    COMPUTED_PARAM = 'COMPUTED_PARAM'
+    BIAS = "BIAS"
+    WEIGHT = "WEIGHT"
+    COMPUTED_PARAM = "COMPUTED_PARAM"
 
 
 class ParameterInfo:
-
     def __init__(
-            self, param_id, param, key=None, shape=None, length=None,
-            grad=None, blob_copy=None):
+        self,
+        param_id,
+        param,
+        key=None,
+        shape=None,
+        length=None,
+        grad=None,
+        blob_copy=None,
+    ):
         assert isinstance(param, core.BlobReference)
         self.param_id = param_id
         self.name = str(param)

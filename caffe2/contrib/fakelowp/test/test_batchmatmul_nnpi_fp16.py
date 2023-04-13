@@ -23,7 +23,7 @@ class TestBatchMatMul(serial.SerializedTestCase):
         rand_seed=st.integers(0, 65534),
         trans_a=st.booleans(),
         trans_b=st.booleans(),
-        run_ints=st.booleans()
+        run_ints=st.booleans(),
     )
     @settings(deadline=datetime.timedelta(seconds=10))
     def test_batch_matmul(self, M, K, N, C, rand_seed, trans_a, trans_b, run_ints):
@@ -52,7 +52,7 @@ class TestBatchMatMul(serial.SerializedTestCase):
         pred_net.external_output.append("out")
         pred_net.op.add().CopyFrom(
             core.CreateOperator(
-                'BatchMatMul', ['X', 'Y'], 'out', trans_a=trans_a, trans_b=trans_b
+                "BatchMatMul", ["X", "Y"], "out", trans_a=trans_a, trans_b=trans_b
             )
         )
 
@@ -60,16 +60,20 @@ class TestBatchMatMul(serial.SerializedTestCase):
 
         # Reference updated to fp16 with fp32 accumulation
         pred_net_ref.BatchMatMulFP16Acc32Fake(
-            ["X", "Y"], ['out'], trans_a=trans_a, trans_b=trans_b)
+            ["X", "Y"], ["out"], trans_a=trans_a, trans_b=trans_b
+        )
 
         print("dims", batch_dims, X.shape, Y.shape)
-        pred_net_onnxified = onnxifi_caffe2_net(pred_net,
-                                                {"X": X.shape, "Y": Y.shape},
-                                                debug=True,
-                                                adjust_batch=False,
-                                                use_onnx=False)
+        pred_net_onnxified = onnxifi_caffe2_net(
+            pred_net,
+            {"X": X.shape, "Y": Y.shape},
+            debug=True,
+            adjust_batch=False,
+            use_onnx=False,
+        )
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op)
+            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
 
         workspace.FeedBlob("X", X)
@@ -79,27 +83,33 @@ class TestBatchMatMul(serial.SerializedTestCase):
 
         # Run Glow net
         workspace.RunNet(pred_net_onnxified.name)
-        out_glow = workspace.FetchBlob('out')
+        out_glow = workspace.FetchBlob("out")
 
         # Run caffe2 net
         workspace.RunNet(pred_net_ref)
-        out_c2_fakefp16 = workspace.FetchBlob('out')
+        out_c2_fakefp16 = workspace.FetchBlob("out")
 
         diff = np.abs(out_c2_fakefp16 - out_glow)
 
         if not np.allclose(out_glow, out_c2_fakefp16):
-            print_test_debug_info("bmm", {
-                "seed": rand_seed,
-                "m": M, "k": K,
-                "n": N, "X": X.shape, "Y": Y.shape,
-                "trans_a": trans_a,
-                "trans_b": trans_b,
-                "run_ints": run_ints,
-                "out_glow": out_glow,
-                "out_c2_fakefp16": out_c2_fakefp16,
-                "diff": diff
-            })
-            assert(0)
+            print_test_debug_info(
+                "bmm",
+                {
+                    "seed": rand_seed,
+                    "m": M,
+                    "k": K,
+                    "n": N,
+                    "X": X.shape,
+                    "Y": Y.shape,
+                    "trans_a": trans_a,
+                    "trans_b": trans_b,
+                    "run_ints": run_ints,
+                    "out_glow": out_glow,
+                    "out_c2_fakefp16": out_c2_fakefp16,
+                    "diff": diff,
+                },
+            )
+            assert 0
 
 
 if __name__ == "__main__":

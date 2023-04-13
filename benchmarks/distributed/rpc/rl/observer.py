@@ -23,7 +23,11 @@ class ObserverBase:
             batch (bool): Whether agent will be using batch select action
         """
         self.state_size = state_size
-        self.select_action = AgentBase.select_action_batch if batch else AgentBase.select_action_non_batch
+        self.select_action = (
+            AgentBase.select_action_batch
+            if batch
+            else AgentBase.select_action_non_batch
+        )
 
     def reset(self):
         r"""
@@ -58,8 +62,11 @@ class ObserverBase:
 
         for st in range(n_steps):
             ob_latency_start = time.time()
-            action = rpc_sync(agent_rref.owner(), self.select_action, args=(
-                agent_rref, self.id, state))
+            action = rpc_sync(
+                agent_rref.owner(),
+                self.select_action,
+                args=(agent_rref, self.id, state),
+            )
 
             ob_latency = time.time() - ob_latency_start
             observer_latencies.append(ob_latency)

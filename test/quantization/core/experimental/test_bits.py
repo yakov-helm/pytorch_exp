@@ -5,6 +5,7 @@ from torch.testing._internal.common_utils import run_tests, TestCase
 from torch.utils._mode_utils import no_dispatch
 from torch.utils._pytree import tree_map
 
+
 class Int16Tensor(torch.Tensor):
     def __new__(cls, elem):
         assert elem.dtype == torch.bits16
@@ -20,6 +21,7 @@ class Int16Tensor(torch.Tensor):
                 with no_dispatch():
                     return t.view(torch.int16)
             return t
+
         args = tree_map(unwrap, args)
         kwargs = tree_map(unwrap, kwargs)
 
@@ -31,6 +33,7 @@ class Int16Tensor(torch.Tensor):
                 with no_dispatch():
                     return t.view(torch.bits16)
             return t
+
         out = tree_map(wrap, out)
         return out
 
@@ -42,7 +45,13 @@ class Int16Tensor(torch.Tensor):
 
 class TestBits(TestCase):
     def test_types(self):
-        bits_types = [torch.bits1x8, torch.bits2x4, torch.bits4x2, torch.bits8, torch.bits16]
+        bits_types = [
+            torch.bits1x8,
+            torch.bits2x4,
+            torch.bits4x2,
+            torch.bits8,
+            torch.bits16,
+        ]
         for bits_type in bits_types:
             _ = torch.zeros(20, dtype=torch.int32).view(bits_type)
             _ = torch.empty(20, dtype=bits_type)
@@ -54,5 +63,5 @@ class TestBits(TestCase):
         self.assertTrue(torch.allclose(s, torch.zeros(20, dtype=torch.bits16)))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

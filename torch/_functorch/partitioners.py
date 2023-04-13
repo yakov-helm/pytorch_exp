@@ -1,5 +1,9 @@
 from torch.fx.experimental.proxy_tensor import is_sym_node, py_sym_types
-from torch.fx.experimental.symbolic_shapes import hint_int, magic_methods, method_to_operator
+from torch.fx.experimental.symbolic_shapes import (
+    hint_int,
+    magic_methods,
+    method_to_operator,
+)
 import torch
 import torch.fx as fx
 import operator
@@ -18,8 +22,8 @@ AOT_PARTITIONER_DEBUG = config.debug_partitioner
 
 
 def is_symint_node(node):
-    assert hasattr(node, 'meta'), "All nodes traced with proxy_tensor should have meta"
-    return "val" in node.meta and isinstance(node.meta['val'], torch.SymInt)
+    assert hasattr(node, "meta"), "All nodes traced with proxy_tensor should have meta"
+    return "val" in node.meta and isinstance(node.meta["val"], torch.SymInt)
 
 
 class InvalidNodeBase:
@@ -54,25 +58,31 @@ def _extract_graph_with_inputs_outputs(joint_graph, inputs, outputs):
     for node in joint_graph.nodes:
         if node in inputs:
             continue
-        elif node.op == 'placeholder':
+        elif node.op == "placeholder":
             env[node] = InvalidNode
-        elif node.op == 'call_function':
+        elif node.op == "call_function":
             all_args = pytree.tree_flatten((node.args, node.kwargs))[0]
-            all_args = [isinstance(env[x], InvalidNodeBase) for x in all_args if isinstance(x, fx.Node)]
+            all_args = [
+                isinstance(env[x], InvalidNodeBase)
+                for x in all_args
+                if isinstance(x, fx.Node)
+            ]
             if any(all_args):
                 env[node] = InvalidNode
                 continue
             env[node] = new_graph.node_copy(node, lambda x: env[x])
-        elif node.op == 'get_attr':
+        elif node.op == "get_attr":
             env[node] = new_graph.node_copy(node, lambda x: env[x])
-        elif node.op == 'output':
+        elif node.op == "output":
             pass
     output_values = []
     for x in outputs:
         if isinstance(x, fx.Node):
             if x not in env:
                 raise RuntimeError(f"Node {x} couldn't be found in env")
-            assert not isinstance(env[x], InvalidNodeBase), f"Node {x} was invalid, but is output"
+            assert not isinstance(
+                env[x], InvalidNodeBase
+            ), f"Node {x} was invalid, but is output"
             output_values.append(env[x])
         else:
             output_values.append(x)
@@ -92,24 +102,34 @@ def _is_tangent(node):
 
 
 def _extract_fwd_bwd_outputs(joint_module: fx.GraphModule, *, num_fwd_outputs):
-    outputs = pytree.tree_flatten([node.args for node in joint_module.graph.nodes if node.op == 'output'])[0]
+    outputs = pytree.tree_flatten(
+        [node.args for node in joint_module.graph.nodes if node.op == "output"]
+    )[0]
     fwd_outputs = outputs[:num_fwd_outputs]
     bwd_outputs = outputs[num_fwd_outputs:]
     return fwd_outputs, bwd_outputs
 
 
-def _extract_fwd_bwd_modules(joint_module: fx.GraphModule, saved_values, saved_sym_nodes=(), *, num_fwd_outputs):
-    fwd_outputs, bwd_outputs = _extract_fwd_bwd_outputs(joint_module, num_fwd_outputs=num_fwd_outputs)
+def _extract_fwd_bwd_modules(
+    joint_module: fx.GraphModule, saved_values, saved_sym_nodes=(), *, num_fwd_outputs
+):
+    fwd_outputs, bwd_outputs = _extract_fwd_bwd_outputs(
+        joint_module, num_fwd_outputs=num_fwd_outputs
+    )
     primal_inputs = list(filter(_is_primal, joint_module.graph.nodes))
     tangent_inputs = list(filter(_is_tangent, joint_module.graph.nodes))
     # Construct the forward module
     # Keep symints separate from tensors, passed between fwd/bwd graphs, and in the right order.
-    fwd_graph = _extract_graph_with_inputs_outputs(joint_module.graph, primal_inputs, fwd_outputs + saved_values + saved_sym_nodes)
-    bwd_graph = _extract_graph_with_inputs_outputs(joint_module.graph, saved_sym_nodes + saved_values + tangent_inputs, bwd_outputs)
+    fwd_graph = _extract_graph_with_inputs_outputs(
+        joint_module.graph, primal_inputs, fwd_outputs + saved_values + saved_sym_nodes
+    )
+    bwd_graph = _extract_graph_with_inputs_outputs(
+        joint_module.graph, saved_sym_nodes + saved_values + tangent_inputs, bwd_outputs
+    )
 
     # This is to filter out saved values that don't actually end up being used by the backwards pass
     for node in bwd_graph.nodes:
-        if node.op == 'placeholder' and not node.users:
+        if node.op == "placeholder" and not node.users:
             for saved_value in saved_values:
                 if saved_value.name == node.name:
                     saved_values.remove(saved_value)
@@ -122,8 +142,12 @@ def _extract_fwd_bwd_modules(joint_module: fx.GraphModule, saved_values, saved_s
 
     # Now, we re-generate the fwd/bwd graphs.
     # NB: This might increase compilation time, but I doubt it matters
-    fwd_graph = _extract_graph_with_inputs_outputs(joint_module.graph, primal_inputs, fwd_outputs + saved_values + saved_sym_nodes)
-    bwd_graph = _extract_graph_with_inputs_outputs(joint_module.graph, saved_sym_nodes + saved_values + tangent_inputs, bwd_outputs)
+    fwd_graph = _extract_graph_with_inputs_outputs(
+        joint_module.graph, primal_inputs, fwd_outputs + saved_values + saved_sym_nodes
+    )
+    bwd_graph = _extract_graph_with_inputs_outputs(
+        joint_module.graph, saved_sym_nodes + saved_values + tangent_inputs, bwd_outputs
+    )
 
     fwd_module = fx.GraphModule(joint_module, fwd_graph)
     bwd_module = fx.GraphModule(joint_module, bwd_graph)
@@ -157,9 +181,15 @@ def default_partition(
         Returns the generated forward and backward Fx graph modules.
     """
     primal_inputs = list(filter(_is_primal, joint_module.graph.nodes))
-    fwd_outputs, bwd_outputs = _extract_fwd_bwd_outputs(joint_module, num_fwd_outputs=num_fwd_outputs)
-    forward_only_graph = _extract_graph_with_inputs_outputs(joint_module.graph, primal_inputs, fwd_outputs)
-    forward_node_names = {node.name for node in forward_only_graph.nodes if node.op != 'output'}
+    fwd_outputs, bwd_outputs = _extract_fwd_bwd_outputs(
+        joint_module, num_fwd_outputs=num_fwd_outputs
+    )
+    forward_only_graph = _extract_graph_with_inputs_outputs(
+        joint_module.graph, primal_inputs, fwd_outputs
+    )
+    forward_node_names = {
+        node.name for node in forward_only_graph.nodes if node.op != "output"
+    }
     saved_values = []
     saved_sym_nodes = []
 
@@ -170,18 +200,19 @@ def default_partition(
             # Symints must be kept separate from tensors so that PythonFunction only calls
             # save_for_backward on tensors and stashes symints in autograd .ctx
             saved_sym_nodes.append(node)
-        elif (
-            'tensor_meta' not in node.meta
-            and node.op == 'call_function'
-        ):
+        elif "tensor_meta" not in node.meta and node.op == "call_function":
             # Since we can't save tuple of tensor values, we need to flatten out what we're saving
             users = node.users
             assert all(user.target == operator.getitem for user in users)
             for user in users:
                 saved_values.append(user)
         else:
-            backward_usages = [n for n in node.users if n.name not in forward_node_names]
-            if 'tensor_meta' in node.meta and all(is_sym_node(n) for n in backward_usages):
+            backward_usages = [
+                n for n in node.users if n.name not in forward_node_names
+            ]
+            if "tensor_meta" in node.meta and all(
+                is_sym_node(n) for n in backward_usages
+            ):
                 # If we have a tensor in the forward, where only its sizes/strides are needed in the backward,
                 # and not the actual tensor data,
                 # then it will be a lot cheaper to save only the sizes/strides, and not the actual tensor.
@@ -197,7 +228,12 @@ def default_partition(
     saved_values = list(set(saved_values))
     saved_sym_nodes = list(set(saved_sym_nodes))
 
-    return _extract_fwd_bwd_modules(joint_module, saved_values, saved_sym_nodes=saved_sym_nodes, num_fwd_outputs=num_fwd_outputs)
+    return _extract_fwd_bwd_modules(
+        joint_module,
+        saved_values,
+        saved_sym_nodes=saved_sym_nodes,
+        num_fwd_outputs=num_fwd_outputs,
+    )
 
 
 def _prod(x):
@@ -205,6 +241,7 @@ def _prod(x):
     for i in x:
         s *= i
     return s
+
 
 def _tensor_nbytes(numel, dtype):
     sizes = {
@@ -226,24 +263,29 @@ def _tensor_nbytes(numel, dtype):
 
     return numel * sizes[dtype]
 
+
 def _size_of(node: fx.Node) -> int:
-    if 'val' in node.meta:
-        val = node.meta['val']
+    if "val" in node.meta:
+        val = node.meta["val"]
         if isinstance(val, py_sym_types):
             if isinstance(val, torch.SymInt):
                 return 1
             else:
                 return 999999
         elif isinstance(val, (list, tuple)):
-            return sum(_tensor_nbytes(hint_int(n.numel()), n.dtype) for n in val if isinstance(n, torch.Tensor))
+            return sum(
+                _tensor_nbytes(hint_int(n.numel()), n.dtype)
+                for n in val
+                if isinstance(n, torch.Tensor)
+            )
         elif isinstance(val, torch.Tensor):
             return _tensor_nbytes(hint_int(val.numel()), val.dtype)
 
         raise RuntimeError(f"Unknown metadata type {type(val)}")
 
     # Only needed since we don't always trace with fake tensors.
-    if 'tensor_meta' in node.meta:
-        metadata = node.meta['tensor_meta']
+    if "tensor_meta" in node.meta:
+        metadata = node.meta["tensor_meta"]
         numel = _prod(map(to_size_hint, metadata.shape))
         dtype = metadata.dtype
     else:
@@ -255,9 +297,10 @@ def _size_of(node: fx.Node) -> int:
 # Used for some investigative purposes
 def _count_ops(graph):
     from collections import defaultdict
+
     cnt = defaultdict(int)
     for node in graph.nodes:
-        if node.op == 'call_function':
+        if node.op == "call_function":
             cnt[node.target.__name__] += 1
     print(sorted(cnt.items(), key=lambda x: x[1], reverse=True))
 
@@ -281,8 +324,12 @@ def pointwise_ops():
 
 
 def min_cut_rematerialization_partition(
-    joint_module: fx.GraphModule, _joint_inputs, compiler="nvfuser", recomputable_ops=None,
-    *, num_fwd_outputs
+    joint_module: fx.GraphModule,
+    _joint_inputs,
+    compiler="nvfuser",
+    recomputable_ops=None,
+    *,
+    num_fwd_outputs,
 ) -> Tuple[fx.GraphModule, fx.GraphModule]:
     """
     Partitions the joint graph such that the backward recomputes the forward.
@@ -312,8 +359,9 @@ def min_cut_rematerialization_partition(
     try:
         import networkx as nx
     except ImportError as e:
-        raise RuntimeError("Need networkx installed to perform smart recomputation "
-                           "heuristics") from e
+        raise RuntimeError(
+            "Need networkx installed to perform smart recomputation " "heuristics"
+        ) from e
 
     joint_module.graph.eliminate_dead_code()
     joint_module.recompile()
@@ -333,23 +381,38 @@ def min_cut_rematerialization_partition(
     def classify_nodes(joint_module):
         required_bw_nodes = set()
         for node in joint_module.graph.nodes:
-            if node.op == 'placeholder' and "tangents" in node.target:
+            if node.op == "placeholder" and "tangents" in node.target:
                 required_bw_nodes.add(node)
             if node in required_bw_nodes:
                 for user in node.users:
                     required_bw_nodes.add(user)
 
         primal_inputs = list(filter(_is_primal, joint_module.graph.nodes))
-        fwd_outputs, bwd_outputs = _extract_fwd_bwd_outputs(joint_module, num_fwd_outputs=num_fwd_outputs)
+        fwd_outputs, bwd_outputs = _extract_fwd_bwd_outputs(
+            joint_module, num_fwd_outputs=num_fwd_outputs
+        )
         required_bw_nodes.update(o for o in bwd_outputs if o is not None)
-        forward_only_graph = _extract_graph_with_inputs_outputs(joint_module.graph, primal_inputs, fwd_outputs)
-        required_fw_nodes = {name_to_node[node.name] for node in forward_only_graph.nodes
-                             if node.op != 'output'}
-        unclaimed_nodes = {node for node in joint_module.graph.nodes
-                           if node not in required_fw_nodes and node not in required_bw_nodes}
+        forward_only_graph = _extract_graph_with_inputs_outputs(
+            joint_module.graph, primal_inputs, fwd_outputs
+        )
+        required_fw_nodes = {
+            name_to_node[node.name]
+            for node in forward_only_graph.nodes
+            if node.op != "output"
+        }
+        unclaimed_nodes = {
+            node
+            for node in joint_module.graph.nodes
+            if node not in required_fw_nodes and node not in required_bw_nodes
+        }
         return fwd_outputs, required_fw_nodes, required_bw_nodes, unclaimed_nodes
 
-    orig_fw_outputs, required_fw_nodes, required_bw_nodes, unclaimed_nodes = classify_nodes(joint_module)
+    (
+        orig_fw_outputs,
+        required_fw_nodes,
+        required_bw_nodes,
+        unclaimed_nodes,
+    ) = classify_nodes(joint_module)
 
     def is_tensor_node(x):
         # When dynamic shapes are not enabled, fw outputs can be raw ints and not fx nodes
@@ -357,13 +420,17 @@ def min_cut_rematerialization_partition(
             return False
         # It would be nice if we could guarantee that all fx nodes from make_fx get a 'val'
         # key in their meta dict, but that isn't always true today (see proxy_tensor.py)
-        return 'tensor_meta' in x.meta or ('val' in x.meta and isinstance(x.meta['val'], torch.Tensor))
+        return "tensor_meta" in x.meta or (
+            "val" in x.meta and isinstance(x.meta["val"], torch.Tensor)
+        )
 
     # networkx blows up on graphs with no required backward nodes
     # Since there's nothing to partition anyway, and the default partitioner can "handle"
     # this case, send our graph over to the default partitioner.
     if len(required_bw_nodes) == 0:
-        return default_partition(joint_module, _joint_inputs, num_fwd_outputs=num_fwd_outputs)
+        return default_partition(
+            joint_module, _joint_inputs, num_fwd_outputs=num_fwd_outputs
+        )
 
     for node in reversed(joint_module.graph.nodes):
         if node not in required_fw_nodes:
@@ -377,11 +444,128 @@ def min_cut_rematerialization_partition(
     prims = torch.ops.prims
 
     # compiler == "nvfuser" is the default set of recomputable ops
-    default_recomputable_ops = [aten.add, aten.sub, aten.div, aten.atan2, aten.mul, aten.max, aten.min, aten.pow, aten.remainder, aten.fmod, aten.__and__, aten.__or__, aten.__xor__, aten.__lshift__, aten.__rshift__, aten.eq, aten.ne, aten.ge, aten.gt, aten.le, aten.lt, aten.abs, aten.bitwise_not, aten.ceil, aten.floor, aten.frac, aten.neg, aten.relu, aten.round, aten.silu, aten.trunc, aten.log, aten.log10, aten.log1p, aten.log2, aten.lgamma, aten.exp, aten.expm1, aten.erf, aten.erfc, aten.cos, aten.acos, aten.cosh, aten.sin, aten.asin, aten.sinh, aten.tan, aten.atan, aten.tanh, aten.atanh, aten.sqrt, aten.rsqrt, aten.reciprocal, aten.sigmoid, aten.softplus, aten.threshold, aten.threshold_backward, aten.clamp, aten.where, aten.lerp, aten.addcmul, aten.gelu, aten.gelu_backward, aten.sum, aten.mean, aten._grad_sum_to_size, aten.sum_to_size, aten.amax, aten.to, aten.type_as, operator.getitem, aten.squeeze, aten.unsqueeze, aten.rsub, aten._to_copy]  # noqa: E501,B950
+    default_recomputable_ops = [
+        aten.add,
+        aten.sub,
+        aten.div,
+        aten.atan2,
+        aten.mul,
+        aten.max,
+        aten.min,
+        aten.pow,
+        aten.remainder,
+        aten.fmod,
+        aten.__and__,
+        aten.__or__,
+        aten.__xor__,
+        aten.__lshift__,
+        aten.__rshift__,
+        aten.eq,
+        aten.ne,
+        aten.ge,
+        aten.gt,
+        aten.le,
+        aten.lt,
+        aten.abs,
+        aten.bitwise_not,
+        aten.ceil,
+        aten.floor,
+        aten.frac,
+        aten.neg,
+        aten.relu,
+        aten.round,
+        aten.silu,
+        aten.trunc,
+        aten.log,
+        aten.log10,
+        aten.log1p,
+        aten.log2,
+        aten.lgamma,
+        aten.exp,
+        aten.expm1,
+        aten.erf,
+        aten.erfc,
+        aten.cos,
+        aten.acos,
+        aten.cosh,
+        aten.sin,
+        aten.asin,
+        aten.sinh,
+        aten.tan,
+        aten.atan,
+        aten.tanh,
+        aten.atanh,
+        aten.sqrt,
+        aten.rsqrt,
+        aten.reciprocal,
+        aten.sigmoid,
+        aten.softplus,
+        aten.threshold,
+        aten.threshold_backward,
+        aten.clamp,
+        aten.where,
+        aten.lerp,
+        aten.addcmul,
+        aten.gelu,
+        aten.gelu_backward,
+        aten.sum,
+        aten.mean,
+        aten._grad_sum_to_size,
+        aten.sum_to_size,
+        aten.amax,
+        aten.to,
+        aten.type_as,
+        operator.getitem,
+        aten.squeeze,
+        aten.unsqueeze,
+        aten.rsub,
+        aten._to_copy,
+    ]  # noqa: E501,B950
     view_ops = [aten.squeeze, aten.unsqueeze, aten.alias]
     if compiler == "inductor":
-        default_recomputable_ops += [prims.div, prims.convert_element_type, aten.clone, aten._to_copy, aten.full_like, prims.var, prims.sum, aten.var, aten.std, prims.broadcast_in_dim, aten.select, aten.permute, aten._unsafe_view, aten.view, aten.expand, aten.slice, aten.reshape, aten.broadcast_tensors, aten.scalar_tensor, aten.ones, aten.new_zeros, aten.lift_fresh_copy, aten.arange, aten.triu, aten.var_mean, aten.isinf, aten.any, aten.full, aten.as_strided, aten.zeros, aten.argmax, aten.maximum]  # noqa: E501,B950
-        view_ops += [aten.view, aten.slice, aten.permute, aten.t, prims.broadcast_in_dim, aten.expand, aten.as_strided]
+        default_recomputable_ops += [
+            prims.div,
+            prims.convert_element_type,
+            aten.clone,
+            aten._to_copy,
+            aten.full_like,
+            prims.var,
+            prims.sum,
+            aten.var,
+            aten.std,
+            prims.broadcast_in_dim,
+            aten.select,
+            aten.permute,
+            aten._unsafe_view,
+            aten.view,
+            aten.expand,
+            aten.slice,
+            aten.reshape,
+            aten.broadcast_tensors,
+            aten.scalar_tensor,
+            aten.ones,
+            aten.new_zeros,
+            aten.lift_fresh_copy,
+            aten.arange,
+            aten.triu,
+            aten.var_mean,
+            aten.isinf,
+            aten.any,
+            aten.full,
+            aten.as_strided,
+            aten.zeros,
+            aten.argmax,
+            aten.maximum,
+        ]  # noqa: E501,B950
+        view_ops += [
+            aten.view,
+            aten.slice,
+            aten.permute,
+            aten.t,
+            prims.broadcast_in_dim,
+            aten.expand,
+            aten.as_strided,
+        ]
         # Natalia said that we should allow recomputing indexing :)
         default_recomputable_ops += [aten.index]
     default_recomputable_ops += view_ops
@@ -392,15 +576,30 @@ def min_cut_rematerialization_partition(
         aten.zeros_like,
     ]
 
-    default_recomputable_ops += [
-        method_to_operator(m)
-        for m in magic_methods
-    ]
+    default_recomputable_ops += [method_to_operator(m) for m in magic_methods]
 
-    recomputable_ops = set(recomputable_ops) if recomputable_ops is not None else set(default_recomputable_ops)
+    recomputable_ops = (
+        set(recomputable_ops)
+        if recomputable_ops is not None
+        else set(default_recomputable_ops)
+    )
 
     random_ops = [aten.native_dropout, aten.rand_like, aten.randn_like]
-    compute_intensive_ops = [aten.mm, aten.convolution, aten.convolution_backward, aten.bmm, aten.addmm, aten.upsample_bilinear2d, aten._softmax, aten._softmax_backward_data, aten.native_layer_norm, aten.native_layer_norm_backward, aten.native_batch_norm, aten.native_batch_norm_backward, aten._native_batch_norm_legit]  # noqa: E501,B950
+    compute_intensive_ops = [
+        aten.mm,
+        aten.convolution,
+        aten.convolution_backward,
+        aten.bmm,
+        aten.addmm,
+        aten.upsample_bilinear2d,
+        aten._softmax,
+        aten._softmax_backward_data,
+        aten.native_layer_norm,
+        aten.native_layer_norm_backward,
+        aten.native_batch_norm,
+        aten.native_batch_norm_backward,
+        aten._native_batch_norm_legit,
+    ]  # noqa: E501,B950
 
     unrecomputable_ops = random_ops + compute_intensive_ops
 
@@ -431,9 +630,12 @@ def min_cut_rematerialization_partition(
 
     def ban_recomputation(node):
         if AGGRESSIVE_RECOMPUTATION:
-            return (node.op == 'call_function' and get_aten_target(node) in unrecomputable_ops)
+            return (
+                node.op == "call_function"
+                and get_aten_target(node) in unrecomputable_ops
+            )
         else:
-            if node.op != 'call_function':
+            if node.op != "call_function":
                 return False
             if get_aten_target(node) not in recomputable_ops:
                 return True
@@ -458,15 +660,17 @@ def min_cut_rematerialization_partition(
                 return True
             # If the output of an op is 4x smaller (arbitrary choice),
             # then we don't allow recomputation.
-            input_tensors_size = sum(_size_of(i) for i in node.args if isinstance(i, fx.Node))
+            input_tensors_size = sum(
+                _size_of(i) for i in node.args if isinstance(i, fx.Node)
+            )
             output_size = _size_of(node)
-            return (output_size * 4 < input_tensors_size)
+            return output_size * 4 < input_tensors_size
 
     def is_fusible(a, b):
         return get_aten_target(a) in fusible_ops and get_aten_target(b) in fusible_ops
 
     def is_materialized(node):
-        if node.op == 'placeholder':
+        if node.op == "placeholder":
             return True
 
         return not all(is_fusible(node, user) for user in node.users)
@@ -486,14 +690,14 @@ def min_cut_rematerialization_partition(
 
     nx_graph = nx.DiGraph()
     for node in full_bw_graph.nodes:
-        if node.op == 'output':
+        if node.op == "output":
             continue
 
         if node in required_bw_nodes:
             nx_graph.add_edge(node.name + "_in", "sink", capacity=math.inf)
             continue
 
-        if node.op == 'placeholder' and "primals" in node.target:
+        if node.op == "placeholder" and "primals" in node.target:
             nx_graph.add_edge("source", node.name + "_in", capacity=math.inf)
 
         # If a node can't be recomputed (too expensive or involves randomness),
@@ -503,8 +707,9 @@ def min_cut_rematerialization_partition(
             nx_graph.add_edge("source", node.name + "_in", capacity=math.inf)
 
         # Checks if a node is actually a tuple. Can be simplified to just an isisinstance check if we always use faketensors.
-        is_non_tensor_node = (('val' not in node.meta and 'tensor_meta' not in node.meta) or
-                              ('val' in node.meta and not isinstance(node.meta['val'], torch.Tensor)))
+        is_non_tensor_node = (
+            "val" not in node.meta and "tensor_meta" not in node.meta
+        ) or ("val" in node.meta and not isinstance(node.meta["val"], torch.Tensor))
         if is_symint_node(node):
             weight = 1
         elif is_sym_node(node):
@@ -522,8 +727,8 @@ def min_cut_rematerialization_partition(
     try:
         cut_value, partition = nx.minimum_cut(nx_graph, "source", "sink")
     except Exception:
-        print('Failed to compute min-cut on following graph:')
-        print('\n'.join(nx.readwrite.edgelist.generate_edgelist(nx_graph)))
+        print("Failed to compute min-cut on following graph:")
+        print("\n".join(nx.readwrite.edgelist.generate_edgelist(nx_graph)))
         raise
 
     reachable, non_reachable = partition
@@ -539,29 +744,49 @@ def min_cut_rematerialization_partition(
 
     # To make this stuff deterministic
     node_idx = {node: idx for idx, node in enumerate(joint_module.graph.nodes)}
-    saved_values = sorted((name_to_node[node] for node in cut_nodes), key=lambda x: node_idx[x])
+    saved_values = sorted(
+        (name_to_node[node] for node in cut_nodes), key=lambda x: node_idx[x]
+    )
     # Symints must be kept separate from tensors so that PythonFunction only calls
     # save_for_backward on tensors and stashes symints in autograd .ctx
     saved_sym_nodes = list(filter(lambda n: is_sym_node(n), saved_values))
     saved_values = list(filter(lambda n: not is_sym_node(n), saved_values))
     fw_module, bw_module = _extract_fwd_bwd_modules(
-        joint_module, saved_values, saved_sym_nodes=saved_sym_nodes, num_fwd_outputs=num_fwd_outputs)
+        joint_module,
+        saved_values,
+        saved_sym_nodes=saved_sym_nodes,
+        num_fwd_outputs=num_fwd_outputs,
+    )
     if AOT_PARTITIONER_DEBUG:
-        print("Theoretical Activations Stored: ", sum([_size_of(i) for i in saved_values]) / 1e9)
-        fw_module_nodes = {node.name for node in fw_module.graph.nodes if node.op == 'call_function'}
-        bw_module_nodes = {node.name for node in bw_module.graph.nodes if node.op == 'call_function'}
+        print(
+            "Theoretical Activations Stored: ",
+            sum([_size_of(i) for i in saved_values]) / 1e9,
+        )
+        fw_module_nodes = {
+            node.name for node in fw_module.graph.nodes if node.op == "call_function"
+        }
+        bw_module_nodes = {
+            node.name for node in bw_module.graph.nodes if node.op == "call_function"
+        }
         remat_nodes = fw_module_nodes & bw_module_nodes
 
         counts = defaultdict(int)
         for node in fw_module.graph.nodes:
-            if node.name in remat_nodes and hasattr(node.target, '_overloadpacket'):
+            if node.name in remat_nodes and hasattr(node.target, "_overloadpacket"):
                 counts[str(node.target._overloadpacket)] += 1
-        print(f"# remat/fw/bw: {len(remat_nodes)}/{len(fw_module_nodes)}/{len(bw_module_nodes)}")
-        print("Count of Ops Rematerialized: ", sorted(counts.items(), key=lambda x: x[1], reverse=True))
+        print(
+            f"# remat/fw/bw: {len(remat_nodes)}/{len(fw_module_nodes)}/{len(bw_module_nodes)}"
+        )
+        print(
+            "Count of Ops Rematerialized: ",
+            sorted(counts.items(), key=lambda x: x[1], reverse=True),
+        )
     return fw_module, bw_module
 
 
-def draw_graph(traced: torch.fx.GraphModule, fname: str, figname: str = "fx_graph", clear_meta=True):
+def draw_graph(
+    traced: torch.fx.GraphModule, fname: str, figname: str = "fx_graph", clear_meta=True
+):
     if clear_meta:
         new_graph = copy.deepcopy(traced.graph)
         traced = fx.GraphModule(traced, new_graph)

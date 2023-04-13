@@ -2,9 +2,6 @@
 # Module caffe2.python.layers.uniform_sampling
 
 
-
-
-
 import numpy as np
 
 from caffe2.python import core, schema
@@ -24,8 +21,8 @@ class UniformSampling(ModelLayer):
         input_record,
         num_samples,
         num_elements,
-        name='uniform_sampling',
-        **kwargs
+        name="uniform_sampling",
+        **kwargs,
     ):
         super().__init__(model, name, input_record, **kwargs)
 
@@ -34,28 +31,31 @@ class UniformSampling(ModelLayer):
 
         self.num_elements = num_elements
 
-        num_examples_init = ('GivenTensorInt64Fill',
-                             {'values': [num_samples]})
-        self.num_samples = self.create_param(param_name='num_examples',
-                                              shape=(1,),
-                                              initializer=num_examples_init,
-                                              optimizer=model.NoOptim)
+        num_examples_init = ("GivenTensorInt64Fill", {"values": [num_samples]})
+        self.num_samples = self.create_param(
+            param_name="num_examples",
+            shape=(1,),
+            initializer=num_examples_init,
+            optimizer=model.NoOptim,
+        )
 
-        sampling_blob_init = ('ConstantFill',
-                              {'value': float(num_samples) / num_elements,
-                               'dtype': core.DataType.FLOAT})
-        self.sampling_prob = self.create_param(param_name='prob',
-                                               shape=(num_samples,),
-                                               initializer=sampling_blob_init,
-                                               optimizer=model.NoOptim)
+        sampling_blob_init = (
+            "ConstantFill",
+            {"value": float(num_samples) / num_elements, "dtype": core.DataType.FLOAT},
+        )
+        self.sampling_prob = self.create_param(
+            param_name="prob",
+            shape=(num_samples,),
+            initializer=sampling_blob_init,
+            optimizer=model.NoOptim,
+        )
 
         self.output_schema = schema.Struct(
             (
-                'samples', schema.Scalar(
-                    np.int32, self.get_next_blob_reference("samples")
-                )
+                "samples",
+                schema.Scalar(np.int32, self.get_next_blob_reference("samples")),
             ),
-            ('sampling_prob', schema.Scalar(np.float32, self.sampling_prob)),
+            ("sampling_prob", schema.Scalar(np.float32, self.sampling_prob)),
         )
 
     def add_ops(self, net):
@@ -68,14 +68,12 @@ class UniformSampling(ModelLayer):
             net.NextScopedBlob("samples_before_concat"),
             min=0,
             max=self.num_elements - 1,
-            input_as_shape=True
+            input_as_shape=True,
         )
 
         net.Concat(
             [self.input_record(), samples],
             [self.output_schema.samples(), net.NextScopedBlob("split_info")],
-            axis=0
+            axis=0,
         )
-        net.StopGradient(
-            self.output_schema.samples(), self.output_schema.samples()
-        )
+        net.StopGradient(self.output_schema.samples(), self.output_schema.samples())

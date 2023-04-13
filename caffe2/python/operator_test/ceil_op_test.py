@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core
 import caffe2.python.hypothesis_test_util as hu
 from hypothesis import given, settings
@@ -14,10 +9,7 @@ import unittest
 
 
 class TestCeil(serial.SerializedTestCase):
-
-    @given(X=hu.tensor(),
-           engine=st.sampled_from(["", "CUDNN"]),
-           **hu.gcs)
+    @given(X=hu.tensor(), engine=st.sampled_from(["", "CUDNN"]), **hu.gcs)
     @settings(deadline=10000)
     def test_ceil(self, X, gc, dc, engine):
         op = core.CreateOperator("Ceil", ["X"], ["Y"], engine=engine)
@@ -26,10 +18,8 @@ class TestCeil(serial.SerializedTestCase):
             return (np.ceil(X),)
 
         self.assertReferenceChecks(
-            device_option=gc,
-            op=op,
-            inputs=[X],
-            reference=ceil_ref)
+            device_option=gc, op=op, inputs=[X], reference=ceil_ref
+        )
 
         # Check over multiple devices
         self.assertDeviceChecks(dc, op, [X], [0])

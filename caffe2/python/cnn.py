@@ -2,9 +2,6 @@
 # Module caffe2.python.cnn
 
 
-
-
-
 from caffe2.python import brew, workspace
 from caffe2.python.model_helper import ModelHelper
 from caffe2.proto import caffe2_pb2
@@ -16,11 +13,17 @@ class CNNModelHelper(ModelHelper):
     manually define parameter initializations and operators separately.
     """
 
-    def __init__(self, order="NCHW", name=None,
-                 use_cudnn=True, cudnn_exhaustive_search=False,
-                 ws_nbytes_limit=None, init_params=True,
-                 skip_sparse_optim=False,
-                 param_model=None):
+    def __init__(
+        self,
+        order="NCHW",
+        name=None,
+        use_cudnn=True,
+        cudnn_exhaustive_search=False,
+        ws_nbytes_limit=None,
+        init_params=True,
+        skip_sparse_optim=False,
+        param_model=None,
+    ):
         logging.warning(
             "[====DEPRECATE WARNING====]: you are creating an "
             "object from CNNModelHelper class which will be deprecated soon. "
@@ -30,12 +33,12 @@ class CNNModelHelper(ModelHelper):
         )
 
         cnn_arg_scope = {
-            'order': order,
-            'use_cudnn': use_cudnn,
-            'cudnn_exhaustive_search': cudnn_exhaustive_search,
+            "order": order,
+            "use_cudnn": use_cudnn,
+            "cudnn_exhaustive_search": cudnn_exhaustive_search,
         }
         if ws_nbytes_limit:
-            cnn_arg_scope['ws_nbytes_limit'] = ws_nbytes_limit
+            cnn_arg_scope["ws_nbytes_limit"] = ws_nbytes_limit
         super().__init__(
             skip_sparse_optim=skip_sparse_optim,
             name="CNN" if name is None else name,
@@ -49,9 +52,7 @@ class CNNModelHelper(ModelHelper):
         self.cudnn_exhaustive_search = cudnn_exhaustive_search
         self.ws_nbytes_limit = ws_nbytes_limit
         if self.order != "NHWC" and self.order != "NCHW":
-            raise ValueError(
-                "Cannot understand the CNN storage order %s." % self.order
-            )
+            raise ValueError("Cannot understand the CNN storage order %s." % self.order)
 
     def ImageInput(self, blob_in, blob_out, use_gpu_transform=False, **kwargs):
         return brew.image_input(
@@ -60,16 +61,11 @@ class CNNModelHelper(ModelHelper):
             blob_out,
             order=self.order,
             use_gpu_transform=use_gpu_transform,
-            **kwargs
+            **kwargs,
         )
 
     def VideoInput(self, blob_in, blob_out, **kwargs):
-        return brew.video_input(
-            self,
-            blob_in,
-            blob_out,
-            **kwargs
-        )
+        return brew.video_input(self, blob_in, blob_out, **kwargs)
 
     def PadImage(self, blob_in, blob_out, **kwargs):
         # TODO(wyiming): remove this dummy helper later
@@ -83,7 +79,7 @@ class CNNModelHelper(ModelHelper):
             order=self.order,
             cudnn_exhaustive_search=self.cudnn_exhaustive_search,
             ws_nbytes_limit=self.ws_nbytes_limit,
-            **kwargs
+            **kwargs,
         )
 
     def Conv(self, *args, **kwargs):
@@ -94,7 +90,7 @@ class CNNModelHelper(ModelHelper):
             order=self.order,
             cudnn_exhaustive_search=self.cudnn_exhaustive_search,
             ws_nbytes_limit=self.ws_nbytes_limit,
-            **kwargs
+            **kwargs,
         )
 
     def ConvTranspose(self, *args, **kwargs):
@@ -105,7 +101,7 @@ class CNNModelHelper(ModelHelper):
             order=self.order,
             cudnn_exhaustive_search=self.cudnn_exhaustive_search,
             ws_nbytes_limit=self.ws_nbytes_limit,
-            **kwargs
+            **kwargs,
         )
 
     def GroupConv(self, *args, **kwargs):
@@ -116,7 +112,7 @@ class CNNModelHelper(ModelHelper):
             order=self.order,
             cudnn_exhaustive_search=self.cudnn_exhaustive_search,
             ws_nbytes_limit=self.ws_nbytes_limit,
-            **kwargs
+            **kwargs,
         )
 
     def GroupConv_Deprecated(self, *args, **kwargs):
@@ -127,7 +123,7 @@ class CNNModelHelper(ModelHelper):
             order=self.order,
             cudnn_exhaustive_search=self.cudnn_exhaustive_search,
             ws_nbytes_limit=self.ws_nbytes_limit,
-            **kwargs
+            **kwargs,
         )
 
     def FC(self, *args, **kwargs):
@@ -210,18 +206,18 @@ class CNNModelHelper(ModelHelper):
 
     @property
     def XavierInit(self):
-        return ('XavierFill', {})
+        return ("XavierFill", {})
 
     def ConstantInit(self, value):
-        return ('ConstantFill', dict(value=value))
+        return ("ConstantFill", dict(value=value))
 
     @property
     def MSRAInit(self):
-        return ('MSRAFill', {})
+        return ("MSRAFill", {})
 
     @property
     def ZeroInit(self):
-        return ('ConstantFill', {})
+        return ("ConstantFill", {})
 
     def AddWeightDecay(self, weight_decay):
         return brew.add_weight_decay(self, weight_decay)

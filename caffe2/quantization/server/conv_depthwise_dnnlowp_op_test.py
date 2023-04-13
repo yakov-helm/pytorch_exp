@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -32,7 +30,7 @@ class DNNLowPOpConvDepthWiseTest(hu.HypothesisTestCase):
         preserve_weight_sparsity=st.booleans(),
         quantize_groupwise=st.booleans(),
         relu=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(max_examples=10, deadline=None)
     def test_dnnlowp_depthwise_3x3_conv(
@@ -187,7 +185,7 @@ class DNNLowPOpConvDepthWiseTest(hu.HypothesisTestCase):
         preserve_activation_sparsity=st.booleans(),
         preserve_weight_sparsity=st.booleans(),
         quantize_groupwise=st.just(True),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(max_examples=10, deadline=None)
     def test_dnnlowp_depthwise_3x3x3_conv(

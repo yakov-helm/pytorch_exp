@@ -3,7 +3,8 @@ from .. import functional as F
 
 from torch import Tensor
 
-__all__ = ['PixelShuffle', 'PixelUnshuffle']
+__all__ = ["PixelShuffle", "PixelUnshuffle"]
+
 
 class PixelShuffle(Module):
     r"""Rearranges elements in a tensor of shape :math:`(*, C \times r^2, H, W)`
@@ -43,7 +44,7 @@ class PixelShuffle(Module):
     .. _Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network:
         https://arxiv.org/abs/1609.05158
     """
-    __constants__ = ['upscale_factor']
+    __constants__ = ["upscale_factor"]
     upscale_factor: int
 
     def __init__(self, upscale_factor: int) -> None:
@@ -54,7 +55,7 @@ class PixelShuffle(Module):
         return F.pixel_shuffle(input, self.upscale_factor)
 
     def extra_repr(self) -> str:
-        return 'upscale_factor={}'.format(self.upscale_factor)
+        return "upscale_factor={}".format(self.upscale_factor)
 
 
 class PixelUnshuffle(Module):
@@ -93,7 +94,7 @@ class PixelUnshuffle(Module):
     .. _Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network:
         https://arxiv.org/abs/1609.05158
     """
-    __constants__ = ['downscale_factor']
+    __constants__ = ["downscale_factor"]
     downscale_factor: int
 
     def __init__(self, downscale_factor: int) -> None:
@@ -104,4 +105,4 @@ class PixelUnshuffle(Module):
         return F.pixel_unshuffle(input, self.downscale_factor)
 
     def extra_repr(self) -> str:
-        return 'downscale_factor={}'.format(self.downscale_factor)
+        return "downscale_factor={}".format(self.downscale_factor)

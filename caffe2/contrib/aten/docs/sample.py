@@ -9,6 +9,7 @@ import torch.onnx
 import onnx
 import caffe2.python.onnx.backend
 
+
 class MyFunction(Function):
     @staticmethod
     def forward(ctx, x, y):
@@ -23,16 +24,21 @@ class MyFunction(Function):
         # this representation will be converted to ONNX protobufs on export.
         return r
 
+
 class MyModule(nn.Module):
     def forward(self, x, y):
         # you can combine your ATen ops with standard onnx ones
         x = nn.ReLU()(x)
         return MyFunction.apply(x, y)
 
+
 f = tempfile.NamedTemporaryFile()
-torch.onnx.export(MyModule(),
-                  (Variable(torch.ones(3, 4)), Variable(torch.ones(3, 4))),
-                  f, verbose=True)
+torch.onnx.export(
+    MyModule(),
+    (Variable(torch.ones(3, 4)), Variable(torch.ones(3, 4))),
+    f,
+    verbose=True,
+)
 
 # prints the graph for debugging:
 # graph(%input : Float(3, 4, strides=[4, 1], requires_grad=0, device=cpu),

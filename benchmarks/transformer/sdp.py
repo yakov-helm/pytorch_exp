@@ -69,7 +69,9 @@ class ExperimentResults:
             f"{self.nn_mha_time:2f}",
             f"{self.compiled_nn_mha_time:2f}" if self.compiled_nn_mha_time else None,
             f"{self.composite_mha_time:2f}",
-            f"{self.compiled_composite_mha_time:2f}" if self.compiled_composite_mha_time else None,
+            f"{self.compiled_composite_mha_time:2f}"
+            if self.compiled_composite_mha_time
+            else None,
         ]
 
     @classmethod
@@ -245,7 +247,11 @@ def run_single_experiment(config: ExperimentConfig) -> ExperimentResults:
             )
 
             compiled_composite_mha_time = benchmark_torch_function_in_microseconds(
-                compiled_composite_mha, qkv, qkv, qkv, mask,
+                compiled_composite_mha,
+                qkv,
+                qkv,
+                qkv,
+                mask,
             )
         else:
             compiled_nn_mha_time = None
@@ -339,7 +345,9 @@ def main(save_path: Optional[Path]):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save-path", "--save_path", type=str, help="Path to save the results")
+    parser.add_argument(
+        "--save-path", "--save_path", type=str, help="Path to save the results"
+    )
 
     args = parser.parse_args()
     save_path = Path(args.save_path) if args.save_path else None

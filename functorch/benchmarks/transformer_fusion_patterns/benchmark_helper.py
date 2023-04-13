@@ -76,7 +76,7 @@ def time_with_torch_timer(fn, args, string_id, kwargs=None):
     fn_call = "fn(*args, **kwargs)"
     # Measure end-to-end fwd time
     timer = Timer(stmt=f"{fn_call}", globals=env)
-    fwd_latency = round(timer.timeit(1000).mean * 10 ** 6, 3)
+    fwd_latency = round(timer.timeit(1000).mean * 10**6, 3)
     timer_blocked = timer.blocked_autorange()
     print(f"Forward = {fwd_latency}")
 
@@ -85,7 +85,7 @@ def time_with_torch_timer(fn, args, string_id, kwargs=None):
         stmt=f"{grad_none}; fwd = {fn_call}; fwd.backward(gO)",
         globals=env,
     )
-    fwd_bwd_latency = round(timer.timeit(1000).mean * 10 ** 6, 3)
+    fwd_bwd_latency = round(timer.timeit(1000).mean * 10**6, 3)
     timer_blocked = timer.blocked_autorange()
     # print(f"Forward + sum + Backward = {fwd_sum_bwd_latency}")
 
@@ -136,8 +136,8 @@ def time_with_manual_timer(fn, args, string_id):
 
         fwd_times.append(fwd_end - fwd_start)
         bwd_times.append(bwd_end - bwd_start)
-    avg_fwd = round(sum(fwd_times) / repeats * 10 ** 6, 2)
-    avg_bwd = round(sum(bwd_times) / repeats * 10 ** 6, 2)
+    avg_fwd = round(sum(fwd_times) / repeats * 10**6, 2)
+    avg_bwd = round(sum(bwd_times) / repeats * 10**6, 2)
     avg_total = round(avg_fwd + avg_bwd, 2)
 
     print(f"Forward = {avg_fwd}")

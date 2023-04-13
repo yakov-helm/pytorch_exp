@@ -18,8 +18,7 @@ import sys
 from .reductions import init_reductions
 import multiprocessing
 
-__all__ = ['set_sharing_strategy', 'get_sharing_strategy',
-           'get_all_sharing_strategies']
+__all__ = ["set_sharing_strategy", "get_sharing_strategy", "get_all_sharing_strategies"]
 
 
 from multiprocessing import *  # noqa: F403
@@ -35,16 +34,22 @@ torch._C._multiprocessing_init()
 
 """Add helper function to spawn N processes and wait for completion of any of
 them. This depends `mp.get_context` which was added in Python 3.4."""
-from .spawn import spawn, SpawnContext, start_processes, ProcessContext, \
-    ProcessRaisedException, ProcessExitedException
+from .spawn import (
+    spawn,
+    SpawnContext,
+    start_processes,
+    ProcessContext,
+    ProcessRaisedException,
+    ProcessExitedException,
+)
 
 
-if sys.platform == 'darwin' or sys.platform == 'win32':
-    _sharing_strategy = 'file_system'
-    _all_sharing_strategies = {'file_system'}
+if sys.platform == "darwin" or sys.platform == "win32":
+    _sharing_strategy = "file_system"
+    _all_sharing_strategies = {"file_system"}
 else:
-    _sharing_strategy = 'file_descriptor'
-    _all_sharing_strategies = {'file_descriptor', 'file_system'}
+    _sharing_strategy = "file_descriptor"
+    _all_sharing_strategies = {"file_descriptor", "file_system"}
 
 
 def set_sharing_strategy(new_strategy):

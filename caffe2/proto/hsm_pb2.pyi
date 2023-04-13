@@ -18,24 +18,50 @@ class NodeProto(google.protobuf.message.Message):
     OFFSET_FIELD_NUMBER: int
     NAME_FIELD_NUMBER: int
     SCORES_FIELD_NUMBER: int
-    word_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[int] = ...
+    word_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        int
+    ] = ...
     offset: int = ...
     name: typing.Text = ...
-    scores: google.protobuf.internal.containers.RepeatedScalarFieldContainer[float] = ...
+    scores: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        float
+    ] = ...
 
     @property
-    def children(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___NodeProto]: ...
-
-    def __init__(self,
+    def children(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___NodeProto
+    ]: ...
+    def __init__(
+        self,
         *,
-        children : typing.Optional[typing.Iterable[global___NodeProto]] = ...,
-        word_ids : typing.Optional[typing.Iterable[int]] = ...,
-        offset : typing.Optional[int] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        scores : typing.Optional[typing.Iterable[float]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"name",b"name",u"offset",b"offset"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"children",b"children",u"name",b"name",u"offset",b"offset",u"scores",b"scores",u"word_ids",b"word_ids"]) -> None: ...
+        children: typing.Optional[typing.Iterable[global___NodeProto]] = ...,
+        word_ids: typing.Optional[typing.Iterable[int]] = ...,
+        offset: typing.Optional[int] = ...,
+        name: typing.Optional[typing.Text] = ...,
+        scores: typing.Optional[typing.Iterable[float]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal["name", b"name", "offset", b"offset"],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "children",
+            b"children",
+            "name",
+            b"name",
+            "offset",
+            b"offset",
+            "scores",
+            b"scores",
+            "word_ids",
+            b"word_ids",
+        ],
+    ) -> None: ...
+
 global___NodeProto = NodeProto
 
 class TreeProto(google.protobuf.message.Message):
@@ -44,13 +70,18 @@ class TreeProto(google.protobuf.message.Message):
 
     @property
     def root_node(self) -> global___NodeProto: ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        root_node : typing.Optional[global___NodeProto] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"root_node",b"root_node"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"root_node",b"root_node"]) -> None: ...
+        root_node: typing.Optional[global___NodeProto] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["root_node", b"root_node"]
+    ) -> bool: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["root_node", b"root_node"]
+    ) -> None: ...
+
 global___TreeProto = TreeProto
 
 class HierarchyProto(google.protobuf.message.Message):
@@ -60,15 +91,24 @@ class HierarchyProto(google.protobuf.message.Message):
     size: int = ...
 
     @property
-    def paths(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PathProto]: ...
-
-    def __init__(self,
+    def paths(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___PathProto
+    ]: ...
+    def __init__(
+        self,
         *,
-        size : typing.Optional[int] = ...,
-        paths : typing.Optional[typing.Iterable[global___PathProto]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"size",b"size"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"paths",b"paths",u"size",b"size"]) -> None: ...
+        size: typing.Optional[int] = ...,
+        paths: typing.Optional[typing.Iterable[global___PathProto]] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["size", b"size"]
+    ) -> bool: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["paths", b"paths", "size", b"size"]
+    ) -> None: ...
+
 global___HierarchyProto = HierarchyProto
 
 class PathProto(google.protobuf.message.Message):
@@ -78,15 +118,27 @@ class PathProto(google.protobuf.message.Message):
     word_id: int = ...
 
     @property
-    def path_nodes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PathNodeProto]: ...
-
-    def __init__(self,
+    def path_nodes(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___PathNodeProto
+    ]: ...
+    def __init__(
+        self,
         *,
-        word_id : typing.Optional[int] = ...,
-        path_nodes : typing.Optional[typing.Iterable[global___PathNodeProto]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"word_id",b"word_id"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"path_nodes",b"path_nodes",u"word_id",b"word_id"]) -> None: ...
+        word_id: typing.Optional[int] = ...,
+        path_nodes: typing.Optional[typing.Iterable[global___PathNodeProto]] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["word_id", b"word_id"]
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "path_nodes", b"path_nodes", "word_id", b"word_id"
+        ],
+    ) -> None: ...
+
 global___PathProto = PathProto
 
 class PathNodeProto(google.protobuf.message.Message):
@@ -98,12 +150,24 @@ class PathNodeProto(google.protobuf.message.Message):
     length: int = ...
     target: int = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        index : typing.Optional[int] = ...,
-        length : typing.Optional[int] = ...,
-        target : typing.Optional[int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"index",b"index",u"length",b"length",u"target",b"target"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"index",b"index",u"length",b"length",u"target",b"target"]) -> None: ...
+        index: typing.Optional[int] = ...,
+        length: typing.Optional[int] = ...,
+        target: typing.Optional[int] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "index", b"index", "length", b"length", "target", b"target"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "index", b"index", "length", b"length", "target", b"target"
+        ],
+    ) -> None: ...
+
 global___PathNodeProto = PathNodeProto

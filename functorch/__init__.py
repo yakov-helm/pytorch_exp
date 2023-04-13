@@ -16,8 +16,18 @@ from . import _C
 from torch._functorch.python_key import make_fx
 
 from torch._functorch.deprecated import (
-    vmap, grad, grad_and_value, vjp, jvp, jacrev, jacfwd, hessian, functionalize,
-    make_functional, make_functional_with_buffers, combine_state_for_ensemble,
+    vmap,
+    grad,
+    grad_and_value,
+    vjp,
+    jvp,
+    jacrev,
+    jacfwd,
+    hessian,
+    functionalize,
+    make_functional,
+    make_functional_with_buffers,
+    combine_state_for_ensemble,
 )
 
 # utilities. Maybe these should go in their own namespace in the future?

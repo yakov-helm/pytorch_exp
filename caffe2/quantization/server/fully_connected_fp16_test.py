@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -24,9 +22,11 @@ class FullyConnectedFP16Test(hu.HypothesisTestCase):
         output_channels=st.integers(128, 256),
         batch_size=st.integers(128, 256),
         empty_batch=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
-    def test_fully_connected(self, input_channels, output_channels, batch_size, empty_batch, gc, dc):
+    def test_fully_connected(
+        self, input_channels, output_channels, batch_size, empty_batch, gc, dc
+    ):
         if empty_batch:
             batch_size = 0
         W = np.random.randn(output_channels, input_channels).astype(np.float32)

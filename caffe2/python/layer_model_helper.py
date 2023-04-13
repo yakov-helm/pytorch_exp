@@ -2,9 +2,6 @@
 # Module caffe2.python.layer_model_helper
 
 
-
-
-
 from caffe2.python import core, model_helper, schema, scope, utils, muji
 from caffe2.python.modeling.parameter_info import (
     ParameterInfo,
@@ -21,6 +18,7 @@ from caffe2.python.layers import layers
 import logging
 import numpy as np
 import copy
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,16 +34,21 @@ class LayerModelHelper(model_helper.ModelHelper):
     operators from train net.
     """
 
-    def __init__(self, name, input_feature_schema, trainer_extra_schema,
-                 keep_blobs=False,
-                 use_attribution=True):
-        ''' TODO(amalevich): more documnetation on input args
+    def __init__(
+        self,
+        name,
+        input_feature_schema,
+        trainer_extra_schema,
+        keep_blobs=False,
+        use_attribution=True,
+    ):
+        """TODO(amalevich): more documnetation on input args
 
         use_attribution:
             if True, will generate the atrribution net for feature importance
             calculation; Need to turn it to false when FC is quantized as FP16
             This attribute access will be consistent with MTML model.
-        '''
+        """
 
         super().__init__(name=name)
         self._layer_names = set()
@@ -75,20 +78,22 @@ class LayerModelHelper(model_helper.ModelHelper):
         # Connect Schema to self.net. That particular instance of schmea will be
         # use for generation of the Layers across the network and would be used
         # for connection with Readers.
-        self._input_feature_schema = schema.NewRecord(
-            self.net,
-            input_feature_schema
-        ) if not keep_blobs else input_feature_schema.clone()
-        self._trainer_extra_schema = schema.NewRecord(
-            self.net,
-            trainer_extra_schema
-        ) if not keep_blobs else trainer_extra_schema.clone()
+        self._input_feature_schema = (
+            schema.NewRecord(self.net, input_feature_schema)
+            if not keep_blobs
+            else input_feature_schema.clone()
+        )
+        self._trainer_extra_schema = (
+            schema.NewRecord(self.net, trainer_extra_schema)
+            if not keep_blobs
+            else trainer_extra_schema.clone()
+        )
         self._metrics_schema = schema.Struct()
 
         self._preproc_output_schema = None
 
         self._init_global_constants()
-        self.param_init_net = self.create_init_net('param_init_net')
+        self.param_init_net = self.create_init_net("param_init_net")
         self._initialize_params = True
 
         self._transfer_learning_blob_name_mappings = None
@@ -106,11 +111,10 @@ class LayerModelHelper(model_helper.ModelHelper):
         self._initialize_params = initialize_params
 
     def add_metric_field(self, name, value):
-        assert name not in self._metrics_schema.fields, (
-            "Try to add metric field twice: {}".format(name))
-        self._metrics_schema = self._metrics_schema + schema.Struct(
-            (name, value)
-        )
+        assert (
+            name not in self._metrics_schema.fields
+        ), "Try to add metric field twice: {}".format(name)
+        self._metrics_schema = self._metrics_schema + schema.Struct((name, value))
 
     # an empty white_set will skip everything
     def filter_metrics_schema(self, white_set):
@@ -118,13 +122,15 @@ class LayerModelHelper(model_helper.ModelHelper):
         field_names = self._metrics_schema.field_names()
         for name in field_names:
             if name not in white_set:
-                self._metrics_schema = self._metrics_schema - schema.Struct((name, schema.Scalar()))
+                self._metrics_schema = self._metrics_schema - schema.Struct(
+                    (name, schema.Scalar())
+                )
 
     def add_ad_hoc_plot_blob(self, blob, dtype=None):
         assert isinstance(
             blob, (str, core.BlobReference)
         ), "expect type str or BlobReference, but got {}".format(type(blob))
-        dtype = dtype or (np.float, (1, ))
+        dtype = dtype or (np.float, (1,))
         self.add_metric_field(str(blob), schema.Scalar(dtype, blob))
         self.ad_hoc_plot_blobs.append(blob)
 
@@ -135,8 +141,9 @@ class LayerModelHelper(model_helper.ModelHelper):
         # to add a global constant to model, one first need to get the
         # initializer
         if array is not None:
-            assert initializer is None,\
-                "Only one from array and initializer should be specified"
+            assert (
+                initializer is None
+            ), "Only one from array and initializer should be specified"
             if dtype is None:
                 array = np.array(array)
             else:
@@ -145,45 +152,47 @@ class LayerModelHelper(model_helper.ModelHelper):
             # TODO: make GivenTensor generic
             op_name = None
             if array.dtype == np.int32:
-                op_name = 'GivenTensorIntFill'
+                op_name = "GivenTensorIntFill"
             elif array.dtype == np.int64:
-                op_name = 'GivenTensorInt64Fill'
+                op_name = "GivenTensorInt64Fill"
             elif array.dtype == np.str:
-                op_name = 'GivenTensorStringFill'
+                op_name = "GivenTensorStringFill"
             elif array.dtype == np.bool:
-                op_name = 'GivenTensorBoolFill'
+                op_name = "GivenTensorBoolFill"
             else:
-                op_name = 'GivenTensorFill'
+                op_name = "GivenTensorFill"
 
             def initializer(blob_name):
                 return core.CreateOperator(
-                    op_name, [],
+                    op_name,
+                    [],
                     blob_name,
                     shape=array.shape,
-                    values=array.flatten().tolist()
+                    values=array.flatten().tolist(),
                 )
+
         else:
             assert initializer is not None
         initializer_op = initializer(blob_name)
         return initializer_op
 
-    def add_global_constant(
-        self, name, array=None, dtype=None, initializer=None
-    ):
-        assert isinstance(name, str), (
-            'name should be a string as we are using it as map key')
+    def add_global_constant(self, name, array=None, dtype=None, initializer=None):
+        assert isinstance(
+            name, str
+        ), "name should be a string as we are using it as map key"
         # This is global namescope for constants. They will be created in all
         # init_nets and there should be very few of them.
-        assert name not in self.global_constants, \
+        assert name not in self.global_constants, (
             "%s already added in global_constants" % name
+        )
         blob_name = self.net.NextBlob(name)
         self.global_constants[name] = blob_name
         initializer_op = LayerModelHelper._get_global_constant_initializer_op(
             blob_name, array, dtype, initializer
         )
-        assert blob_name not in self.global_constant_initializers, \
-            "there is already a initializer op associated with blob %s" % \
-            blob_name
+        assert blob_name not in self.global_constant_initializers, (
+            "there is already a initializer op associated with blob %s" % blob_name
+        )
         self.global_constant_initializers[blob_name] = initializer_op
         return blob_name
 
@@ -194,31 +203,34 @@ class LayerModelHelper(model_helper.ModelHelper):
 
         if name in self.global_constants:
             blob_name = self.global_constants[name]
-            initializer_op = \
-                LayerModelHelper._get_global_constant_initializer_op(
-                    blob_name, *args, **kwargs
-                )
+            initializer_op = LayerModelHelper._get_global_constant_initializer_op(
+                blob_name, *args, **kwargs
+            )
             # check if the original initializer is the same as the one intended
             # now
             assert utils.OpAlmostEqual(
                 initializer_op,
                 self.global_constant_initializers[blob_name],
-                'debug_info'
-            ), \
-                "conflict initializers for global constant %s, " \
-                "previous %s, now %s" % (
-                    blob_name, str(initializer_op),
-                    str(self.global_constant_initializers[blob_name]))
+                "debug_info",
+            ), (
+                "conflict initializers for global constant %s, "
+                "previous %s, now %s"
+                % (
+                    blob_name,
+                    str(initializer_op),
+                    str(self.global_constant_initializers[blob_name]),
+                )
+            )
             return blob_name
         return self.add_global_constant(name, *args, **kwargs)
 
     def _init_global_constants(self):
         self.global_constants = {}
         self.global_constant_initializers = {}
-        self.add_global_constant('ONE', 1.0)
-        self.add_global_constant('NAN', float("NaN"))
-        self.add_global_constant('ZERO', 0.0)
-        self.add_global_constant('ZERO_RANGE', [0, 0], dtype='int32')
+        self.add_global_constant("ONE", 1.0)
+        self.add_global_constant("NAN", float("NaN"))
+        self.add_global_constant("ZERO", 0.0)
+        self.add_global_constant("ZERO_RANGE", [0, 0], dtype="int32")
 
     def _add_global_constants(self, init_net):
         for initializer_op in self.global_constant_initializers.values():
@@ -240,7 +252,8 @@ class LayerModelHelper(model_helper.ModelHelper):
                 "Got inconsistent shapes between shared parameters "
                 "when trying to map a blob in scope {0} to {1}. ref_shape : "
                 " {2}, shape : {3}".format(
-                    scope.CurrentNameScope(), param_name, ref_shape, shape)
+                    scope.CurrentNameScope(), param_name, ref_shape, shape
+                )
             )
 
     def _validate_param_optim(self, param_name, optim):
@@ -253,10 +266,12 @@ class LayerModelHelper(model_helper.ModelHelper):
         if param_name not in self.param_to_optim:
             return
 
-        logger.info("{} shares the same parameter with another parameter. "
-                    "Validating if the same optimizer has been specified for them.".format(
-                        param_name,
-                    ))
+        logger.info(
+            "{} shares the same parameter with another parameter. "
+            "Validating if the same optimizer has been specified for them.".format(
+                param_name,
+            )
+        )
 
         ref_optim = self.param_to_optim[param_name]
 
@@ -289,7 +304,10 @@ class LayerModelHelper(model_helper.ModelHelper):
                 )
             )
 
-            assert type(optim) is type(ref_optim) and optim.attributes == ref_optim.attributes, (
+            assert (
+                type(optim) is type(ref_optim)
+                and optim.attributes == ref_optim.attributes
+            ), (
                 "Optim for {} is an instance of Optimizer. However, the optimizer "
                 "for the parameters shared with {} is {}. "
                 "This optimizer either doesn't have the same type as the current optimizer: "
@@ -297,21 +315,37 @@ class LayerModelHelper(model_helper.ModelHelper):
                 "that of current optimizer which is {} vs {}. "
                 "Please check the optimizer specified for other parameters in the "
                 "shared group to ensure consistency.".format(
-                    param_name, param_name, ref_optim, type(optim), type(ref_optim), optim.attributes, ref_optim.attributes
+                    param_name,
+                    param_name,
+                    ref_optim,
+                    type(optim),
+                    type(ref_optim),
+                    optim.attributes,
+                    ref_optim.attributes,
                 )
             )
         else:
-            raise ValueError("optim should be either None, NoOptim, or an instance of Optimizer, Got {} ".format(optim))
+            raise ValueError(
+                "optim should be either None, NoOptim, or an instance of Optimizer, Got {} ".format(
+                    optim
+                )
+            )
 
-    def create_param(self, param_name, shape, initializer, optimizer=None,
-                     ps_param=None, regularizer=None):
+    def create_param(
+        self,
+        param_name,
+        shape,
+        initializer,
+        optimizer=None,
+        ps_param=None,
+        regularizer=None,
+    ):
         if isinstance(param_name, core.BlobReference):
             param_name = str(param_name)
         elif isinstance(param_name, str):
             # Parameter name will be equal to current Namescope that got
             # resolved with the respect of parameter sharing of the scopes.
-            param_name = parameter_sharing_context.get_parameter_name(
-                param_name)
+            param_name = parameter_sharing_context.get_parameter_name(param_name)
         else:
             raise ValueError("Unsupported type for param_name")
 
@@ -323,16 +357,13 @@ class LayerModelHelper(model_helper.ModelHelper):
             assert len(initializer) == 2
             init_op_args = copy.deepcopy(initializer[1])
         if shape is not None:
-            assert 'shape' not in init_op_args
-            init_op_args.update({'shape': shape})
+            assert "shape" not in init_op_args
+            init_op_args.update({"shape": shape})
 
         initializer_op = None
         if self._initialize_params:
             initializer_op = core.CreateOperator(
-                initializer[0],
-                [],
-                param_blob,
-                **init_op_args
+                initializer[0], [], param_blob, **init_op_args
             )
 
         param = layers.LayerParameter(
@@ -340,7 +371,7 @@ class LayerModelHelper(model_helper.ModelHelper):
             initializer=initializer_op,
             optimizer=optimizer,
             ps_param=ps_param,
-            regularizer=regularizer
+            regularizer=regularizer,
         )
 
         self._validate_param_shape(param_name, shape)
@@ -356,7 +387,7 @@ class LayerModelHelper(model_helper.ModelHelper):
         name = base_name
         index = 0
         while name in self._layer_names:
-            name = base_name + '_auto_' + str(index)
+            name = base_name + "_auto_" + str(index)
             index += 1
 
         self._layer_names.add(name)
@@ -367,8 +398,9 @@ class LayerModelHelper(model_helper.ModelHelper):
         for param in layer.get_parameters():
             assert isinstance(param.parameter, core.BlobReference)
 
-            self.param_to_optim[str(param.parameter)] = \
+            self.param_to_optim[str(param.parameter)] = (
                 param.optimizer or self.default_optimizer
+            )
 
             self.params.append(param.parameter)
             if isinstance(param, layers.LayerParameter):
@@ -381,11 +413,12 @@ class LayerModelHelper(model_helper.ModelHelper):
                 # In ModelHelper, regularization is not supported in create_param
                 # We will unify the way of create_param of ModelHelper and
                 # LayerModelHelper in the future.
-                logger.info('regularization is unsupported for ParameterInfo object')
+                logger.info("regularization is unsupported for ParameterInfo object")
             else:
                 raise ValueError(
-                    'unknown object type besides ParameterInfo and LayerParameter: {}'
-                    .format(param)
+                    "unknown object type besides ParameterInfo and LayerParameter: {}".format(
+                        param
+                    )
                 )
 
         # The primary value of adding everything to self.net - generation of the
@@ -403,17 +436,21 @@ class LayerModelHelper(model_helper.ModelHelper):
         return param_blobs
 
     def add_post_grad_net_modifiers(self, modifier):
-        assert modifier not in self._post_grad_net_modifiers,\
-            "{0} is already in {1}".format(modifier, self._post_grad_net_modifiers)
-        assert isinstance(modifier, NetModifier),\
-            "{} has to be a NetModifier instance".format(modifier)
+        assert (
+            modifier not in self._post_grad_net_modifiers
+        ), "{0} is already in {1}".format(modifier, self._post_grad_net_modifiers)
+        assert isinstance(
+            modifier, NetModifier
+        ), "{} has to be a NetModifier instance".format(modifier)
         self._post_grad_net_modifiers.append(modifier)
 
     def add_final_net_modifiers(self, modifier):
-        assert modifier not in self._final_net_modifiers,\
-            "{0} is already in {1}".format(modifier, self._final_net_modifiers)
-        assert isinstance(modifier, NetModifier),\
-            "{} has to be a NetModifier instance".format(modifier)
+        assert (
+            modifier not in self._final_net_modifiers
+        ), "{0} is already in {1}".format(modifier, self._final_net_modifiers)
+        assert isinstance(
+            modifier, NetModifier
+        ), "{} has to be a NetModifier instance".format(modifier)
         self._final_net_modifiers.append(modifier)
 
     @property
@@ -496,7 +533,9 @@ class LayerModelHelper(model_helper.ModelHelper):
 
     @transfer_learning_blob_name_mappings.setter
     def transfer_learning_blob_name_mappings(self, blob_name_mappings):
-        assert blob_name_mappings is not None, "Transfer learning blob name mappings should not be None"
+        assert (
+            blob_name_mappings is not None
+        ), "Transfer learning blob name mappings should not be None"
         self._transfer_learning_blob_name_mappings = blob_name_mappings
 
     @property
@@ -512,7 +551,7 @@ class LayerModelHelper(model_helper.ModelHelper):
     def has_loss(self):
         return self._loss is not None
 
-    def add_loss(self, loss, name='unnamed'):
+    def add_loss(self, loss, name="unnamed"):
         assert loss is not None, "Added loss should not be None"
         assert isinstance(loss, schema.Scalar) or isinstance(
             loss, schema.Struct
@@ -523,9 +562,9 @@ class LayerModelHelper(model_helper.ModelHelper):
             # loss could've been set through model.loss directly which could be
             # a scalar
             if isinstance(self._loss, schema.Scalar):
-                self._loss = schema.Struct(('unnamed', self._loss))
+                self._loss = schema.Struct(("unnamed", self._loss))
 
-            prefix_base = name + '_auto_'
+            prefix_base = name + "_auto_"
             index = 0
             prefix = name
             while prefix in self._loss:
@@ -535,19 +574,22 @@ class LayerModelHelper(model_helper.ModelHelper):
             self._loss = self._loss + loss_struct
 
     def add_output_schema(self, name, value):
-        assert value is not None, \
-            'Added output schema {} should not be None'.format(name)
-        assert isinstance(value, schema.Scalar) or \
-            isinstance(value, schema.Struct), \
-            'Added output schema {} should be a scalar or a struct.\n\
-            Now it is {}.'.format(name, type(value))
+        assert value is not None, "Added output schema {} should not be None".format(
+            name
+        )
+        assert isinstance(value, schema.Scalar) or isinstance(
+            value, schema.Struct
+        ), "Added output schema {} should be a scalar or a struct.\n\
+            Now it is {}.".format(
+            name, type(value)
+        )
         if self._output_schema is None:  # be the first field
             self._output_schema = schema.Struct((name, value))
         else:  # merge with other fields
-            assert name not in self._output_schema.fields, \
-                'Output Schema Field {} already exists'.format(name)
-            self._output_schema = \
-                self._output_schema + schema.Struct((name, value))
+            assert (
+                name not in self._output_schema.fields
+            ), "Output Schema Field {} already exists".format(name)
+            self._output_schema = self._output_schema + schema.Struct((name, value))
 
     def add_trainer_extra_schema(self, trainer_extra_schema):
         trainer_extra_record = schema.NewRecord(self.net, trainer_extra_schema)
@@ -557,7 +599,7 @@ class LayerModelHelper(model_helper.ModelHelper):
         def is_functional_layer(layer):
             if core.IsOperator(layer):
                 return True
-            elif layer.startswith('FunctionalLayer'):
+            elif layer.startswith("FunctionalLayer"):
                 return True
             else:
                 return False
@@ -565,18 +607,17 @@ class LayerModelHelper(model_helper.ModelHelper):
         def resolve_functional_layer(layer):
             if core.IsOperator(layer):
                 return layer
-            elif layer.startswith('FunctionalLayer'):
-                return layer[len('FunctionalLayer'):]
+            elif layer.startswith("FunctionalLayer"):
+                return layer[len("FunctionalLayer") :]
             else:
-                raise ValueError(
-                    '%s cannot be resolved as functional layer' % layer
-                )
+                raise ValueError("%s cannot be resolved as functional layer" % layer)
 
-        if layer.startswith('__'):
+        if layer.startswith("__"):
             raise AttributeError(layer)
 
         # TODO(amalevich): Add add support for ifbpy inline documentation
         if layers.layer_exists(layer):
+
             def wrapper(*args, **kwargs):
                 new_layer = layers.create_layer(layer, self, *args, **kwargs)
                 if kwargs.get("output_to_metrics", False):
@@ -584,6 +625,7 @@ class LayerModelHelper(model_helper.ModelHelper):
                 if kwargs.get("params_to_metrics", False):
                     new_layer.export_params_for_metrics()
                 return self.add_layer(new_layer)
+
             return wrapper
         elif is_functional_layer(layer):
             # TODO(xlwang): Desginated layer shadows the usage of an op as a
@@ -595,17 +637,15 @@ class LayerModelHelper(model_helper.ModelHelper):
                 def apply_operator(net, in_record, out_record, **kwargs):
                     # TODO(amalevich): Switch to net.operator as soon as it gets
                     # landed
-                    net.__getattr__(layer)(in_record.field_blobs(),
-                                           out_record.field_blobs(),
-                                           **kwargs)
+                    net.__getattr__(layer)(
+                        in_record.field_blobs(), out_record.field_blobs(), **kwargs
+                    )
 
-                if 'name' not in kwargs:
-                    kwargs['name'] = layer
+                if "name" not in kwargs:
+                    kwargs["name"] = layer
 
                 new_layer = layers.create_layer(
-                    'Functional',
-                    self, *args, function=apply_operator,
-                    **kwargs
+                    "Functional", self, *args, function=apply_operator, **kwargs
                 )
 
                 if kwargs.get("output_to_metrics", False):
@@ -614,11 +654,13 @@ class LayerModelHelper(model_helper.ModelHelper):
                     new_layer.export_params_for_metrics()
 
                 return self.add_layer(new_layer)
+
             return wrapper
         else:
             # this needs to be an AttributeError to fit hasattr semantics
             raise AttributeError(
-                "Trying to create non-registered layer: {}".format(layer))
+                "Trying to create non-registered layer: {}".format(layer)
+            )
 
     @property
     def layers(self):
@@ -634,16 +676,16 @@ class LayerModelHelper(model_helper.ModelHelper):
         for param, regularizer in self.param_to_reg.items():
             if regularizer is None:
                 continue
-            logger.info("add regularizer {0} for param {1} to loss".format(regularizer, param))
+            logger.info(
+                "add regularizer {0} for param {1} to loss".format(regularizer, param)
+            )
             assert isinstance(regularizer, Regularizer)
-            added_loss_blob = regularizer(train_net, train_init_net, param, grad=None,
-                                          by=RegularizationBy.ON_LOSS)
+            added_loss_blob = regularizer(
+                train_net, train_init_net, param, grad=None, by=RegularizationBy.ON_LOSS
+            )
             logger.info(added_loss_blob)
             if added_loss_blob is not None:
-                self.add_loss(
-                    schema.Scalar(blob=added_loss_blob),
-                    str(added_loss_blob)
-                )
+                self.add_loss(schema.Scalar(blob=added_loss_blob), str(added_loss_blob))
 
     def apply_regularizers_after_optimizer(
         self,
@@ -660,7 +702,11 @@ class LayerModelHelper(model_helper.ModelHelper):
             if regularizer is None:
                 continue
             assert isinstance(regularizer, Regularizer)
-            logger.info("add regularizer {0} for param {1} to optimizer".format(regularizer, param))
+            logger.info(
+                "add regularizer {0} for param {1} to optimizer".format(
+                    regularizer, param
+                )
+            )
             device = get_param_device(
                 param,
                 grad_map.get(str(param)),
@@ -669,8 +715,11 @@ class LayerModelHelper(model_helper.ModelHelper):
             )
             with core.DeviceScope(device):
                 regularizer(
-                    train_net, train_init_net, param, grad=grad_map.get(str(param)),
-                    by=RegularizationBy.AFTER_OPTIMIZER
+                    train_net,
+                    train_init_net,
+                    param,
+                    grad=grad_map.get(str(param)),
+                    by=RegularizationBy.AFTER_OPTIMIZER,
                 )
 
     def apply_post_grad_net_modifiers(
@@ -681,13 +730,20 @@ class LayerModelHelper(model_helper.ModelHelper):
         blob_to_device=None,
         modify_output_record=False,
     ):
-        param_grad_map = {param: grad_map[param]
-                          for param in self.param_to_optim.keys() if param in grad_map}
+        param_grad_map = {
+            param: grad_map[param]
+            for param in self.param_to_optim.keys()
+            if param in grad_map
+        }
 
         for modifier in self._post_grad_net_modifiers:
-            modifier(trainer_net, trainer_init_net, param_grad_map,
-                     blob_to_device=blob_to_device,
-                     modify_output_record=modify_output_record)
+            modifier(
+                trainer_net,
+                trainer_init_net,
+                param_grad_map,
+                blob_to_device=blob_to_device,
+                modify_output_record=modify_output_record,
+            )
 
     def apply_final_net_modifiers(
         self,
@@ -698,9 +754,13 @@ class LayerModelHelper(model_helper.ModelHelper):
         modify_output_record=False,
     ):
         for modifier in self._final_net_modifiers:
-            modifier(trainer_net, trainer_init_net, grad_map,
-                     blob_to_device=blob_to_device,
-                     modify_output_record=modify_output_record)
+            modifier(
+                trainer_net,
+                trainer_init_net,
+                grad_map,
+                blob_to_device=blob_to_device,
+                modify_output_record=modify_output_record,
+            )
 
     def apply_optimizers(
         self,
@@ -713,8 +773,9 @@ class LayerModelHelper(model_helper.ModelHelper):
         # if given, blob_to_device is a map from blob to device_option
         blob_to_device = blob_to_device or {}
         for param, optimizer in self.param_to_optim.items():
-            assert optimizer is not None, \
-                "default optimizer must have been set in add_layer"
+            assert (
+                optimizer is not None
+            ), "default optimizer must have been set in add_layer"
             # note that not all params has gradient and thus we sent None if
             # gradient does not exists
             device = get_param_device(
@@ -728,11 +789,10 @@ class LayerModelHelper(model_helper.ModelHelper):
                 del device.extra_info[:]
 
             with core.DeviceScope(device):
-                optimizer(
-                    train_net, train_init_net, param, grad_map.get(str(param)))
+                optimizer(train_net, train_init_net, param, grad_map.get(str(param)))
 
     def _GetOne(self):
-        return self.global_constants['ONE']
+        return self.global_constants["ONE"]
 
     # An optimizer which allows us to do NO optimization
     def NoOptim(self, *args, **kwargs):

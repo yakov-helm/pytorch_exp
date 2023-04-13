@@ -16,10 +16,7 @@ if not dist.is_available():
     sys.exit(0)
 
 import torch.testing._internal.common_utils as common
-from torch.testing._internal.common_distributed import (
-    skip_if_win32,
-    create_tcp_store
-)
+from torch.testing._internal.common_distributed import skip_if_win32, create_tcp_store
 from torch.testing._internal.common_utils import (
     TestCase,
     load_tests,
@@ -54,7 +51,7 @@ def gpus_for_rank(world_size):
     gpus_for_rank = []
     for rank in range(world_size):
         gpus_for_rank.append(
-            visible_devices[rank * gpus_per_process: (rank + 1) * gpus_per_process]
+            visible_devices[rank * gpus_per_process : (rank + 1) * gpus_per_process]
         )
     return gpus_for_rank
 
@@ -92,7 +89,9 @@ class StoreTestBase:
         self._test_set_get(self._create_store())
 
     def _test_compare_set(self, store):
-        missing_key_result = store.compare_set("cs_key0", "wrong_old_value", "new_value0")
+        missing_key_result = store.compare_set(
+            "cs_key0", "wrong_old_value", "new_value0"
+        )
         self.assertEqual(b"wrong_old_value", missing_key_result)
 
         store.set("cs_key0", "value0")
@@ -134,10 +133,14 @@ class FileStoreTest(TestCase, StoreTestBase):
         # Init RPC using file
         rpc_backend_options = rpc.TensorPipeRpcBackendOptions()
         rpc_backend_options.init_method = f"file://{file.name}"
-        rpc.init_rpc("worker", rank=0, world_size=1, rpc_backend_options=rpc_backend_options)
+        rpc.init_rpc(
+            "worker", rank=0, world_size=1, rpc_backend_options=rpc_backend_options
+        )
 
         # Init PG using file
-        dist.init_process_group("gloo", rank=0, world_size=1, init_method=f"file://{file.name}")
+        dist.init_process_group(
+            "gloo", rank=0, world_size=1, init_method=f"file://{file.name}"
+        )
         dist.destroy_process_group()
         assert os.path.exists(file.name)
 
@@ -166,19 +169,23 @@ class HashStoreTest(TestCase, StoreTestBase):
         store.set_timeout(timedelta(seconds=300))
         return store
 
+
 class PrefixStoreTest(TestCase):
     def setUp(self):
         # delete is false as FileStore will automatically clean up the file
         self.file = tempfile.NamedTemporaryFile(delete=False)
 
     def test_get_underlying_store(self):
-        tcp_store = dist.TCPStore(host_name=DEFAULT_HOSTNAME, port=0, world_size=1, is_master=True)
+        tcp_store = dist.TCPStore(
+            host_name=DEFAULT_HOSTNAME, port=0, world_size=1, is_master=True
+        )
         hash_store = dist.HashStore()
         file_store = dist.FileStore(self.file.name, world_size=1)
         for store in [tcp_store, hash_store, file_store]:
             with self.subTest(f"Testing getting underlying_store for {type(store)}"):
                 prefix_store = dist.PrefixStore("prefix", store)
                 self.assertEqual(prefix_store.underlying_store, store)
+
 
 class PrefixFileStoreTest(TestCase, StoreTestBase):
     def setUp(self):
@@ -289,11 +296,17 @@ class TCPStoreTest(TestCase, StoreTestBase):
         self._test_numkeys_delkeys(self._create_store())
 
     def _create_client(self, index, addr, port, world_size):
-        client_store = dist.TCPStore(addr, port, world_size=world_size, timeout=timedelta(seconds=10))
+        client_store = dist.TCPStore(
+            addr, port, world_size=world_size, timeout=timedelta(seconds=10)
+        )
         self.assertEqual("value".encode(), client_store.get("key"))
         client_store.set(f"new_key{index}", f"new_value{index}")
-        self.assertEqual(f"next_value{index}".encode(),
-                         client_store.compare_set(f"new_key{index}", f"new_value{index}", f"next_value{index}"))
+        self.assertEqual(
+            f"next_value{index}".encode(),
+            client_store.compare_set(
+                f"new_key{index}", f"new_value{index}", f"next_value{index}"
+            ),
+        )
 
     def _multi_worker_helper(self, world_size):
         addr = DEFAULT_HOSTNAME
@@ -310,6 +323,7 @@ class TCPStoreTest(TestCase, StoreTestBase):
 
     def test_multi_worker_with_nonfixed_world_size(self):
         self._multi_worker_helper(None)
+
 
 class PrefixTCPStoreTest(TestCase, StoreTestBase):
     def setUp(self):
@@ -448,7 +462,9 @@ class RendezvousTCPTest(TestCase):
             next(gen)
 
     def test_dns_timeout(self):
-        with self.assertRaisesRegex(TimeoutError, "client socket has timed out after.*dnsnotexist"):
+        with self.assertRaisesRegex(
+            TimeoutError, "client socket has timed out after.*dnsnotexist"
+        ):
             gen = dist.rendezvous(
                 "tcp://dnsnotexist:23456?world_size=2&rank=0",
                 timeout=timedelta(seconds=1),

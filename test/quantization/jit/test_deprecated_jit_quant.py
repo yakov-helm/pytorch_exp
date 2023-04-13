@@ -1,14 +1,13 @@
 # Owner(s): ["oncall: quantization"]
 
 import torch
-from torch.testing._internal.common_quantization import (
-    skipIfNoFBGEMM
-)
+from torch.testing._internal.common_quantization import skipIfNoFBGEMM
 from torch.testing._internal.common_utils import suppress_warnings
 from torch.testing._internal.jit_utils import JitTestCase
 
 from typing import Tuple
 import copy
+
 
 class TestDeprecatedJitQuantized(JitTestCase):
     @skipIfNoFBGEMM
@@ -38,31 +37,29 @@ class TestDeprecatedJitQuantized(JitTestCase):
             # product that overflows the int16 range, e.g.
             # (255*127+255*127) = 64770. So, we hardcode the test values
             # here and ensure a mix of signedness.
-            vals = [[100, -155],
-                    [100, -155],
-                    [-155, 100],
-                    [-155, 100],
-                    [100, -155],
-                    [-155, 100],
-                    [-155, 100],
-                    [100, -155]]
-            vals = vals[:d_hid * num_chunks]
+            vals = [
+                [100, -155],
+                [100, -155],
+                [-155, 100],
+                [-155, 100],
+                [100, -155],
+                [-155, 100],
+                [-155, 100],
+                [100, -155],
+            ]
+            vals = vals[: d_hid * num_chunks]
             cell.weight_ih = torch.nn.Parameter(
-                torch.tensor(vals, dtype=torch.float),
-                requires_grad=False)
+                torch.tensor(vals, dtype=torch.float), requires_grad=False
+            )
             cell.weight_hh = torch.nn.Parameter(
-                torch.tensor(vals, dtype=torch.float),
-                requires_grad=False)
+                torch.tensor(vals, dtype=torch.float), requires_grad=False
+            )
 
             ref = copy.deepcopy(cell)
 
             cell = torch.jit.quantized.quantize_rnn_cell_modules(cell)
-            x = torch.tensor([[100, -155],
-                              [-155, 100],
-                              [100, -155]], dtype=torch.float)
-            h0_vals = [[-155, 100],
-                       [-155, 155],
-                       [100, -155]]
+            x = torch.tensor([[100, -155], [-155, 100], [100, -155]], dtype=torch.float)
+            h0_vals = [[-155, 100], [-155, 155], [100, -155]]
             hx = torch.tensor(h0_vals, dtype=torch.float)
             if isinstance(cell, torch.jit.quantized.QuantizedLSTMCell):
                 cx = torch.tensor(h0_vals, dtype=torch.float)
@@ -71,16 +68,20 @@ class TestDeprecatedJitQuantized(JitTestCase):
                 hiddens = hx
 
             if isinstance(cell, torch.jit.quantized.QuantizedLSTMCell):
+
                 class ScriptWrapper(torch.jit.ScriptModule):
                     def __init__(self, cell):
                         super().__init__()
                         self.cell = cell
 
                     @torch.jit.script_method
-                    def forward(self, x: torch.Tensor,
-                                hiddens: Tuple[torch.Tensor, torch.Tensor]
-                                ) -> Tuple[torch.Tensor, torch.Tensor]:
+                    def forward(
+                        self,
+                        x: torch.Tensor,
+                        hiddens: Tuple[torch.Tensor, torch.Tensor],
+                    ) -> Tuple[torch.Tensor, torch.Tensor]:
                         return self.cell(x, hiddens)
+
             else:
 
                 class ScriptWrapper(torch.jit.ScriptModule):
@@ -89,7 +90,9 @@ class TestDeprecatedJitQuantized(JitTestCase):
                         self.cell = cell
 
                     @torch.jit.script_method
-                    def forward(self, x: torch.Tensor, hiddens: torch.Tensor) -> torch.Tensor:
+                    def forward(
+                        self, x: torch.Tensor, hiddens: torch.Tensor
+                    ) -> torch.Tensor:
                         return self.cell(x, hiddens)
 
             cell = ScriptWrapper(cell)
@@ -123,37 +126,41 @@ class TestDeprecatedJitQuantized(JitTestCase):
             # product that overflows the int16 range, e.g.
             # (255*127+255*127) = 64770. So, we hardcode the test values
             # here and ensure a mix of signedness.
-            vals = [[100, -155],
-                    [100, -155],
-                    [-155, 100],
-                    [-155, 100],
-                    [100, -155],
-                    [-155, 100],
-                    [-155, 100],
-                    [100, -155]]
+            vals = [
+                [100, -155],
+                [100, -155],
+                [-155, 100],
+                [-155, 100],
+                [100, -155],
+                [-155, 100],
+                [-155, 100],
+                [100, -155],
+            ]
             if isinstance(cell, torch.nn.LSTM):
                 num_chunks = 4
             elif isinstance(cell, torch.nn.GRU):
                 num_chunks = 3
-            vals = vals[:d_hid * num_chunks]
+            vals = vals[: d_hid * num_chunks]
             cell.weight_ih_l0 = torch.nn.Parameter(
-                torch.tensor(vals, dtype=torch.float),
-                requires_grad=False)
+                torch.tensor(vals, dtype=torch.float), requires_grad=False
+            )
             cell.weight_hh_l0 = torch.nn.Parameter(
-                torch.tensor(vals, dtype=torch.float),
-                requires_grad=False)
+                torch.tensor(vals, dtype=torch.float), requires_grad=False
+            )
 
             ref = copy.deepcopy(cell)
             cell_int8 = torch.jit.quantized.quantize_rnn_modules(cell, dtype=torch.int8)
-            cell_fp16 = torch.jit.quantized.quantize_rnn_modules(cell, dtype=torch.float16)
+            cell_fp16 = torch.jit.quantized.quantize_rnn_modules(
+                cell, dtype=torch.float16
+            )
 
             niter = 10
-            x = torch.tensor([[100, -155],
-                              [-155, 100],
-                              [100, -155]], dtype=torch.float).unsqueeze(0).repeat(niter, 1, 1)
-            h0_vals = [[-155, 100],
-                       [-155, 155],
-                       [100, -155]]
+            x = (
+                torch.tensor([[100, -155], [-155, 100], [100, -155]], dtype=torch.float)
+                .unsqueeze(0)
+                .repeat(niter, 1, 1)
+            )
+            h0_vals = [[-155, 100], [-155, 155], [100, -155]]
             hx = torch.tensor(h0_vals, dtype=torch.float).unsqueeze(0)
             cx = torch.tensor(h0_vals, dtype=torch.float).unsqueeze(0)
 
@@ -195,18 +202,22 @@ class TestDeprecatedJitQuantized(JitTestCase):
                     torch.testing.assert_close(out, ref)
 
             if isinstance(cell, torch.jit.quantized.QuantizedGRU):
+
                 class ScriptWrapper(torch.jit.ScriptModule):
                     def __init__(self, cell):
                         super().__init__()
                         self.cell = cell
 
                     @torch.jit.script_method
-                    def forward(self, x: torch.Tensor, hiddens: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+                    def forward(
+                        self, x: torch.Tensor, hiddens: torch.Tensor
+                    ) -> Tuple[torch.Tensor, torch.Tensor]:
                         return self.cell(x, hiddens)
 
                 compare_quantized_unquantized(ScriptWrapper, cell)
             elif isinstance(cell, torch.jit.quantized.QuantizedLSTM):
                 for cell in [cell_int8, cell_fp16]:
+
                     class ScriptWrapper(torch.jit.ScriptModule):
                         def __init__(self, cell):
                             super().__init__()
@@ -217,9 +228,10 @@ class TestDeprecatedJitQuantized(JitTestCase):
                             # type: (torch.Tensor, Tuple[torch.Tensor, torch.Tensor])
                             #        -> Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
                             return self.cell(x, hiddens)
+
                     compare_quantized_unquantized(ScriptWrapper, cell)
 
-    if 'fbgemm' in torch.backends.quantized.supported_engines:
+    if "fbgemm" in torch.backends.quantized.supported_engines:
         # Suppression: using deprecated quant api
         @suppress_warnings
         def test_quantization_modules(self):
@@ -236,8 +248,12 @@ class TestDeprecatedJitQuantized(JitTestCase):
 
             fb = FooBar()
             fb.linear1.weight = torch.nn.Parameter(
-                torch.tensor([[-150, 100], [100, -150]], dtype=torch.float), requires_grad=False)
-            fb.linear1.bias = torch.nn.Parameter(torch.zeros_like(fb.linear1.bias), requires_grad=False)
+                torch.tensor([[-150, 100], [100, -150]], dtype=torch.float),
+                requires_grad=False,
+            )
+            fb.linear1.bias = torch.nn.Parameter(
+                torch.zeros_like(fb.linear1.bias), requires_grad=False
+            )
 
             x = (torch.rand(1, K1).float() - 0.5) / 10.0
             value = torch.tensor([[100, -150]], dtype=torch.float)
@@ -263,13 +279,19 @@ class TestDeprecatedJitQuantized(JitTestCase):
             def __init__(self, in_features, out_features):
                 super().__init__()
                 qweight = torch._empty_affine_quantized(
-                    [out_features, in_features], scale=1, zero_point=0,
-                    dtype=torch.qint8)
+                    [out_features, in_features],
+                    scale=1,
+                    zero_point=0,
+                    dtype=torch.qint8,
+                )
                 self._packed_weight = torch.ops.quantized.linear_prepack(qweight)
 
             @torch.jit.export
             def __getstate__(self):
-                return (torch.ops.quantized.linear_unpack(self._packed_weight)[0], self.training)
+                return (
+                    torch.ops.quantized.linear_unpack(self._packed_weight)[0],
+                    self.training,
+                )
 
             def forward(self):
                 return self._packed_weight
@@ -292,7 +314,9 @@ class TestDeprecatedJitQuantized(JitTestCase):
             torch._C._jit_pass_erase_shape_information(x.graph)
 
 
-if __name__ == '__main__':
-    raise RuntimeError("This test file is not meant to be run directly, use:\n\n"
-                       "\tpython test/test_quantization.py TESTNAME\n\n"
-                       "instead.")
+if __name__ == "__main__":
+    raise RuntimeError(
+        "This test file is not meant to be run directly, use:\n\n"
+        "\tpython test/test_quantization.py TESTNAME\n\n"
+        "instead."
+    )

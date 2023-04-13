@@ -173,7 +173,7 @@ class TestUnaryUfuncs(TestCase):
                 torch.from_numpy(expected).to(actual.dtype),
                 msg,
                 exact_device=False,
-                **kwargs
+                **kwargs,
             )
         else:
             self.assertEqual(actual, expected, msg, exact_device=False, **kwargs)
@@ -496,8 +496,10 @@ class TestUnaryUfuncs(TestCase):
         shapes = [[1, 3, 6, 6], [1, 3, 6, 128], [1, 3, 256, 256]]
         for shape in shapes:
             x = torch.randn(shape, device=device)
-            extremals = [float('nan'), float('inf'), -float('inf')]
-            for id1, id2, extremal in zip(torch.randint(0, 2, (3,)), torch.randint(0, 5, (3,)), extremals):
+            extremals = [float("nan"), float("inf"), -float("inf")]
+            for id1, id2, extremal in zip(
+                torch.randint(0, 2, (3,)), torch.randint(0, 5, (3,)), extremals
+            ):
                 x[0, id1, id2, :] = extremal
             test_dtype(func(), x, torch.bfloat16)
 

@@ -1,5 +1,3 @@
-
-
 import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 import numpy as np
@@ -14,7 +12,7 @@ class TestEnsureClipped(hu.HypothesisTestCase):
         in_place=st.booleans(),
         sparse=st.booleans(),
         indices=hu.arrays(dims=[5], elements=st.booleans()),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_ensure_clipped(self, X, in_place, sparse, indices, gc, dc):
         if (not in_place) and sparse:

@@ -1,6 +1,7 @@
 import torch
 from torch._inductor.cuda_properties import get_device_capability
 
+
 def _has_triton():
     if not torch.cuda.is_available():
         return False
@@ -10,6 +11,7 @@ def _has_triton():
         return triton is not None and get_device_capability() >= (7, 0)
     except ImportError:
         return False
+
 
 def compressed_indices_to_plain_indices(cidx, pidx):
     nnz = pidx.shape[-1]
@@ -38,6 +40,7 @@ def slicer(dim, slice_range, *tensors):
         slices = [slice(None)] * t.dim()
         slices[dim] = slice_range
         yield t[slices]
+
 
 if _has_triton():
     import triton
@@ -153,7 +156,9 @@ if _has_triton():
             # find which row of dense needs to get loaded
             # for multiplication with values_block.
             dense_row_idx = tl.load(col_index_nnz_ptr)
-            dense_block = tl.load(dense_block_ptrs + dense_tiled_row_stride * dense_row_idx)
+            dense_block = tl.load(
+                dense_block_ptrs + dense_tiled_row_stride * dense_row_idx
+            )
 
             # do block mm
             output_acc_block += tl.dot(values_block, dense_block)
@@ -164,7 +169,6 @@ if _has_triton():
 
         # write back the result
         tl.store(output_ptrs, output_acc_block.to(output_ptr.dtype.element_ty))
-
 
     @triton.jit
     def _bsr_strided_sparse_rowspace_kernel(
@@ -254,7 +258,9 @@ if _has_triton():
             # find which row of dense needs to get loaded
             # for multiplication with values_block.
             dense_row_idx = tl.load(col_index_nnz_ptr)
-            dense_block = tl.load(dense_block_ptrs + dense_tiled_row_stride * dense_row_idx)
+            dense_block = tl.load(
+                dense_block_ptrs + dense_tiled_row_stride * dense_row_idx
+            )
 
             # do block mm
             output_acc_block += tl.dot(values_block, dense_block)
@@ -265,7 +271,6 @@ if _has_triton():
 
         # write back the result
         tl.store(output_ptrs, output_acc_block.to(output_ptr.dtype.element_ty))
-
 
     def _run_sparse_rowspace_kernel(
         blocksize, values, crow_indices, col_indices, dense, output, max_grid
@@ -326,7 +331,6 @@ if _has_triton():
                     num_warps=4,
                 )
 
-
     def _run_dense_rowspace_kernel(
         blocksize, values, crow_indices, col_indices, dense, output, max_grid
     ):
@@ -376,7 +380,6 @@ if _has_triton():
                         num_stages=1,
                         num_warps=4,
                     )
-
 
     def bsr_dense_mm(
         bsr: torch.Tensor,
@@ -490,7 +493,9 @@ if _has_triton():
         # Compute broadcasted batch dimension
         bsr_batch_dims = values.shape[:-3]
         dense_batch_dims = dense.shape[:-2]
-        batch_dims_broadcasted = torch.broadcast_shapes(bsr_batch_dims, dense_batch_dims)
+        batch_dims_broadcasted = torch.broadcast_shapes(
+            bsr_batch_dims, dense_batch_dims
+        )
 
         # Broadcast batch dimensions and squash
         def batch_broadcast_and_squash(t, batch_dims, invariant_dims):
@@ -519,7 +524,9 @@ if _has_triton():
                 values, batch_dims_broadcasted, values.shape[-3:]
             )
 
-        dense = batch_broadcast_and_squash(dense, batch_dims_broadcasted, dense.shape[-2:])
+        dense = batch_broadcast_and_squash(
+            dense, batch_dims_broadcasted, dense.shape[-2:]
+        )
 
         # NOTE: out is contiguous, so batch_broadcast_and_squash will create a view
         # out gets modified in-place, so we store a backup copy.
@@ -575,6 +582,7 @@ if _has_triton():
         kernel(blocksize, values, crow_indices, col_indices, dense, out, max_grid)
 
         return out_backup
+
 else:
     bsr_dense_mm = None  # type: ignore[assignment]
 

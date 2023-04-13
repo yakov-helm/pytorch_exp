@@ -26,8 +26,7 @@ def ChannelLast(arr):
 
 
 class PatchVisualizer:
-    """PatchVisualizer visualizes patches.
-  """
+    """PatchVisualizer visualizes patches."""
 
     def __init__(self, gap=1):
         self.gap = gap
@@ -35,10 +34,10 @@ class PatchVisualizer:
     def ShowSingle(self, patch, cmap=None):
         """Visualizes one single patch.
 
-    The input patch could be a vector (in which case we try to infer the shape
-    of the patch), a 2-D matrix, or a 3-D matrix whose 3rd dimension has 3
-    channels.
-    """
+        The input patch could be a vector (in which case we try to infer the shape
+        of the patch), a 2-D matrix, or a 3-D matrix whose 3rd dimension has 3
+        channels.
+        """
         if len(patch.shape) == 1:
             patch = patch.reshape(self.get_patch_shape(patch))
         elif len(patch.shape) > 2 and patch.shape[2] != 3:
@@ -52,18 +51,18 @@ class PatchVisualizer:
     def ShowMultiple(self, patches, ncols=None, cmap=None, bg_func=np.mean):
         """Visualize multiple patches.
 
-    In the passed in patches matrix, each row is a patch, in the shape of either
-    n*n, n*n*1 or n*n*3, either in a flattened format (so patches would be a
-    2-D array), or a multi-dimensional tensor. We will try our best to figure
-    out automatically the patch size.
-    """
+        In the passed in patches matrix, each row is a patch, in the shape of either
+        n*n, n*n*1 or n*n*3, either in a flattened format (so patches would be a
+        2-D array), or a multi-dimensional tensor. We will try our best to figure
+        out automatically the patch size.
+        """
         num_patches = patches.shape[0]
         if ncols is None:
             ncols = int(np.ceil(np.sqrt(num_patches)))
         nrows = int(np.ceil(num_patches / float(ncols)))
         if len(patches.shape) == 2:
             patches = patches.reshape(
-                (patches.shape[0], ) + self.get_patch_shape(patches[0])
+                (patches.shape[0],) + self.get_patch_shape(patches[0])
             )
         patch_size_expand = np.array(patches.shape[1:3]) + self.gap
         image_size = patch_size_expand * np.array([nrows, ncols]) - self.gap
@@ -76,7 +75,7 @@ class PatchVisualizer:
                     cmap = cm.gray
             elif patches.shape[3] == 3:
                 # color patches
-                image_shape = tuple(image_size) + (3, )
+                image_shape = tuple(image_size) + (3,)
             else:
                 raise ValueError("The input patch shape isn't expected.")
         else:
@@ -87,26 +86,27 @@ class PatchVisualizer:
         for pid in range(num_patches):
             row = pid // ncols * patch_size_expand[0]
             col = pid % ncols * patch_size_expand[1]
-            image[row:row+patches.shape[1], col:col+patches.shape[2]] = \
-                patches[pid]
-        pyplot.imshow(image, cmap=cmap, interpolation='nearest')
-        pyplot.axis('off')
+            image[row : row + patches.shape[1], col : col + patches.shape[2]] = patches[
+                pid
+            ]
+        pyplot.imshow(image, cmap=cmap, interpolation="nearest")
+        pyplot.axis("off")
         return image
 
     def ShowImages(self, patches, *args, **kwargs):
         """Similar to ShowMultiple, but always normalize the values between 0 and 1
-    for better visualization of image-type data.
-    """
+        for better visualization of image-type data.
+        """
         patches = patches - np.min(patches)
         patches /= np.max(patches) + np.finfo(np.float64).eps
         return self.ShowMultiple(patches, *args, **kwargs)
 
     def ShowChannels(self, patch, cmap=None, bg_func=np.mean):
-        """ This function shows the channels of a patch.
+        """This function shows the channels of a patch.
 
-    The incoming patch should have shape [w, h, num_channels], and each channel
-    will be visualized as a separate gray patch.
-    """
+        The incoming patch should have shape [w, h, num_channels], and each channel
+        will be visualized as a separate gray patch.
+        """
         if len(patch.shape) != 3:
             raise ValueError("The input patch shape isn't correct.")
         patch_reordered = np.swapaxes(patch.T, 1, 2)
@@ -115,13 +115,13 @@ class PatchVisualizer:
     def get_patch_shape(self, patch):
         """Gets the shape of a single patch.
 
-    Basically it tries to interpret the patch as a square, and also check if it
-    is in color (3 channels)
-    """
+        Basically it tries to interpret the patch as a square, and also check if it
+        is in color (3 channels)
+        """
         edgeLen = np.sqrt(patch.size)
         if edgeLen != np.floor(edgeLen):
             # we are given color patches
-            edgeLen = np.sqrt(patch.size / 3.)
+            edgeLen = np.sqrt(patch.size / 3.0)
             if edgeLen != np.floor(edgeLen):
                 raise ValueError("I can't figure out the patch shape.")
             return (edgeLen, edgeLen, 3)

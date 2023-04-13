@@ -3,7 +3,7 @@ from torch.testing._internal.common_utils import (
     TestCase,
     run_tests,
     skipIfTorchDynamo,
-    IS_WINDOWS
+    IS_WINDOWS,
 )
 from torch.testing._internal.common_nn import NNTestCase, _create_basic_net
 
@@ -104,9 +104,7 @@ class KwargModel(nn.Module):
         self.net1 = Net()
         self.net2 = Net()
 
-    def forward(
-        self, x: torch.Tensor, bias: torch.Tensor = None
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, bias: torch.Tensor = None) -> torch.Tensor:
         if bias is not None:
             x = x + bias
         return x
@@ -183,15 +181,11 @@ class TestModuleHooks(TestCase):
         model = ToyModel()
         x = torch.randn(10, 10)
         hook = partial(forward_pre_hook, self, fired_hooks, model.net2.seq1)
-        model.net2.seq1.register_forward_pre_hook(
-            partial(hook, 0), prepend=True
-        )
+        model.net2.seq1.register_forward_pre_hook(partial(hook, 0), prepend=True)
         model.net2.seq1.register_forward_pre_hook(partial(hook, 1))
         model.net2.seq1.register_forward_pre_hook(partial(hook, 2))
         model.net2.seq1.register_forward_pre_hook(partial(hook, 3))
-        model.net2.seq1.register_forward_pre_hook(
-            partial(hook, 4), prepend=True
-        )
+        model.net2.seq1.register_forward_pre_hook(partial(hook, 4), prepend=True)
         expected = [4, 0, 1, 2, 3]
 
         self.assertEqual(fired_hooks, [])
@@ -229,12 +223,8 @@ class TestModuleHooks(TestCase):
         model = ToyModel()
         x = torch.randn(10, 10)
         hook = partial(full_backward_pre_hook, self, fired_hooks, model.net1)
-        model.net1.register_full_backward_pre_hook(
-            partial(hook, 0), prepend=True
-        )
-        model.net1.register_full_backward_pre_hook(
-            partial(hook, 1), prepend=True
-        )
+        model.net1.register_full_backward_pre_hook(partial(hook, 0), prepend=True)
+        model.net1.register_full_backward_pre_hook(partial(hook, 1), prepend=True)
         model.net1.register_full_backward_pre_hook(partial(hook, 2))
         model.net1.register_full_backward_pre_hook(partial(hook, 3))
         model.net1.register_full_backward_pre_hook(partial(hook, 4))
@@ -269,9 +259,7 @@ class TestModuleHooks(TestCase):
         model.register_forward_pre_hook(
             partial(forward_pre_hook, self, fired_hooks, model, 0)
         )
-        model.register_forward_hook(
-            partial(forward_hook, self, fired_hooks, model, 1)
-        )
+        model.register_forward_hook(partial(forward_hook, self, fired_hooks, model, 1))
         model.register_full_backward_pre_hook(
             partial(full_backward_pre_hook, self, fired_hooks, model, 2)
         )
@@ -333,16 +321,13 @@ class TestModuleHooks(TestCase):
         x: torch.Tensor = torch.ones(10, 10)
         bias: torch.Tensor = torch.ones(10, 10)
         model = KwargModel()
-        model.register_forward_hook(
-            model.internal_forward_hook, with_kwargs=True
-        )
+        model.register_forward_hook(model.internal_forward_hook, with_kwargs=True)
 
         # forward: out = x + bias
         # forward-post: out = out + bias
         # So, out = x + bias * 2
         out = model(x, bias=bias)
         self.assertEqual(out, x + 2 * bias, rtol=0, atol=1e-5)
-
 
     @skipIfTorchDynamo("Dynamo does not yet capture hooks")
     def test_remove_kwarg_hooks(self):
@@ -376,9 +361,7 @@ class TestModuleHooks(TestCase):
         out = model(x, bias=bias)
         self.assertEqual(fired_hooks, [0, 1, 0])
         self.assertEqual(out, x + 2 * bias, rtol=0, atol=1e-5)
-        self.assertFalse(
-            forward_hook_handle.id in model._forward_hooks_with_kwargs
-        )
+        self.assertFalse(forward_hook_handle.id in model._forward_hooks_with_kwargs)
 
         # forward: out = x + bias
         # So, out = x + bias
@@ -394,22 +377,22 @@ class TestModuleHooks(TestCase):
     def test_bw_hook_warning_for_non_tensor_or_tuple(self):
         # Test to verify that backward hook raises warning
         # if result is not a Tensor or tuple of Tensors.
-        counter = {'forward': 0, 'backward': 0}
+        counter = {"forward": 0, "backward": 0}
 
         def fw_pre_hook(module: nn.Module, _inputs):
-            counter['forward'] += 1
+            counter["forward"] += 1
 
         def fw_hook(module: nn.Module, _inputs, _outputs):
-            counter['forward'] += 1
+            counter["forward"] += 1
 
         def bw_hook(module: nn.Module, _inputs, _outputs):
-            counter['backward'] += 1
+            counter["backward"] += 1
 
         class TestModule(nn.Module):
             def forward(self, dict):
-                inp = dict['x']
+                inp = dict["x"]
                 x = torch.nn.functional.softmax(inp, dim=0)
-                return {'x': x}
+                return {"x": x}
 
         x = torch.ones(2, requires_grad=True)
         model = TestModule()
@@ -419,12 +402,12 @@ class TestModuleHooks(TestCase):
         model.register_full_backward_hook(bw_hook)
 
         with warnings.catch_warnings(record=True) as w:
-            y = model({'x': x})['x']
+            y = model({"x": x})["x"]
             loss = y.sum()
             loss.backward()
 
-        self.assertEqual(counter['forward'], 2)
-        self.assertEqual(counter['backward'], 0)
+        self.assertEqual(counter["forward"], 2)
+        self.assertEqual(counter["backward"], 0)
         self.assertEqual(len(w), 1)
         self.assertTrue("should be a Tensor or a tuple of Tensors" in str(w[0].message))
 
@@ -432,8 +415,8 @@ class TestModuleHooks(TestCase):
 def _hook_to_pickle(*args, **kwargs):
     pass
 
-class TestStateDictHooks(TestCase):
 
+class TestStateDictHooks(TestCase):
     def test_load_state_dict_pre_hook(self):
 
         m = nn.Linear(10, 10)
@@ -443,12 +426,29 @@ class TestStateDictHooks(TestCase):
 
         hook_called = 0
 
-        def hook_without_module(state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
+        def hook_without_module(
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+        ):
             self.assertEqual(m_state_dict, state_dict)
             nonlocal hook_called
             hook_called += 1
 
-        def hook_with_module(module, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
+        def hook_with_module(
+            module,
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+        ):
             self.assertEqual(m_state_dict, state_dict)
             self.assertTrue(m_load is module)
             nonlocal hook_called
@@ -491,7 +491,16 @@ class TestStateDictHooks(TestCase):
                 super().__init__()
                 self.foo = torch.nn.Parameter(torch.rand(10))
 
-            def my_pre_load_hook(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
+            def my_pre_load_hook(
+                self,
+                state_dict,
+                prefix,
+                local_metadata,
+                strict,
+                missing_keys,
+                unexpected_keys,
+                error_msgs,
+            ):
                 assert [] == error_msgs
                 assert [] == unexpected_keys
                 assert [] == missing_keys
@@ -535,9 +544,7 @@ class TestStateDictHooks(TestCase):
                 mod = m
 
             hook_called = 0
-            mod._register_load_state_dict_pre_hook(
-                mod.my_pre_load_hook
-            )
+            mod._register_load_state_dict_pre_hook(mod.my_pre_load_hook)
             m.load_state_dict(state_dict)
             self.assertEqual(1, hook_called)
 
@@ -613,9 +620,9 @@ class TestStateDictHooks(TestCase):
         for m in [nn.Softmin(10), nn.Softmax(10), nn.LogSoftmax(10)]:
             called = False
             sd = deepcopy(m.state_dict())
-            self.assertTrue(hasattr(m, '_load_state_dict_post_hooks'))
+            self.assertTrue(hasattr(m, "_load_state_dict_post_hooks"))
             # Simulate an older model that did not have this attr
-            delattr(m, '_load_state_dict_post_hooks')
+            delattr(m, "_load_state_dict_post_hooks")
             # Save and load, and ensure that load_state_dict works (without proper
             # BC we would run into errors because this attribute would be expected).
             # In particular, Softmax runs into the issue described here:
@@ -635,7 +642,6 @@ class TestStateDictHooks(TestCase):
 
 
 class TestModuleGlobalHooks(TestCase):
-
     def tearDown(self):
         nn.modules.module._global_backward_hooks = OrderedDict()
         nn.modules.module._global_forward_hooks = OrderedDict()
@@ -651,10 +657,7 @@ class TestModuleGlobalHooks(TestCase):
 
         input = torch.ones(5, 5, requires_grad=True)
 
-        counter = {
-            'forwards': 0,
-            'backwards': 0
-        }
+        counter = {"forwards": 0, "backwards": 0}
 
         def fw_hook(inc, h_module, input, output):
             self.assertIsInstance(input, tuple)
@@ -662,67 +665,74 @@ class TestModuleGlobalHooks(TestCase):
             self.assertTrue(isinstance(h_module, module))
             self.assertEqual(input[0], torch.ones(5, 5))
             self.assertEqual(output, torch.empty(5, 5).fill_(1 / (1 + 1 / math.e)))
-            counter['forwards'] += inc
+            counter["forwards"] += inc
 
         def bw_hook(inc, h_module, grad_input, grad_output):
             self.assertIsInstance(grad_input, tuple)
             self.assertIsInstance(grad_output, tuple)
             self.assertTrue(isinstance(h_module, module))
             self.assertEqual(grad_output[0], torch.ones(5, 5) * 2)
-            counter['backwards'] += inc
+            counter["backwards"] += inc
 
-        test_fwd = nn.modules.module.register_module_forward_hook(lambda *args: fw_hook(1, *args))
+        test_fwd = nn.modules.module.register_module_forward_hook(
+            lambda *args: fw_hook(1, *args)
+        )
 
         module_1(input)
         module_2(input)
         module_3(input)
-        self.assertEqual(counter['forwards'], 3)
-        self.assertEqual(counter['backwards'], 0)
+        self.assertEqual(counter["forwards"], 3)
+        self.assertEqual(counter["backwards"], 0)
 
         test_bwd = nn.modules.module.register_module_backward_hook(
-            lambda *args: bw_hook(1, *args))
+            lambda *args: bw_hook(1, *args)
+        )
 
         output_1 = module_1(input)
         output_2 = module_2(input)
         output_3 = module_3(input)
-        self.assertEqual(counter['forwards'], 6)
-        self.assertEqual(counter['backwards'], 0)
+        self.assertEqual(counter["forwards"], 6)
+        self.assertEqual(counter["backwards"], 0)
 
         output_1.backward(torch.ones(5, 5) * 2, retain_graph=True)
         output_2.backward(torch.ones(5, 5) * 2, retain_graph=False)
         output_3.backward(torch.ones(5, 5) * 2, retain_graph=False)
-        self.assertEqual(counter['forwards'], 6)
-        self.assertEqual(counter['backwards'], 3)
+        self.assertEqual(counter["forwards"], 6)
+        self.assertEqual(counter["backwards"], 3)
 
         output_1.backward(torch.ones(5, 5) * 2, retain_graph=True)
-        self.assertEqual(counter['forwards'], 6)
-        self.assertEqual(counter['backwards'], 4)
+        self.assertEqual(counter["forwards"], 6)
+        self.assertEqual(counter["backwards"], 4)
 
-        test2_fwd = nn.modules.module.register_module_forward_hook(lambda *args: fw_hook(2, *args))
+        test2_fwd = nn.modules.module.register_module_forward_hook(
+            lambda *args: fw_hook(2, *args)
+        )
 
         output = module_1(input)
         output = module_2(input)
         output = module_3(input)
-        self.assertEqual(counter['forwards'], 15)
-        self.assertEqual(counter['backwards'], 4)
+        self.assertEqual(counter["forwards"], 15)
+        self.assertEqual(counter["backwards"], 4)
 
-        test2_bwd = nn.modules.module.register_module_backward_hook(lambda *args: bw_hook(2, *args))
+        test2_bwd = nn.modules.module.register_module_backward_hook(
+            lambda *args: bw_hook(2, *args)
+        )
 
         module_1(input).backward(torch.ones(5, 5) * 2)
-        self.assertEqual(counter['forwards'], 18)
-        self.assertEqual(counter['backwards'], 7)
+        self.assertEqual(counter["forwards"], 18)
+        self.assertEqual(counter["backwards"], 7)
 
         test2_bwd.remove()
 
         module_2(input).backward(torch.ones(5, 5) * 2)
-        self.assertEqual(counter['forwards'], 21)
-        self.assertEqual(counter['backwards'], 8)
+        self.assertEqual(counter["forwards"], 21)
+        self.assertEqual(counter["backwards"], 8)
 
         test2_fwd.remove()
 
         module_3(input).backward(torch.ones(5, 5) * 2)
-        self.assertEqual(counter['forwards'], 22)
-        self.assertEqual(counter['backwards'], 9)
+        self.assertEqual(counter["forwards"], 22)
+        self.assertEqual(counter["backwards"], 9)
 
         test_fwd.remove()
         test_bwd.remove()
@@ -738,11 +748,11 @@ class TestModuleGlobalHooks(TestCase):
             return grad_input + (torch.randn(2, 2),)
 
         with nn.modules.module.register_module_backward_hook(bw_fail1):
-            with self.assertRaisesRegex(RuntimeError, 'got 0, but expected 1'):
+            with self.assertRaisesRegex(RuntimeError, "got 0, but expected 1"):
                 module(input).sum().backward()
 
         with nn.modules.module.register_module_backward_hook(bw_fail2):
-            with self.assertRaisesRegex(RuntimeError, 'got 2, but expected 1'):
+            with self.assertRaisesRegex(RuntimeError, "got 2, but expected 1"):
                 module(input).sum().backward()
 
     @skipIfTorchDynamo("https://github.com/pytorch/torchdynamo/issues/847")
@@ -781,7 +791,7 @@ class TestModuleGlobalHooks(TestCase):
         expected_res = -torch.sigmoid(torch.nn.functional.relu(input))
         self.assertEqual(output, expected_res)
         output.backward(torch.ones(5, 5) * 2, retain_graph=True)
-        mask = (input > 0)
+        mask = input > 0
         expected_grad = -sig_x * (1 - sig_x) * 2 * mask
         self.assertEqual(input.grad, expected_grad)
 
@@ -913,7 +923,12 @@ class TestModuleGlobalHooks(TestCase):
         module.register_backward_hook(local_backward_hook)
 
         output = module(input)
-        self.assertTrue(local_forward_called and local_forward_pre_called and global_forward_called and global_forward_pre_called)
+        self.assertTrue(
+            local_forward_called
+            and local_forward_pre_called
+            and global_forward_called
+            and global_forward_pre_called
+        )
 
         output.backward(torch.ones(5, 5), retain_graph=True)
         self.assertTrue(local_backward_called and global_backward_called)
@@ -927,10 +942,7 @@ class TestModuleHookNN(NNTestCase):
         module = nn.Sigmoid()
         input = torch.ones(5, 5, requires_grad=True)
 
-        counter = {
-            'forwards': 0,
-            'backwards': 0
-        }
+        counter = {"forwards": 0, "backwards": 0}
 
         def fw_hook(inc, h_module, input, output):
             self.assertIsInstance(input, tuple)
@@ -938,14 +950,14 @@ class TestModuleHookNN(NNTestCase):
             self.assertTrue(h_module is module)
             self.assertEqual(input[0], torch.ones(5, 5))
             self.assertEqual(output, torch.empty(5, 5).fill_(1 / (1 + 1 / math.e)))
-            counter['forwards'] += inc
+            counter["forwards"] += inc
 
         def bw_hook(inc, h_module, grad_input, grad_output):
             self.assertIsInstance(grad_input, tuple)
             self.assertIsInstance(grad_output, tuple)
             self.assertTrue(h_module is module)
             self.assertEqual(grad_output[0], torch.ones(5, 5) * 2)
-            counter['backwards'] += inc
+            counter["backwards"] += inc
 
         # backward_pre_hook expects callback with only `module` and `grad_output`
         # as arguments.
@@ -953,54 +965,61 @@ class TestModuleHookNN(NNTestCase):
             self.assertIsInstance(grad_output, tuple)
             self.assertTrue(h_module is module)
             self.assertEqual(grad_output[0], torch.ones(5, 5) * 2)
-            counter['backwards'] += inc
+            counter["backwards"] += inc
 
         test_fwd = module.register_forward_hook(lambda *args: fw_hook(1, *args))
 
         module(input)
         module(input)
-        self.assertEqual(counter['forwards'], 2)
-        self.assertEqual(counter['backwards'], 0)
+        self.assertEqual(counter["forwards"], 2)
+        self.assertEqual(counter["backwards"], 0)
 
-        bw_hook_fn = bw_pre_hook if backward_register_fn == 'register_full_backward_pre_hook' else bw_hook
+        bw_hook_fn = (
+            bw_pre_hook
+            if backward_register_fn == "register_full_backward_pre_hook"
+            else bw_hook
+        )
         test_bwd = getattr(module, backward_register_fn)(
-            lambda *args: bw_hook_fn(1, *args))
+            lambda *args: bw_hook_fn(1, *args)
+        )
 
         output = module(input)
-        self.assertEqual(counter['forwards'], 3)
-        self.assertEqual(counter['backwards'], 0)
+        self.assertEqual(counter["forwards"], 3)
+        self.assertEqual(counter["backwards"], 0)
 
         output.backward(torch.ones(5, 5) * 2, retain_graph=True)
-        self.assertEqual(counter['forwards'], 3)
-        self.assertEqual(counter['backwards'], 1)
+        self.assertEqual(counter["forwards"], 3)
+        self.assertEqual(counter["backwards"], 1)
 
         output.backward(torch.ones(5, 5) * 2, retain_graph=True)
-        self.assertEqual(counter['forwards'], 3)
-        self.assertEqual(counter['backwards'], 2)
+        self.assertEqual(counter["forwards"], 3)
+        self.assertEqual(counter["backwards"], 2)
 
         test2_fwd = module.register_forward_hook(lambda *args: fw_hook(2, *args))
 
         output = module(input)
-        self.assertEqual(counter['forwards'], 6)
-        self.assertEqual(counter['backwards'], 2)
+        self.assertEqual(counter["forwards"], 6)
+        self.assertEqual(counter["backwards"], 2)
 
-        test2_bwd = getattr(module, backward_register_fn)(lambda *args: bw_hook_fn(2, *args))
+        test2_bwd = getattr(module, backward_register_fn)(
+            lambda *args: bw_hook_fn(2, *args)
+        )
 
         module(input).backward(torch.ones(5, 5) * 2)
-        self.assertEqual(counter['forwards'], 9)
-        self.assertEqual(counter['backwards'], 5)
+        self.assertEqual(counter["forwards"], 9)
+        self.assertEqual(counter["backwards"], 5)
 
         test2_bwd.remove()
 
         module(input).backward(torch.ones(5, 5) * 2)
-        self.assertEqual(counter['forwards'], 12)
-        self.assertEqual(counter['backwards'], 6)
+        self.assertEqual(counter["forwards"], 12)
+        self.assertEqual(counter["backwards"], 6)
 
         test2_fwd.remove()
 
         module(input).backward(torch.ones(5, 5) * 2)
-        self.assertEqual(counter['forwards'], 13)
-        self.assertEqual(counter['backwards'], 7)
+        self.assertEqual(counter["forwards"], 13)
+        self.assertEqual(counter["backwards"], 7)
 
         test_fwd.remove()
         test_bwd.remove()
@@ -1030,15 +1049,15 @@ class TestModuleHookNN(NNTestCase):
         # the full_backward_hook
         module = torch.nn.Sigmoid()
 
-        cnt = {'backward_cnt': 0}
+        cnt = {"backward_cnt": 0}
 
         def bw_pre_hook(m, grad_output):
-            cnt['backward_cnt'] += 1
-            return (grad_output[0] * 0.5, )
+            cnt["backward_cnt"] += 1
+            return (grad_output[0] * 0.5,)
 
         def bw_hook(m, grad_in, grad_output):
             self.assertEqual(torch.full_like(grad_output[0], 0.5), grad_output[0])
-            cnt['backward_cnt'] += 1
+            cnt["backward_cnt"] += 1
             return grad_output
 
         module.register_full_backward_pre_hook(bw_pre_hook)
@@ -1046,7 +1065,7 @@ class TestModuleHookNN(NNTestCase):
 
         t = torch.ones(1, 2, requires_grad=True)
         module(t).sum().backward()
-        self.assertEqual(cnt['backward_cnt'], 2)
+        self.assertEqual(cnt["backward_cnt"], 2)
 
     def test_hook_invalid_outputs(self):
         module = nn.Sigmoid()
@@ -1059,11 +1078,11 @@ class TestModuleHookNN(NNTestCase):
             return grad_input + (torch.randn(2, 2),)
 
         with module.register_backward_hook(bw_fail1):
-            with self.assertRaisesRegex(RuntimeError, 'got 0, but expected 1'):
+            with self.assertRaisesRegex(RuntimeError, "got 0, but expected 1"):
                 module(input).sum().backward()
 
         with module.register_backward_hook(bw_fail2):
-            with self.assertRaisesRegex(RuntimeError, 'got 2, but expected 1'):
+            with self.assertRaisesRegex(RuntimeError, "got 2, but expected 1"):
                 module(input).sum().backward()
 
         def bw_pre_fail1(self, grad_output):
@@ -1073,11 +1092,11 @@ class TestModuleHookNN(NNTestCase):
             return grad_output + (torch.randn(2, 2),)
 
         with module.register_full_backward_pre_hook(bw_pre_fail1):
-            with self.assertRaisesRegex(RuntimeError, 'got 0, but expected 1'):
+            with self.assertRaisesRegex(RuntimeError, "got 0, but expected 1"):
                 module(input).sum().backward()
 
         with module.register_full_backward_pre_hook(bw_pre_fail2):
-            with self.assertRaisesRegex(RuntimeError, 'got 2, but expected 1'):
+            with self.assertRaisesRegex(RuntimeError, "got 2, but expected 1"):
                 module(input).sum().backward()
 
     def test_hook_requires_grad(self):
@@ -1187,8 +1206,10 @@ class TestModuleHookNN(NNTestCase):
 
         inp = torch.rand(10, requires_grad=True)
         mod = MyModule()
-        for hook_fn, register_fn in [(hook, mod.register_full_backward_hook),
-                                     (hook_pre, mod.register_full_backward_pre_hook)]:
+        for hook_fn, register_fn in [
+            (hook, mod.register_full_backward_hook),
+            (hook_pre, mod.register_full_backward_pre_hook),
+        ]:
             hook_called[0] = 0
             with register_fn(hook_fn):
                 # No inplace should work
@@ -1196,8 +1217,11 @@ class TestModuleHookNN(NNTestCase):
                 self.assertEqual(hook_called[0], 1)
 
                 # Input inplace error should throw an error
-                with self.assertRaisesRegex(RuntimeError, "Output 0 of BackwardHookFunctionBackward is "
-                                            "a view and is being modified inplace."):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "Output 0 of BackwardHookFunctionBackward is "
+                    "a view and is being modified inplace.",
+                ):
                     mod(inp.clone(), True)
 
                 # Input inplace error should throw an error if we try to re-use the view after they have
@@ -1205,15 +1229,21 @@ class TestModuleHookNN(NNTestCase):
                 local_inp = inp.clone()
                 out = mod(local_inp, False)
                 local_inp[0] *= 1
-                with self.assertRaisesRegex(RuntimeError, "Output 0 of BackwardHookFunctionBackward is "
-                                            "a view and its base or another view"):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "Output 0 of BackwardHookFunctionBackward is "
+                    "a view and its base or another view",
+                ):
                     # Any operation involving the view will fail here
                     mod.inp + 2
 
                 # Output inplace error should throw an error
                 out = mod(inp, False)
-                with self.assertRaisesRegex(RuntimeError, "BackwardHookFunctionBackward is a view "
-                                            "and is being modified inplace."):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "BackwardHookFunctionBackward is a view "
+                    "and is being modified inplace.",
+                ):
                     out += 1
 
     def test_hook_non_full_warning(self):
@@ -1231,7 +1261,9 @@ class TestModuleHookNN(NNTestCase):
         m = MyModule()
         m.register_backward_hook(noop)
 
-        with self.assertWarnsRegex(UserWarning, "does not take as input a single Tensor or a tuple of Tensors"):
+        with self.assertWarnsRegex(
+            UserWarning, "does not take as input a single Tensor or a tuple of Tensors"
+        ):
             m([a, b])
 
         # Check invalid output container
@@ -1242,7 +1274,9 @@ class TestModuleHookNN(NNTestCase):
         m = MyModule()
         m.register_backward_hook(noop)
 
-        with self.assertWarnsRegex(UserWarning, "does not return a single Tensor or a tuple of Tensors"):
+        with self.assertWarnsRegex(
+            UserWarning, "does not return a single Tensor or a tuple of Tensors"
+        ):
             m(a, b)
 
         # Check invalid output from different Nodes
@@ -1253,7 +1287,9 @@ class TestModuleHookNN(NNTestCase):
         m = MyModule()
         m.register_backward_hook(noop)
 
-        with self.assertWarnsRegex(UserWarning, "outputs are generated by different autograd Nodes"):
+        with self.assertWarnsRegex(
+            UserWarning, "outputs are generated by different autograd Nodes"
+        ):
             m(a, b)
 
         # Check invalid forward with multiple Nodes
@@ -1264,7 +1300,9 @@ class TestModuleHookNN(NNTestCase):
         m = MyModule()
         m.register_backward_hook(noop)
 
-        with self.assertWarnsRegex(UserWarning, "the forward contains multiple autograd Nodes"):
+        with self.assertWarnsRegex(
+            UserWarning, "the forward contains multiple autograd Nodes"
+        ):
             m(a)
 
     def test_hook_backward_size(self):
@@ -1328,16 +1366,18 @@ class TestModuleHookNN(NNTestCase):
         expected_res = -torch.nn.functional.sigmoid(torch.nn.functional.relu(input))
         self.assertEqual(output, expected_res)
         output.backward(torch.ones(5, 5) * 2, retain_graph=True)
-        mask = (input > 0)
+        mask = input > 0
         expected_grad = -sig_x * (1 - sig_x) * 2 * mask
         self.assertEqual(input.grad, expected_grad)
 
     def test_hook_buffer_registration(self):
         for return_buffer in (True, False):
+
             def buffer_registration_hook(module, name, buffer):
                 buffer.registered = True
                 if return_buffer:
                     return buffer
+
             handle = torch.nn.modules.module.register_module_buffer_registration_hook(
                 buffer_registration_hook
             )
@@ -1350,11 +1390,13 @@ class TestModuleHookNN(NNTestCase):
 
     def test_hook_submodule_registration(self):
         for return_submodule in (True, False):
+
             def module_registration_hook(module, name, submodule):
                 module.registered = True
                 submodule.registered = True
                 if return_submodule:
                     return submodule
+
             handle = torch.nn.modules.module.register_module_module_registration_hook(
                 module_registration_hook
             )
@@ -1367,12 +1409,16 @@ class TestModuleHookNN(NNTestCase):
 
     def test_hook_parameter_registration(self):
         for return_parameter in (True, False):
+
             def parameter_registration_hook(module, name, parameter):
                 parameter.registered = True
                 if return_parameter:
                     return parameter
-            handle = torch.nn.modules.module.register_module_parameter_registration_hook(
-                parameter_registration_hook
+
+            handle = (
+                torch.nn.modules.module.register_module_parameter_registration_hook(
+                    parameter_registration_hook
+                )
             )
             try:
                 l, n, s = _create_basic_net()

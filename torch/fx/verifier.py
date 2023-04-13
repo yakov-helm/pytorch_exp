@@ -10,9 +10,11 @@ from torch.fx import GraphModule
 
 ALLOWED_META_KEYS = {"spec", "stack_trace"}
 
+
 @torch.fx._compatibility.compatibility(is_backward_compatible=False)
 class SpecViolationError(Exception):
     pass
+
 
 @torch.fx._compatibility.compatibility(is_backward_compatible=False)
 def is_functional(op: OpOverload) -> bool:
@@ -58,10 +60,14 @@ def check_valid(gm: GraphModule) -> None:  # noqa: C901
                 if hasattr(node.target, "name")
                 else node.target.__name__
             )
-            is_builtin_func = (node.target == operator.getitem or node.target.__name__ in [
-                'while_loop',
-                'cond',
-            ])
+            is_builtin_func = (
+                node.target == operator.getitem
+                or node.target.__name__
+                in [
+                    "while_loop",
+                    "cond",
+                ]
+            )
             if not isinstance(node.target, OpOverload) and not is_builtin_func:
                 raise SpecViolationError(
                     "Operator '{}' is not a registered Op".format(op_name),

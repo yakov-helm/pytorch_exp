@@ -19,6 +19,7 @@ class Ver:
     """
     Represents a product with a version number
     """
+
     name: str
     version: str = ""
 
@@ -28,7 +29,7 @@ class Ver:
 
 @dataclass
 class ConfigNode:
-    parent: Optional['ConfigNode']
+    parent: Optional["ConfigNode"]
     node_name: str
     props: Dict[str, str] = field(default_factory=dict)
 
@@ -40,7 +41,11 @@ class ConfigNode:
         return []
 
     def get_parents(self):
-        return (self.parent.get_parents() + [self.parent.get_label()]) if self.parent else []
+        return (
+            (self.parent.get_parents() + [self.parent.get_label()])
+            if self.parent
+            else []
+        )
 
     def get_depth(self):
         return len(self.get_parents())
@@ -69,12 +74,13 @@ class ConfigNode:
 
 
 def dfs_recurse(
-        node,
-        leaf_callback=lambda x: None,
-        discovery_callback=lambda x, y, z: None,
-        child_callback=lambda x, y: None,
-        sibling_index=0,
-        sibling_count=1):
+    node,
+    leaf_callback=lambda x: None,
+    discovery_callback=lambda x, y, z: None,
+    child_callback=lambda x, y: None,
+    sibling_index=0,
+    sibling_count=1,
+):
 
     discovery_callback(node, sibling_index, sibling_count)
 

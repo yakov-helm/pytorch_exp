@@ -184,7 +184,12 @@ class TestShardedEmbeddingBag(ShardedTensorTestBase):
         self._run_sharded_embedding_bag(spec, [5, 4], 17, 12, "mean")
         self._run_sharded_embedding_bag(spec, [6, 7], 21, 11, "max")
         self._run_sharded_embedding_bag(
-            spec, [5, 5], 17, 14, "sum", max_norm=2.5,
+            spec,
+            [5, 5],
+            17,
+            14,
+            "sum",
+            max_norm=2.5,
         )
         self._run_sharded_embedding_bag(
             spec,

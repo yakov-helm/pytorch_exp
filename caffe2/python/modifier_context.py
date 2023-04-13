@@ -2,11 +2,7 @@
 # Module caffe2.python.modifier_context
 
 
-
-
-
-
-DEFAULT_MODIFIER = 'DEFAULT'
+DEFAULT_MODIFIER = "DEFAULT"
 
 
 class ModifierContext:
@@ -41,14 +37,14 @@ class ModifierContext:
 
 
 class UseModifierBase:
-    '''
+    """
     context class to allow setting the current context.
     Example usage with layer:
         modifiers = {'modifier1': modifier1, 'modifier2': modifier2}
         with Modifiers(modifiers):
             modifier = ModifierContext.current().get_modifier('modifier1')
             layer(modifier=modifier)
-    '''
+    """
 
     def __init__(self, modifier_or_dict):
         if isinstance(modifier_or_dict, dict):

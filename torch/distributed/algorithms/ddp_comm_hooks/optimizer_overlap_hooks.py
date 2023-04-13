@@ -10,6 +10,7 @@ __all__: List[str] = []
 
 _FUNCTIONAL_OPTIM_STEP_METHOD_NAME = "step_param"
 
+
 class _OptimizerHookState:
     """
     Holds state for running optimizer in-line after DDP communication hook.
@@ -40,9 +41,10 @@ class _OptimInBackwardHookState:
     optim_stream: torch.cuda.Stream
     wait_for_optim_stream_enqueued: bool
 
+
 @no_type_check
 def _apply_optim_in_backward_hook(
-    gradient_is_bucket_view: bool
+    gradient_is_bucket_view: bool,
 ) -> Callable[[Any, dist.GradBucket], torch.futures.Future[torch.Tensor]]:
     r"""
     If torch.distributed.optim._apply_optimizer_in_backward is used to overlap
@@ -55,7 +57,9 @@ def _apply_optim_in_backward_hook(
     )
 
     def apply_optim_in_backward_hook(
-        hook_state: Any, bucket: dist.GradBucket, optim_stream_state,
+        hook_state: Any,
+        bucket: dist.GradBucket,
+        optim_stream_state,
     ) -> torch.futures.Future[torch.Tensor]:
         # Run original hook
         reducer_weakref, process_group = hook_state
@@ -72,7 +76,7 @@ def _apply_optim_in_backward_hook(
             # TODO (rohan-varma): upcast as needed for DDP mixed precision,
             # once optimizer in backward + DDP mixed precision is supported.
             for p, g in zip(model_params, grads):
-                if hasattr(p, '_in_backward_optimizers'):
+                if hasattr(p, "_in_backward_optimizers"):
                     # Note: need to set grad to the bucket's grad, because
                     # running allreduce results in the bucket's grad being
                     # reduced, but not grad field.
@@ -88,16 +92,12 @@ def _apply_optim_in_backward_hook(
         # enqueue a callback to wait for this optimizer stream at the end of
         # backward.
         def wait_for_optim_stream_callback():
-            torch.cuda.current_stream().wait_stream(
-                optim_stream_state.optim_stream
-            )
+            torch.cuda.current_stream().wait_stream(optim_stream_state.optim_stream)
             # reset for the next backwards pass
             optim_stream_state.wait_for_optim_stream_enqueued = False
 
         if not optim_stream_state.wait_for_optim_stream_enqueued:
-            Variable._execution_engine.queue_callback(
-                wait_for_optim_stream_callback
-            )
+            Variable._execution_engine.queue_callback(wait_for_optim_stream_callback)
             # mark that the callback is enqueued
             optim_stream_state.wait_for_optim_stream_enqueued = True
 
@@ -112,6 +112,7 @@ def _apply_optim_in_backward_hook(
 
     return comm_hook
 
+
 def _hook_then_optimizer(
     hook: Callable[[Any, dist.GradBucket], torch.futures.Future[torch.Tensor]],
     optimizer_state: _OptimizerHookState,
@@ -120,7 +121,7 @@ def _hook_then_optimizer(
     Runs optimizer in a functional fashion after DDP communication hook.
     """
     has_set_params = (
-        hasattr(optimizer_state, 'params_to_optimize')
+        hasattr(optimizer_state, "params_to_optimize")
         and optimizer_state.params_to_optimize is not None
     )
 
@@ -134,7 +135,10 @@ def _hook_then_optimizer(
             gradient_tensors = bucket.gradients()
             model_params = bucket.parameters()
             for grad_tensor, model_param in zip(gradient_tensors, model_params):
-                if not has_set_params or model_param in optimizer_state.params_to_optimize:
+                if (
+                    not has_set_params
+                    or model_param in optimizer_state.params_to_optimize
+                ):
                     optimizer_state.functional_optimizer.step_param(
                         model_param,
                         grad_tensor,

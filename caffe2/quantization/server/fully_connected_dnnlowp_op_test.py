@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -35,7 +33,7 @@ class DNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
         output_packed_bias=st.booleans(),
         use_input_qparam=st.booleans(),
         use_output_qparam=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_dnnlowp_fully_connected_int(
         self,
@@ -119,7 +117,9 @@ class DNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
             net = core.Net("test_net")
 
             do_quantize = "DNNLOWP" in engine and in_quantized and not do_fuse
-            do_dequantize = "DNNLOWP" in engine and out_quantized and not skip_requantization
+            do_dequantize = (
+                "DNNLOWP" in engine and out_quantized and not skip_requantization
+            )
             do_quantize_weight = (
                 engine == "DNNLOWP" and weight_quantized and len(outputs) > 0
             )
@@ -191,9 +191,11 @@ class DNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
                 device_option=gc,
             )
             if op_type != "FC":
-                if (do_dequantize and use_output_qparam) or (use_input_qparam and op_type == "Int8_FC"):
+                if (do_dequantize and use_output_qparam) or (
+                    use_input_qparam and op_type == "Int8_FC"
+                ):
                     fc.input.extend(["quant_param"])
-                if (use_input_qparam and op_type == "Int8_FC"):
+                if use_input_qparam and op_type == "Int8_FC":
                     fc.input.extend(["X_quant_param"])
 
             if do_quantize_weight or do_prepack_weight:
@@ -214,8 +216,6 @@ class DNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
                     "Dequantize", ["Y_q"], ["Y"], engine=engine, device_option=gc
                 )
                 net.Proto().op.extend([dequantize])
-
-
 
             if use_output_qparam and do_dequantize and op_type != "FC":
                 ref_output = outputs[0][0]
@@ -255,7 +255,6 @@ class DNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
                 x_q_param_scale,
                 x_q_param_zero_point,
             )
-
 
             if output_packed_bias and do_prepack_weight and do_dequantize:
                 bias_int32 = self.ws.blobs["B_q32"].fetch()

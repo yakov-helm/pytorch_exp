@@ -170,7 +170,9 @@ class RendezvousParametersTest(TestCase):
 
                 params = self._create_params()
 
-                self.assertEqual(params.get_as_int("dummy_param"), int(cast(SupportsInt, value)))
+                self.assertEqual(
+                    params.get_as_int("dummy_param"), int(cast(SupportsInt, value))
+                )
 
     def test_get_as_int_raises_error_if_value_is_invalid(self) -> None:
         for value in ["a", "0a", "3b", "abc"]:
@@ -233,7 +235,9 @@ class RendezvousHandlerRegistryTest(TestCase):
         self._registry.register("dummy_backend", self._create_handler)
         self._registry.register("dummy_backend", self._create_handler)
 
-    def test_register_raises_error_if_called_twice_with_different_creators(self) -> None:
+    def test_register_raises_error_if_called_twice_with_different_creators(
+        self,
+    ) -> None:
         self._registry.register("dummy_backend", self._create_handler)
 
         other_create_handler = lambda p: _DummyRendezvousHandler(p)  # noqa: E731

@@ -1,7 +1,3 @@
-
-
-
-
 import numpy as np
 from hypothesis import given, settings
 import hypothesis.strategies as st
@@ -11,14 +7,15 @@ import caffe2.python.hypothesis_test_util as hu
 
 class TestAssert(hu.HypothesisTestCase):
     @given(
-        dtype=st.sampled_from(['bool_', 'int32', 'int64']),
+        dtype=st.sampled_from(["bool_", "int32", "int64"]),
         shape=st.lists(elements=st.integers(1, 10), min_size=1, max_size=4),
-        **hu.gcs)
+        **hu.gcs,
+    )
     @settings(deadline=10000)
     def test_assert(self, dtype, shape, gc, dc):
         test_tensor = np.random.rand(*shape).astype(np.dtype(dtype))
 
-        op = core.CreateOperator('Assert', ['X'], [])
+        op = core.CreateOperator("Assert", ["X"], [])
 
         def assert_ref(X):
             return []
@@ -26,4 +23,4 @@ class TestAssert(hu.HypothesisTestCase):
         try:
             self.assertReferenceChecks(gc, op, [test_tensor], assert_ref)
         except Exception:
-            assert(not np.all(test_tensor))
+            assert not np.all(test_tensor)

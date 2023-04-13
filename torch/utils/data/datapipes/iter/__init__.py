@@ -40,25 +40,27 @@ from torch.utils.data.datapipes.iter.streamreader import (
     StreamReaderIterDataPipe as StreamReader,
 )
 
-__all__ = ['Batcher',
-           'Collator',
-           'Concater',
-           'Demultiplexer',
-           'FileLister',
-           'FileOpener',
-           'Filter',
-           'Forker',
-           'Grouper',
-           'IterableWrapper',
-           'Mapper',
-           'Multiplexer',
-           'RoutedDecoder',
-           'Sampler',
-           'ShardingFilter',
-           'Shuffler',
-           'StreamReader',
-           'UnBatcher',
-           'Zipper']
+__all__ = [
+    "Batcher",
+    "Collator",
+    "Concater",
+    "Demultiplexer",
+    "FileLister",
+    "FileOpener",
+    "Filter",
+    "Forker",
+    "Grouper",
+    "IterableWrapper",
+    "Mapper",
+    "Multiplexer",
+    "RoutedDecoder",
+    "Sampler",
+    "ShardingFilter",
+    "Shuffler",
+    "StreamReader",
+    "UnBatcher",
+    "Zipper",
+]
 
 # Please keep this list sorted
 assert __all__ == sorted(__all__)

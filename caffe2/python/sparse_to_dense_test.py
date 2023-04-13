@@ -1,7 +1,3 @@
-
-
-
-
 from caffe2.python import core, workspace
 from caffe2.python.test_util import TestCase
 
@@ -10,19 +6,12 @@ import numpy as np
 
 class TestSparseToDense(TestCase):
     def test_sparse_to_dense(self):
-        op = core.CreateOperator(
-            'SparseToDense',
-            ['indices', 'values'],
-            ['output'])
-        workspace.FeedBlob(
-            'indices',
-            np.array([2, 4, 999, 2], dtype=np.int32))
-        workspace.FeedBlob(
-            'values',
-            np.array([1, 2, 6, 7], dtype=np.int32))
+        op = core.CreateOperator("SparseToDense", ["indices", "values"], ["output"])
+        workspace.FeedBlob("indices", np.array([2, 4, 999, 2], dtype=np.int32))
+        workspace.FeedBlob("values", np.array([1, 2, 6, 7], dtype=np.int32))
 
         workspace.RunOperatorOnce(op)
-        output = workspace.FetchBlob('output')
+        output = workspace.FetchBlob("output")
         print(output)
 
         expected = np.zeros(1000, dtype=np.int32)
@@ -36,14 +25,18 @@ class TestSparseToDense(TestCase):
     def test_sparse_to_dense_shape_inference(self):
         indices = np.array([2, 4, 999, 2], dtype=np.int32)
         values = np.array([[1, 2], [2, 4], [6, 7], [7, 8]], dtype=np.int32)
-        data_to_infer_dim = np.array(np.zeros(1500, ), dtype=np.int32)
+        data_to_infer_dim = np.array(
+            np.zeros(
+                1500,
+            ),
+            dtype=np.int32,
+        )
         op = core.CreateOperator(
-            'SparseToDense',
-            ['indices', 'values', 'data_to_infer_dim'],
-            ['output'])
-        workspace.FeedBlob('indices', indices)
-        workspace.FeedBlob('values', values)
-        workspace.FeedBlob('data_to_infer_dim', data_to_infer_dim)
+            "SparseToDense", ["indices", "values", "data_to_infer_dim"], ["output"]
+        )
+        workspace.FeedBlob("indices", indices)
+        workspace.FeedBlob("values", values)
+        workspace.FeedBlob("data_to_infer_dim", data_to_infer_dim)
 
         net = core.Net("sparse_to_dense")
         net.Proto().op.extend([op])
@@ -66,39 +59,32 @@ class TestSparseToDense(TestCase):
         self.assertEqual(shapes["output"], [1500, 2])
         self.assertEqual(types["output"], core.DataType.INT32)
 
-
     def test_sparse_to_dense_invalid_inputs(self):
-        op = core.CreateOperator(
-            'SparseToDense',
-            ['indices', 'values'],
-            ['output'])
-        workspace.FeedBlob(
-            'indices',
-            np.array([2, 4, 999, 2], dtype=np.int32))
-        workspace.FeedBlob(
-            'values',
-            np.array([1, 2, 6], dtype=np.int32))
+        op = core.CreateOperator("SparseToDense", ["indices", "values"], ["output"])
+        workspace.FeedBlob("indices", np.array([2, 4, 999, 2], dtype=np.int32))
+        workspace.FeedBlob("values", np.array([1, 2, 6], dtype=np.int32))
 
         with self.assertRaises(RuntimeError):
             workspace.RunOperatorOnce(op)
 
     def test_sparse_to_dense_with_data_to_infer_dim(self):
         op = core.CreateOperator(
-            'SparseToDense',
-            ['indices', 'values', 'data_to_infer_dim'],
-            ['output'])
+            "SparseToDense", ["indices", "values", "data_to_infer_dim"], ["output"]
+        )
+        workspace.FeedBlob("indices", np.array([2, 4, 999, 2], dtype=np.int32))
+        workspace.FeedBlob("values", np.array([1, 2, 6, 7], dtype=np.int32))
         workspace.FeedBlob(
-            'indices',
-            np.array([2, 4, 999, 2], dtype=np.int32))
-        workspace.FeedBlob(
-            'values',
-            np.array([1, 2, 6, 7], dtype=np.int32))
-        workspace.FeedBlob(
-            'data_to_infer_dim',
-            np.array(np.zeros(1500, ), dtype=np.int32))
+            "data_to_infer_dim",
+            np.array(
+                np.zeros(
+                    1500,
+                ),
+                dtype=np.int32,
+            ),
+        )
 
         workspace.RunOperatorOnce(op)
-        output = workspace.FetchBlob('output')
+        output = workspace.FetchBlob("output")
         print(output)
 
         expected = np.zeros(1500, dtype=np.int32)

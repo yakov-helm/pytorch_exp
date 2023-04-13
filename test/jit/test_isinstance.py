@@ -223,15 +223,21 @@ class TestIsinstance(JitTestCase):
 
         x = ["1", "2", "3"]
 
-        err_msg = "Attempted to use List without a contained type. " \
+        err_msg = (
+            "Attempted to use List without a contained type. "
             r"Please add a contained type, e.g. List\[int\]"
+        )
 
-        with self.assertRaisesRegex(RuntimeError, err_msg,):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            err_msg,
+        ):
             torch.jit.script(list_no_contained_type)
-        with self.assertRaisesRegex(RuntimeError, err_msg,):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            err_msg,
+        ):
             list_no_contained_type(x)
-
-
 
     def test_tuple_no_contained_type(self):
         def tuple_no_contained_type(x: Any):
@@ -239,12 +245,20 @@ class TestIsinstance(JitTestCase):
 
         x = ("1", "2", "3")
 
-        err_msg = "Attempted to use Tuple without a contained type. " \
+        err_msg = (
+            "Attempted to use Tuple without a contained type. "
             r"Please add a contained type, e.g. Tuple\[int\]"
+        )
 
-        with self.assertRaisesRegex(RuntimeError, err_msg,):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            err_msg,
+        ):
             torch.jit.script(tuple_no_contained_type)
-        with self.assertRaisesRegex(RuntimeError, err_msg,):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            err_msg,
+        ):
             tuple_no_contained_type(x)
 
     def test_optional_no_contained_type(self):
@@ -253,12 +267,20 @@ class TestIsinstance(JitTestCase):
 
         x = ("1", "2", "3")
 
-        err_msg = "Attempted to use Optional without a contained type. " \
+        err_msg = (
+            "Attempted to use Optional without a contained type. "
             r"Please add a contained type, e.g. Optional\[int\]"
+        )
 
-        with self.assertRaisesRegex(RuntimeError, err_msg,):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            err_msg,
+        ):
             torch.jit.script(optional_no_contained_type)
-        with self.assertRaisesRegex(RuntimeError, err_msg,):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            err_msg,
+        ):
             optional_no_contained_type(x)
 
     def test_dict_no_contained_type(self):
@@ -267,12 +289,20 @@ class TestIsinstance(JitTestCase):
 
         x = {"a": "aa"}
 
-        err_msg = "Attempted to use Dict without contained types. " \
+        err_msg = (
+            "Attempted to use Dict without contained types. "
             r"Please add contained type, e.g. Dict\[int, int\]"
+        )
 
-        with self.assertRaisesRegex(RuntimeError, err_msg,):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            err_msg,
+        ):
             torch.jit.script(dict_no_contained_type)
-        with self.assertRaisesRegex(RuntimeError, err_msg,):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            err_msg,
+        ):
             dict_no_contained_type(x)
 
     def test_tuple_rhs(self):

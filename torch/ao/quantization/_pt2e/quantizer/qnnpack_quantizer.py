@@ -30,6 +30,7 @@ SUPPORTED_QSCHEMES = [
     torch.per_channel_affine_float_qparams,
 ]
 
+
 @dataclass(eq=True, frozen=True)
 class TensorSpec:
     dtype: torch.dtype
@@ -45,7 +46,11 @@ class TensorSpec:
             raise TypeError(f"Unsupported dtype {self.dtype}.")
 
         # quant_min must be less than quant_max
-        if self.quant_min is not None and self.quant_max is not None and self.quant_min > self.quant_max:
+        if (
+            self.quant_min is not None
+            and self.quant_max is not None
+            and self.quant_min > self.quant_max
+        ):
             raise ValueError(
                 f"quant_min {self.quant_min} must be <= quant_max {self.quant_max}."
             )
@@ -61,25 +66,38 @@ class TensorSpec:
 
 
 OperatorSpec = NamedTuple(
-    "OperatorSpec", [("activation", TensorSpec), ("weight", TensorSpec), ("bias", TensorSpec)]
+    "OperatorSpec",
+    [("activation", TensorSpec), ("weight", TensorSpec), ("bias", TensorSpec)],
 )
 
 SpecAndOperators = NamedTuple(
-    "SpecAndOperators",
-    [("operator_spec", OperatorSpec), ("operators", List[str])]
+    "SpecAndOperators", [("operator_spec", OperatorSpec), ("operators", List[str])]
 )
 
 
 def supported_symmetric_quantized_operators() -> List[str]:
-    supported_operators = ["conv2d", "linear", "add", "maxpool2d", "hardtanh", "mean", "adaptive_avgpool2d"]
+    supported_operators = [
+        "conv2d",
+        "linear",
+        "add",
+        "maxpool2d",
+        "hardtanh",
+        "mean",
+        "adaptive_avgpool2d",
+    ]
     return copy.deepcopy(supported_operators)
+
 
 def get_supported_symmetric_quantized_spec_and_operators() -> List[SpecAndOperators]:
     supported_spec_and_operators: List[SpecAndOperators] = []
-    for operator_spec in [get_default_symmetric_qnnpack_operator_spec(), get_default_per_channel_symmetric_qnnpack_operator_spec()]:
+    for operator_spec in [
+        get_default_symmetric_qnnpack_operator_spec(),
+        get_default_per_channel_symmetric_qnnpack_operator_spec(),
+    ]:
         ops = supported_symmetric_quantized_operators()
         supported_spec_and_operators.append(SpecAndOperators(operator_spec, ops))
     return copy.deepcopy(supported_spec_and_operators)
+
 
 def get_default_symmetric_qnnpack_operator_spec():
     act_tensor_spec = TensorSpec(
@@ -101,6 +119,7 @@ def get_default_symmetric_qnnpack_operator_spec():
     operator_spec = OperatorSpec(act_tensor_spec, weight_tensor_spec, bias_tensor_spec)
     return operator_spec
 
+
 def get_default_per_channel_symmetric_qnnpack_operator_spec():
     act_tensor_spec = TensorSpec(
         dtype=torch.int8,
@@ -121,11 +140,12 @@ def get_default_per_channel_symmetric_qnnpack_operator_spec():
     operator_spec = OperatorSpec(act_tensor_spec, weight_tensor_spec, bias_tensor_spec)
     return operator_spec
 
+
 def get_supported_spec_and_operators() -> List[SpecAndOperators]:
     return get_supported_symmetric_quantized_spec_and_operators()
 
-class OperatorSpecConfig:
 
+class OperatorSpecConfig:
     def __init__(self):
         super().__init__()
         self.global_spec: Optional[OperatorSpec] = None
@@ -135,9 +155,12 @@ class OperatorSpecConfig:
         self.global_spec = operator_spec
         return self
 
-    def set_operator_type(self, operator_type: str, operator_spec: Optional[OperatorSpec]) -> OperatorSpecConfig:
+    def set_operator_type(
+        self, operator_type: str, operator_spec: Optional[OperatorSpec]
+    ) -> OperatorSpecConfig:
         self.operator_type_specs[operator_type] = operator_spec
         return self
+
 
 # TODO: add support for torch dtype in quant code base
 # this includes observers and prepare/convert code
@@ -147,6 +170,8 @@ _TORCH_DTYPE_TO_QDTYPE = {
     torch.int32: torch.qint32,
     torch.float16: torch.float16,
 }
+
+
 def _get_act_obs_or_fq_ctr(operator_spec: Optional[OperatorSpec]):
     if operator_spec is None:
         return None
@@ -160,11 +185,14 @@ def _get_act_obs_or_fq_ctr(operator_spec: Optional[OperatorSpec]):
             quant_min=tensor_spec.quant_min,
             quant_max=tensor_spec.quant_max,
             reduce_range=False,
-            eps=2**-12
+            eps=2**-12,
         )
     else:
         # TODO: extend this helper function to support dynamic quantization
-        raise Exception("Unsupported tensor_spec for activation: {}".format(tensor_spec))
+        raise Exception(
+            "Unsupported tensor_spec for activation: {}".format(tensor_spec)
+        )
+
 
 def _get_weight_obs_or_fq_ctr(operator_spec: Optional[OperatorSpec]):
     if operator_spec is None:
@@ -178,7 +206,7 @@ def _get_weight_obs_or_fq_ctr(operator_spec: Optional[OperatorSpec]):
             dtype=qdtype,
             quant_min=tensor_spec.quant_min,
             quant_max=tensor_spec.quant_max,
-            eps=2**-12
+            eps=2**-12,
         )
     elif tensor_spec.qscheme == torch.per_channel_symmetric:
         return PerChannelMinMaxObserver.with_args(
@@ -186,21 +214,26 @@ def _get_weight_obs_or_fq_ctr(operator_spec: Optional[OperatorSpec]):
             dtype=qdtype,
             quant_min=tensor_spec.quant_min,
             quant_max=tensor_spec.quant_max,
-            eps=2**-12
+            eps=2**-12,
         )
     else:
         raise Exception("Unsupported tensor_spec for weight: {}".format(tensor_spec))
+
 
 def _get_bias_obs_or_fq_ctr(operator_spec: Optional[OperatorSpec]):
     if operator_spec is None:
         return None
     assert operator_spec is not None
     tensor_spec: TensorSpec = operator_spec.bias
-    assert tensor_spec.dtype == torch.float, "Only float dtype for bias is supported for bias right now"
+    assert (
+        tensor_spec.dtype == torch.float
+    ), "Only float dtype for bias is supported for bias right now"
     return PlaceholderObserver.with_args(dtype=tensor_spec.dtype)
+
 
 def _get_default_obs_or_fq_ctr():
     return PlaceholderObserver.with_args(dtype=torch.float)
+
 
 def _is_annotated(nodes: List[Node]):
     """
@@ -210,8 +243,12 @@ def _is_annotated(nodes: List[Node]):
     """
     annotated = False
     for node in nodes:
-        annotated = annotated or ("target_dtype_info" in node.meta and node.meta["target_dtype_info"].get("_annotated", False))
+        annotated = annotated or (
+            "target_dtype_info" in node.meta
+            and node.meta["target_dtype_info"].get("_annotated", False)
+        )
     return annotated
+
 
 class QNNPackQuantizer(Quantizer):
     supported_spec_and_operators = get_supported_spec_and_operators()
@@ -228,7 +265,9 @@ class QNNPackQuantizer(Quantizer):
         return list(op_specs)
 
     @classmethod
-    def get_supported_operator_for_operator_spec(cls, operator_spec: Optional[OperatorSpec]) -> List[str]:
+    def get_supported_operator_for_operator_spec(
+        cls, operator_spec: Optional[OperatorSpec]
+    ) -> List[str]:
         if operator_spec is None:
             all_ops = []
             for _, ops in cls.supported_spec_and_operators:
@@ -256,8 +295,7 @@ class QNNPackQuantizer(Quantizer):
         return self
 
     def annotate(self, model: torch.fx.GraphModule) -> torch.fx.GraphModule:
-        """ just handling global spec for now
-        """
+        """just handling global spec for now"""
         # initialize default target_dtype_info
         _DEFAULT_TARGET_DTYPE_INFO = {
             "input_act_obs_or_fq_ctr": _get_default_obs_or_fq_ctr(),
@@ -293,13 +331,21 @@ class QNNPackQuantizer(Quantizer):
 
         return model
 
-    def _annotate_conv2d_relu(self, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
-        if node.op != "call_function" or node.target not in [torch.ops.aten.relu_.default, torch.ops.aten.relu.default]:
+    def _annotate_conv2d_relu(
+        self, node: Node, operator_spec: Optional[OperatorSpec]
+    ) -> None:
+        if node.op != "call_function" or node.target not in [
+            torch.ops.aten.relu_.default,
+            torch.ops.aten.relu.default,
+        ]:
             return
         relu_node = node
         conv_node = relu_node.args[0]
         assert isinstance(conv_node, Node)
-        if conv_node.op != "call_function" or conv_node.target != torch.ops.aten.convolution.default:
+        if (
+            conv_node.op != "call_function"
+            or conv_node.target != torch.ops.aten.convolution.default
+        ):
             return
         if _is_annotated([relu_node, conv_node]):
             return
@@ -321,9 +367,14 @@ class QNNPackQuantizer(Quantizer):
             "_annotated": True,
         }
 
-    def _annotate_conv2d(self, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
+    def _annotate_conv2d(
+        self, node: Node, operator_spec: Optional[OperatorSpec]
+    ) -> None:
         conv_node = node
-        if conv_node.op != "call_function" or conv_node.target != torch.ops.aten.convolution.default:
+        if (
+            conv_node.op != "call_function"
+            or conv_node.target != torch.ops.aten.convolution.default
+        ):
             return
         # skip annotation if it is already annotated
         if _is_annotated([conv_node]):
@@ -340,13 +391,21 @@ class QNNPackQuantizer(Quantizer):
             "_annotated": True,
         }
 
-    def _annotate_linear(self, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
+    def _annotate_linear(
+        self, node: Node, operator_spec: Optional[OperatorSpec]
+    ) -> None:
         addmm_node = node
-        if addmm_node.op != "call_function" or addmm_node.target != torch.ops.aten.addmm.default:
+        if (
+            addmm_node.op != "call_function"
+            or addmm_node.target != torch.ops.aten.addmm.default
+        ):
             return
         view_node = addmm_node.args[1]
         assert isinstance(view_node, Node)
-        if view_node.op != "call_function" or view_node.target != torch.ops.aten.view.default:
+        if (
+            view_node.op != "call_function"
+            or view_node.target != torch.ops.aten.view.default
+        ):
             return
         t_node = addmm_node.args[2]
         assert isinstance(t_node, Node)
@@ -376,13 +435,22 @@ class QNNPackQuantizer(Quantizer):
             "_annotated": True,
         }
 
-    def _annotate_maxpool2d(self, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
-        if node.op != "call_function" or node.target != operator.getitem or node.args[1] != 0:
+    def _annotate_maxpool2d(
+        self, node: Node, operator_spec: Optional[OperatorSpec]
+    ) -> None:
+        if (
+            node.op != "call_function"
+            or node.target != operator.getitem
+            or node.args[1] != 0
+        ):
             return
         getitem_node = node
         maxpool_node = getitem_node.args[0]
         assert isinstance(maxpool_node, Node)
-        if maxpool_node.op != "call_function" or maxpool_node.target != torch.ops.aten.max_pool2d_with_indices.default:
+        if (
+            maxpool_node.op != "call_function"
+            or maxpool_node.target != torch.ops.aten.max_pool2d_with_indices.default
+        ):
             return
         if _is_annotated([getitem_node, maxpool_node]):
             return
@@ -399,9 +467,14 @@ class QNNPackQuantizer(Quantizer):
             "_annotated": True,
         }
 
-    def _annotate_input_out_obs_sharing_op(self, op: Callable, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
+    def _annotate_input_out_obs_sharing_op(
+        self, op: Callable, node: Node, operator_spec: Optional[OperatorSpec]
+    ) -> None:
         io_obs_sharing_node = node
-        if io_obs_sharing_node.op != "call_function" or io_obs_sharing_node.target != op:
+        if (
+            io_obs_sharing_node.op != "call_function"
+            or io_obs_sharing_node.target != op
+        ):
             return
         if _is_annotated([io_obs_sharing_node]):
             return
@@ -413,23 +486,43 @@ class QNNPackQuantizer(Quantizer):
             "_annotated": True,
         }
 
-    def _annotate_hardtanh(self, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
-        self._annotate_input_out_obs_sharing_op(torch.ops.aten.hardtanh.default, node, operator_spec)
+    def _annotate_hardtanh(
+        self, node: Node, operator_spec: Optional[OperatorSpec]
+    ) -> None:
+        self._annotate_input_out_obs_sharing_op(
+            torch.ops.aten.hardtanh.default, node, operator_spec
+        )
 
     def _annotate_mean(self, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
-        self._annotate_input_out_obs_sharing_op(torch.ops.aten.mean.default, node, operator_spec)
-        self._annotate_input_out_obs_sharing_op(torch.ops.aten.mean.dim, node, operator_spec)
+        self._annotate_input_out_obs_sharing_op(
+            torch.ops.aten.mean.default, node, operator_spec
+        )
+        self._annotate_input_out_obs_sharing_op(
+            torch.ops.aten.mean.dim, node, operator_spec
+        )
 
-    def _annotate_adaptive_avg_pool2d(self, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
-        self._annotate_input_out_obs_sharing_op(torch.ops.aten.adaptive_avg_pool2d.default, node, operator_spec)
+    def _annotate_adaptive_avg_pool2d(
+        self, node: Node, operator_spec: Optional[OperatorSpec]
+    ) -> None:
+        self._annotate_input_out_obs_sharing_op(
+            torch.ops.aten.adaptive_avg_pool2d.default, node, operator_spec
+        )
 
-    def _annotate_add_relu(self, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
-        if node.op != "call_function" or node.target not in [torch.ops.aten.relu_.default, torch.ops.aten.relu.default]:
+    def _annotate_add_relu(
+        self, node: Node, operator_spec: Optional[OperatorSpec]
+    ) -> None:
+        if node.op != "call_function" or node.target not in [
+            torch.ops.aten.relu_.default,
+            torch.ops.aten.relu.default,
+        ]:
             return
         relu_node = node
         add_node = relu_node.args[0]
         assert isinstance(add_node, Node)
-        if add_node.op != "call_function" or add_node.target not in [torch.ops.aten.add.Tensor, torch.ops.aten.add_.Tensor]:
+        if add_node.op != "call_function" or add_node.target not in [
+            torch.ops.aten.add.Tensor,
+            torch.ops.aten.add_.Tensor,
+        ]:
             return
         if _is_annotated([relu_node, add_node]):
             return
@@ -447,7 +540,10 @@ class QNNPackQuantizer(Quantizer):
 
     def _annotate_add(self, node: Node, operator_spec: Optional[OperatorSpec]) -> None:
         add_node = node
-        if add_node.op != "call_function" or add_node.target not in [torch.ops.aten.add.Tensor, torch.ops.aten.add_.Tensor]:
+        if add_node.op != "call_function" or add_node.target not in [
+            torch.ops.aten.add.Tensor,
+            torch.ops.aten.add_.Tensor,
+        ]:
             return
         if _is_annotated([add_node]):
             return

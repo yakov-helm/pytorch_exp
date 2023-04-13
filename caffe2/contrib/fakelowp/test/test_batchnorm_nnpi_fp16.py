@@ -12,9 +12,14 @@ from caffe2.python.fakelowp.test_utils import print_test_debug_info
 import caffe2.python.serialized_test.serialized_test_util as serial
 import datetime
 
-core.GlobalInit(["caffe2", "--glow_global_fp16=1",
-                 "--glow_global_fused_scale_offset_fp16=1",
-                 "--glow_global_force_sls_fp16_accum=1"])
+core.GlobalInit(
+    [
+        "caffe2",
+        "--glow_global_fp16=1",
+        "--glow_global_fused_scale_offset_fp16=1",
+        "--glow_global_force_sls_fp16_accum=1",
+    ]
+)
 
 GLOW_LOWERED_BATCHNORM = False
 
@@ -25,7 +30,7 @@ def reference_spatialbn_test16(X, scale, bias, mean, var, epsilon, order):
     bias = bias.astype(np.float16)
     mean = mean.astype(np.float16)
     # var = var.astype(np.float16)
-    assert(order == "NCHW")
+    assert order == "NCHW"
 
     scale = scale[np.newaxis, :, np.newaxis, np.newaxis]
     bias = bias[np.newaxis, :, np.newaxis, np.newaxis]
@@ -38,10 +43,12 @@ def reference_spatialbn_test16(X, scale, bias, mean, var, epsilon, order):
 # Test the lowered BN op
 class BatchnormTest(serial.SerializedTestCase):
     # TODO: using hypothesis seed, sweep dimensions
-    @given(seed=st.integers(0, 65535),
-           size=st.integers(2, 30),
-           input_channels=st.integers(2, 40),
-           batch_size=st.integers(2, 20))
+    @given(
+        seed=st.integers(0, 65535),
+        size=st.integers(2, 30),
+        input_channels=st.integers(2, 40),
+        batch_size=st.integers(2, 20),
+    )
     @settings(deadline=datetime.timedelta(seconds=10))
     def test_bn(self, seed, size, input_channels, batch_size):
         workspace.ResetWorkspace()
@@ -61,7 +68,7 @@ class BatchnormTest(serial.SerializedTestCase):
                 ["Y"],
                 order=order,
                 is_test=True,
-                epsilon=epsilon
+                epsilon=epsilon,
             )
         )
 
@@ -81,7 +88,7 @@ class BatchnormTest(serial.SerializedTestCase):
                 ["Y"],
                 order=order,
                 is_test=True,
-                epsilon=epsilon
+                epsilon=epsilon,
             )
         )
 
@@ -89,8 +96,10 @@ class BatchnormTest(serial.SerializedTestCase):
         bias = np.random.rand(input_channels).astype(np.float32) - 0.5
         mean = np.random.randn(input_channels).astype(np.float32)
         var = np.random.rand(input_channels).astype(np.float32) + 0.5
-        X = np.random.rand(
-            batch_size, input_channels, size, size).astype(np.float32) - 0.5
+        X = (
+            np.random.rand(batch_size, input_channels, size, size).astype(np.float32)
+            - 0.5
+        )
 
         workspace.FeedBlob("scale", scale)
         workspace.FeedBlob("bias", bias)
@@ -102,17 +111,20 @@ class BatchnormTest(serial.SerializedTestCase):
 
         pred_net_onnxified = onnxifi_caffe2_net(
             pred_net,
-            {"X": [batch_size, input_channels, size, size],
-             "scale": [input_channels],
-             "bias": [input_channels],
-             "mean": [input_channels],
-             "var": [input_channels]},
+            {
+                "X": [batch_size, input_channels, size, size],
+                "scale": [input_channels],
+                "bias": [input_channels],
+                "mean": [input_channels],
+                "var": [input_channels],
+            },
             debug=True,
             adjust_batch=False,
-            use_onnx=False
+            use_onnx=False,
         )
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op)
+            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
 
         workspace.FeedBlob("X", X)
@@ -139,5 +151,7 @@ class BatchnormTest(serial.SerializedTestCase):
                     "Y_np": Y_c2,
                     "Y_glow": Y_glow,
                     "diff": diff,
-                    "rowwise_diff": np.max(np.abs(diff), -1)})
-            assert(0)
+                    "rowwise_diff": np.max(np.abs(diff), -1),
+                },
+            )
+            assert 0

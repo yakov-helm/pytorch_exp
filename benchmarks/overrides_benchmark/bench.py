@@ -51,14 +51,14 @@ def main():
     types = torch.tensor, SubTensor, WithTorchFunction, SubWithTorchFunction
 
     for t in types:
-        tensor_1 = t([1.])
-        tensor_2 = t([2.])
+        tensor_1 = t([1.0])
+        tensor_2 = t([2.0])
 
         bench_min, bench_std = bench(tensor_1, tensor_2)
         print(
             "Type {0} had a minimum time of {1} us"
             " and a standard deviation of {2} us.".format(
-                t.__name__, (10 ** 6 * bench_min), (10 ** 6) * bench_std
+                t.__name__, (10**6 * bench_min), (10**6) * bench_std
             )
         )
 

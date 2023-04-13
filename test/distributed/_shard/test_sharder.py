@@ -1,4 +1,3 @@
-
 # Owner(s): ["oncall: distributed"]
 import sys
 import copy
@@ -38,15 +37,15 @@ class CustomEmbeddingBagCollection(nn.Module):
 
         for i in range(num_bags):
             self.embedding_bags[f"embedding_bag_{i}"] = nn.EmbeddingBag(
-                num_embeddings_per_bag,
-                num_dims,
-                mode="sum")
+                num_embeddings_per_bag, num_dims, mode="sum"
+            )
 
     def forward(self, inputs):
         outputs = []
         for bag in self.embedding_bags.values():
             outputs.append(bag(inputs))
         return torch.cat(outputs)
+
 
 # a simple sharded version of EBC
 class CustomShardedEBC(nn.Module):
@@ -62,9 +61,19 @@ class CustomShardedEBC(nn.Module):
         for i in range(ebc.num_bags):
             bag_key = f"embedding_bag_{i}"
             if i < self.split_idx:
-                shard_module(ebc, plan=ShardingPlan(plan={f"embedding_bags.{bag_key}.weight": row_spec}))
+                shard_module(
+                    ebc,
+                    plan=ShardingPlan(
+                        plan={f"embedding_bags.{bag_key}.weight": row_spec}
+                    ),
+                )
             else:
-                shard_module(ebc, plan=ShardingPlan(plan={f"embedding_bags.{bag_key}.weight": col_spec}))
+                shard_module(
+                    ebc,
+                    plan=ShardingPlan(
+                        plan={f"embedding_bags.{bag_key}.weight": col_spec}
+                    ),
+                )
 
             self.embedding_bags[bag_key] = ebc.embedding_bags[bag_key]
 
@@ -78,13 +87,16 @@ class CustomSharder(Sharder):
 
     def shard(self, ebc: nn.Module) -> nn.Module:
         if not isinstance(ebc, CustomEmbeddingBagCollection):
-            raise RuntimeError("The custom sharder only supports CustomEmbeddingBagCollection")
+            raise RuntimeError(
+                "The custom sharder only supports CustomEmbeddingBagCollection"
+            )
 
-        return CustomShardedEBC(ebc, self.split_sharding_idx, (self.rowwise_spec, self.colwise_spec))
+        return CustomShardedEBC(
+            ebc, self.split_sharding_idx, (self.rowwise_spec, self.colwise_spec)
+        )
 
 
 class TestCustomSharder(ShardedTensorTestBase):
-
     @with_comms(init_rpc=False)
     @skip_if_lt_x_gpu(TEST_GPU_NUM)
     @requires_nccl()
@@ -99,13 +111,14 @@ class TestCustomSharder(ShardedTensorTestBase):
 
         custom_sharder = CustomSharder(
             devices=[f"rank:{i}/cuda:{i}" for i in range(TEST_GPU_NUM)],
-            split_sharding_idx=TEST_GPU_NUM // 2
+            split_sharding_idx=TEST_GPU_NUM // 2,
         )
 
         sharding_plan = ShardingPlan(
             plan={
                 "ebc": custom_sharder,
-            })
+            }
+        )
 
         local_model = MyModule().cuda(self.rank)
         sharded_model = copy.deepcopy(local_model)
@@ -117,8 +130,14 @@ class TestCustomSharder(ShardedTensorTestBase):
         emb_bags = sharded_model.ebc.embedding_bags
         self.assertTrue(isinstance(emb_bags["embedding_bag_0"].weight, ShardedTensor))
         self.assertTrue(isinstance(emb_bags["embedding_bag_9"].weight, ShardedTensor))
-        self.assertEqual(emb_bags["embedding_bag_0"].weight.sharding_spec(), custom_sharder.rowwise_spec)
-        self.assertEqual(emb_bags["embedding_bag_9"].weight.sharding_spec(), custom_sharder.colwise_spec)
+        self.assertEqual(
+            emb_bags["embedding_bag_0"].weight.sharding_spec(),
+            custom_sharder.rowwise_spec,
+        )
+        self.assertEqual(
+            emb_bags["embedding_bag_9"].weight.sharding_spec(),
+            custom_sharder.colwise_spec,
+        )
 
         # make sure we can run sharded computation and compare outputs
         # with the local model version
@@ -134,13 +153,14 @@ class TestCustomSharder(ShardedTensorTestBase):
     def test_custom_sharder_errors(self):
         custom_sharder = CustomSharder(
             devices=[f"rank:{i}/cuda:{i}" for i in range(TEST_GPU_NUM)],
-            split_sharding_idx=TEST_GPU_NUM // 2
+            split_sharding_idx=TEST_GPU_NUM // 2,
         )
 
         sharding_plan = ShardingPlan(
             plan={
                 "": custom_sharder,
-            })
+            }
+        )
 
         sharded_model = CustomEmbeddingBagCollection(10, 10, 8).cuda(self.rank)
 
@@ -156,7 +176,8 @@ class TestCustomSharder(ShardedTensorTestBase):
             plan={
                 "embedding_bags.embedding_bag_0.weight": spec,
                 "embedding_bags": custom_sharder,
-            })
+            }
+        )
 
         with self.assertRaisesRegex(
             RuntimeError, "should not conflict with the submodule tree"

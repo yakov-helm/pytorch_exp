@@ -1,8 +1,3 @@
-
-
-
-
-
 import functools
 
 import hypothesis
@@ -16,17 +11,17 @@ import caffe2.python.hypothesis_test_util as hu
 
 
 class TestAdam(hu.HypothesisTestCase):
-
     @staticmethod
-    def ref_adam(param, mom1, mom2, grad, LR, ITER,
-                 beta1, beta2, epsilon, output_grad=False):
+    def ref_adam(
+        param, mom1, mom2, grad, LR, ITER, beta1, beta2, epsilon, output_grad=False
+    ):
         t = ITER + 1
-        corrected_local_rate = np.sqrt(1 - np.power(beta2, t)) / \
-            (1 - np.power(beta1, t))
+        corrected_local_rate = np.sqrt(1 - np.power(beta2, t)) / (
+            1 - np.power(beta1, t)
+        )
         mom1_out = (beta1 * mom1) + (1 - beta1) * grad
         mom2_out = (beta2 * mom2) + (1 - beta2) * np.square(grad)
-        grad_out = corrected_local_rate * mom1_out / \
-            (np.sqrt(mom2_out) + epsilon)
+        grad_out = corrected_local_rate * mom1_out / (np.sqrt(mom2_out) + epsilon)
         param_out = param + LR * grad_out
         if output_grad:
             return param_out, mom1_out, mom2_out, grad_out
@@ -34,13 +29,23 @@ class TestAdam(hu.HypothesisTestCase):
             return param_out, mom1_out, mom2_out
 
     @staticmethod
-    def ref_smart_decay_adam(param, mom1, mom2, last_seen, grad, LR, ITER,
-                             beta1, beta2, epsilon):
+    def ref_smart_decay_adam(
+        param, mom1, mom2, last_seen, grad, LR, ITER, beta1, beta2, epsilon
+    ):
 
-        for name in ('param', 'mom1', 'mom2', 'last_seen', 'grad',
-                     'LR', 'ITER', 'beta1', 'beta2', 'epsilon'):
-            print("{} {} {}".format(name, locals()['name'], type(locals()['name'])))
-
+        for name in (
+            "param",
+            "mom1",
+            "mom2",
+            "last_seen",
+            "grad",
+            "LR",
+            "ITER",
+            "beta1",
+            "beta2",
+            "epsilon",
+        ):
+            print("{} {} {}".format(name, locals()["name"], type(locals()["name"])))
 
         t = ITER + 1
         k = t - last_seen
@@ -65,11 +70,13 @@ class TestAdam(hu.HypothesisTestCase):
         return param_out, mom1_out, mom2_out, last_seen_out
 
     @staticmethod
-    def ref_row_wise_adam(param, mom1, mom2, grad, LR, ITER,
-                          beta1, beta2, epsilon, output_grad=False):
+    def ref_row_wise_adam(
+        param, mom1, mom2, grad, LR, ITER, beta1, beta2, epsilon, output_grad=False
+    ):
         t = ITER + 1
-        corrected_local_rate = np.sqrt(1 - np.power(beta2, t)) / \
-            (1 - np.power(beta1, t))
+        corrected_local_rate = np.sqrt(1 - np.power(beta2, t)) / (
+            1 - np.power(beta1, t)
+        )
         mom1_out = (beta1 * mom1) + (1 - beta1) * grad
         mom2_out = (beta2 * mom2) + (1 - beta2) * np.mean(np.square(grad))
         grad_out = corrected_local_rate * mom1_out / (np.sqrt(mom2_out) + epsilon)
@@ -79,17 +86,23 @@ class TestAdam(hu.HypothesisTestCase):
         else:
             return param_out, mom1_out, mom2_out
 
-    @given(inputs=hu.tensors(n=4),
-           ITER=st.integers(min_value=0, max_value=10000),
-           LR=st.floats(min_value=0.01, max_value=0.99,
-                        allow_nan=False, allow_infinity=False),
-           beta1=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           beta2=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           epsilon=st.floats(min_value=0.01, max_value=0.99,
-                             allow_nan=False, allow_infinity=False),
-           **hu.gcs)
+    @given(
+        inputs=hu.tensors(n=4),
+        ITER=st.integers(min_value=0, max_value=10000),
+        LR=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta1=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta2=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        epsilon=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        **hu.gcs,
+    )
     def test_adam(self, inputs, ITER, LR, beta1, beta2, epsilon, gc, dc):
         param, mom1, mom2, grad = inputs
         mom2 = np.abs(mom2)
@@ -100,30 +113,39 @@ class TestAdam(hu.HypothesisTestCase):
             "Adam",
             ["param", "mom1", "mom2", "grad", "lr", "iter"],
             ["output_param", "output_mom1", "output_mom2"],
-            beta1=beta1, beta2=beta2, epsilon=epsilon)
+            beta1=beta1,
+            beta2=beta2,
+            epsilon=epsilon,
+        )
 
         # Iter lives on the CPU
-        input_device_options = {'iter': hu.cpu_do}
+        input_device_options = {"iter": hu.cpu_do}
 
         self.assertReferenceChecks(
-            gc, op,
+            gc,
+            op,
             [param, mom1, mom2, grad, LR, ITER],
-            functools.partial(
-                self.ref_adam,
-                beta1=beta1, beta2=beta2, epsilon=epsilon),
-            input_device_options=input_device_options)
+            functools.partial(self.ref_adam, beta1=beta1, beta2=beta2, epsilon=epsilon),
+            input_device_options=input_device_options,
+        )
 
-    @given(inputs=hu.tensors(n=4),
-           ITER=st.integers(min_value=0, max_value=10000),
-           LR=st.floats(min_value=0.01, max_value=0.99,
-                        allow_nan=False, allow_infinity=False),
-           beta1=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           beta2=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           epsilon=st.floats(min_value=0.01, max_value=0.99,
-                             allow_nan=False, allow_infinity=False),
-           **hu.gcs_cpu_only)
+    @given(
+        inputs=hu.tensors(n=4),
+        ITER=st.integers(min_value=0, max_value=10000),
+        LR=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta1=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta2=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        epsilon=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        **hu.gcs_cpu_only,
+    )
     def test_adam_output_grad(self, inputs, ITER, LR, beta1, beta2, epsilon, gc, dc):
         param, mom1, mom2, grad = inputs
         mom2 = np.abs(mom2)
@@ -134,33 +156,49 @@ class TestAdam(hu.HypothesisTestCase):
             "Adam",
             ["param", "mom1", "mom2", "grad", "lr", "iter"],
             ["output_param", "output_mom1", "output_mom2", "output_grad"],
-            beta1=beta1, beta2=beta2, epsilon=epsilon)
+            beta1=beta1,
+            beta2=beta2,
+            epsilon=epsilon,
+        )
 
         # Iter lives on the CPU
-        input_device_options = {'iter': hu.cpu_do}
+        input_device_options = {"iter": hu.cpu_do}
 
         self.assertReferenceChecks(
-            gc, op,
+            gc,
+            op,
             [param, mom1, mom2, grad, LR, ITER],
             functools.partial(
                 self.ref_adam,
-                beta1=beta1, beta2=beta2, epsilon=epsilon, output_grad=True),
-            input_device_options=input_device_options)
+                beta1=beta1,
+                beta2=beta2,
+                epsilon=epsilon,
+                output_grad=True,
+            ),
+            input_device_options=input_device_options,
+        )
 
-    @given(inputs=hu.tensors(n=4),
-           ITER=st.integers(min_value=0, max_value=10000),
-           LR=st.floats(min_value=0.01, max_value=0.99,
-                        allow_nan=False, allow_infinity=False),
-           beta1=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           beta2=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           epsilon=st.floats(min_value=0.01, max_value=0.99,
-                             allow_nan=False, allow_infinity=False),
-           data_strategy=st.data(),
-           **hu.gcs)
-    def test_sparse_adam(self, inputs, ITER, LR, beta1, beta2, epsilon,
-                         data_strategy, gc, dc):
+    @given(
+        inputs=hu.tensors(n=4),
+        ITER=st.integers(min_value=0, max_value=10000),
+        LR=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta1=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta2=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        epsilon=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        data_strategy=st.data(),
+        **hu.gcs,
+    )
+    def test_sparse_adam(
+        self, inputs, ITER, LR, beta1, beta2, epsilon, data_strategy, gc, dc
+    ):
         param, mom1, mom2, grad = inputs
         mom2 = np.absolute(mom2)
         ITER = np.array([ITER], dtype=np.int64)
@@ -179,9 +217,8 @@ class TestAdam(hu.HypothesisTestCase):
 
         # Verify that the generated indices are unique
         hypothesis.assume(
-            np.array_equal(
-                np.unique(indices.flatten()),
-                np.sort(indices.flatten())))
+            np.array_equal(np.unique(indices.flatten()), np.sort(indices.flatten()))
+        )
 
         # Sparsify grad
         grad = grad[indices]
@@ -190,7 +227,10 @@ class TestAdam(hu.HypothesisTestCase):
             "SparseAdam",
             ["param", "mom1", "mom2", "indices", "grad", "lr", "iter"],
             ["param", "mom1", "mom2"],
-            beta1=beta1, beta2=beta2, epsilon=epsilon)
+            beta1=beta1,
+            beta2=beta2,
+            epsilon=epsilon,
+        )
 
         def ref_sparse(param, mom1, mom2, indices, grad, LR, ITER):
             param_out = np.copy(param)
@@ -198,36 +238,52 @@ class TestAdam(hu.HypothesisTestCase):
             mom2_out = np.copy(mom2)
 
             for i, index in enumerate(indices):
-                param_out[index], mom1_out[index], mom2_out[index] = \
-                    self.ref_adam(param[index], mom1[index], mom2[index],
-                                  grad[i], LR, ITER,
-                                  beta1, beta2, epsilon)
+                param_out[index], mom1_out[index], mom2_out[index] = self.ref_adam(
+                    param[index],
+                    mom1[index],
+                    mom2[index],
+                    grad[i],
+                    LR,
+                    ITER,
+                    beta1,
+                    beta2,
+                    epsilon,
+                )
             return (param_out, mom1_out, mom2_out)
 
         # Iter lives on the CPU
-        input_device_options = {'iter': hu.cpu_do}
+        input_device_options = {"iter": hu.cpu_do}
 
         self.assertReferenceChecks(
-            gc, op,
+            gc,
+            op,
             [param, mom1, mom2, indices, grad, LR, ITER],
             ref_sparse,
-            input_device_options=input_device_options)
+            input_device_options=input_device_options,
+        )
 
     @unittest.skipIf(not workspace.has_cuda_support, "no cuda support")
-    @given(inputs=hu.tensors(n=4),
-           ITER=st.integers(min_value=0, max_value=10),
-           LR=st.floats(min_value=0.000001, max_value=0.1,
-                        allow_nan=False, allow_infinity=False),
-           beta1=st.floats(min_value=0.0, max_value=0.99999,
-                           allow_nan=False, allow_infinity=False),
-           beta2=st.floats(min_value=0.9, max_value=0.999999,
-                           allow_nan=False, allow_infinity=False),
-           epsilon=st.floats(min_value=0.00001, max_value=0.99,
-                             allow_nan=False, allow_infinity=False),
-           data_strategy=st.data(),
-           **hu.gcs)
-    def test_smart_decay_sparse_adam(self, inputs, ITER, LR, beta1, beta2, epsilon,
-                                     data_strategy, gc, dc):
+    @given(
+        inputs=hu.tensors(n=4),
+        ITER=st.integers(min_value=0, max_value=10),
+        LR=st.floats(
+            min_value=0.000001, max_value=0.1, allow_nan=False, allow_infinity=False
+        ),
+        beta1=st.floats(
+            min_value=0.0, max_value=0.99999, allow_nan=False, allow_infinity=False
+        ),
+        beta2=st.floats(
+            min_value=0.9, max_value=0.999999, allow_nan=False, allow_infinity=False
+        ),
+        epsilon=st.floats(
+            min_value=0.00001, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        data_strategy=st.data(),
+        **hu.gcs,
+    )
+    def test_smart_decay_sparse_adam(
+        self, inputs, ITER, LR, beta1, beta2, epsilon, data_strategy, gc, dc
+    ):
         param, mom1, mom2, grad = inputs
         mom2 = np.absolute(mom2)
         _iter, _lr = ITER, LR  # Keep the scalar types for reference
@@ -258,9 +314,8 @@ class TestAdam(hu.HypothesisTestCase):
 
         # Verify that the generated indices are unique
         hypothesis.assume(
-            np.array_equal(
-                np.unique(indices.flatten()),
-                np.sort(indices.flatten())))
+            np.array_equal(np.unique(indices.flatten()), np.sort(indices.flatten()))
+        )
 
         # Sparsify grad
         grad = grad[indices]
@@ -269,7 +324,10 @@ class TestAdam(hu.HypothesisTestCase):
             "SmartDecaySparseAdam",
             ["param", "mom1", "mom2", "last_seen", "indices", "grad", "lr", "iter"],
             ["param", "mom1", "mom2", "last_seen"],
-            beta1=beta1, beta2=beta2, epsilon=epsilon)
+            beta1=beta1,
+            beta2=beta2,
+            epsilon=epsilon,
+        )
 
         def ref_sparse(param, mom1, mom2, last_seen, indices, grad, LR, ITER):
             param_out = np.copy(param)
@@ -278,35 +336,57 @@ class TestAdam(hu.HypothesisTestCase):
             last_seen_out = np.copy(last_seen)
 
             for i, index in enumerate(indices):
-                param_out[index], mom1_out[index], mom2_out[index], last_seen_out[index] = \
-                    self.ref_smart_decay_adam(param[index], mom1[index], mom2[index], last_seen[index],
-                                              grad[i], LR, ITER,
-                                              beta1, beta2, epsilon)
+                (
+                    param_out[index],
+                    mom1_out[index],
+                    mom2_out[index],
+                    last_seen_out[index],
+                ) = self.ref_smart_decay_adam(
+                    param[index],
+                    mom1[index],
+                    mom2[index],
+                    last_seen[index],
+                    grad[i],
+                    LR,
+                    ITER,
+                    beta1,
+                    beta2,
+                    epsilon,
+                )
             return (param_out, mom1_out, mom2_out, last_seen_out)
 
         # Iter lives on the CPU
-        input_device_options = {'iter': hu.cpu_do}
+        input_device_options = {"iter": hu.cpu_do}
 
         self.assertReferenceChecks(
-            gc, op,
+            gc,
+            op,
             [param, mom1, mom2, last_seen, indices, grad, LR, ITER],
             ref_sparse,
-            input_device_options=input_device_options)
+            input_device_options=input_device_options,
+        )
 
-    @given(inputs=hu.tensors(n=4),
-           ITER=st.integers(min_value=0, max_value=10000),
-           LR=st.floats(min_value=0.01, max_value=0.99,
-                        allow_nan=False, allow_infinity=False),
-           beta1=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           beta2=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           epsilon=st.floats(min_value=0.01, max_value=0.99,
-                             allow_nan=False, allow_infinity=False),
-           data_strategy=st.data(),
-           **hu.gcs)
-    def test_sparse_adam_output_grad(self, inputs, ITER, LR, beta1, beta2, epsilon,
-                                     data_strategy, gc, dc):
+    @given(
+        inputs=hu.tensors(n=4),
+        ITER=st.integers(min_value=0, max_value=10000),
+        LR=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta1=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta2=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        epsilon=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        data_strategy=st.data(),
+        **hu.gcs,
+    )
+    def test_sparse_adam_output_grad(
+        self, inputs, ITER, LR, beta1, beta2, epsilon, data_strategy, gc, dc
+    ):
         param, mom1, mom2, grad = inputs
         mom2 = np.absolute(mom2)
         ITER = np.array([ITER], dtype=np.int64)
@@ -325,9 +405,8 @@ class TestAdam(hu.HypothesisTestCase):
 
         # Verify that the generated indices are unique
         hypothesis.assume(
-            np.array_equal(
-                np.unique(indices.flatten()),
-                np.sort(indices.flatten())))
+            np.array_equal(np.unique(indices.flatten()), np.sort(indices.flatten()))
+        )
 
         # Sparsify grad
         grad = grad[indices]
@@ -336,55 +415,98 @@ class TestAdam(hu.HypothesisTestCase):
             "SparseAdam",
             ["param", "mom1", "mom2", "indices", "grad", "lr", "iter"],
             ["param", "mom1", "mom2", "output_grad"],
-            beta1=beta1, beta2=beta2, epsilon=epsilon)
+            beta1=beta1,
+            beta2=beta2,
+            epsilon=epsilon,
+        )
 
-        def ref_sparse_output_grad(param, mom1, mom2, indices, grad, LR, ITER,
-                                   beta1, beta2, epsilon, output_grad):
+        def ref_sparse_output_grad(
+            param,
+            mom1,
+            mom2,
+            indices,
+            grad,
+            LR,
+            ITER,
+            beta1,
+            beta2,
+            epsilon,
+            output_grad,
+        ):
             param_out = np.copy(param)
             mom1_out = np.copy(mom1)
             mom2_out = np.copy(mom2)
             grad_out = np.copy(grad)
 
             for i, index in enumerate(indices):
-                param_out[index], mom1_out[index], mom2_out[index], grad_out[i] = \
-                    self.ref_adam(param[index], mom1[index], mom2[index],
-                                  grad[i], LR, ITER,
-                                  beta1, beta2, epsilon, output_grad)
+                (
+                    param_out[index],
+                    mom1_out[index],
+                    mom2_out[index],
+                    grad_out[i],
+                ) = self.ref_adam(
+                    param[index],
+                    mom1[index],
+                    mom2[index],
+                    grad[i],
+                    LR,
+                    ITER,
+                    beta1,
+                    beta2,
+                    epsilon,
+                    output_grad,
+                )
             return (param_out, mom1_out, mom2_out, grad_out)
 
         # Iter lives on the CPU
-        input_device_options = {'iter': hu.cpu_do}
+        input_device_options = {"iter": hu.cpu_do}
 
         self.assertReferenceChecks(
-            gc, op,
+            gc,
+            op,
             [param, mom1, mom2, indices, grad, LR, ITER],
             functools.partial(
                 ref_sparse_output_grad,
-                beta1=beta1, beta2=beta2, epsilon=epsilon, output_grad=True),
-            input_device_options=input_device_options)
+                beta1=beta1,
+                beta2=beta2,
+                epsilon=epsilon,
+                output_grad=True,
+            ),
+            input_device_options=input_device_options,
+        )
 
-    @given(inputs=hu.tensors(n=3),
-           ITER=st.integers(min_value=0, max_value=10000),
-           LR=st.floats(min_value=0.01, max_value=0.99,
-                        allow_nan=False, allow_infinity=False),
-           beta1=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           beta2=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           epsilon=st.floats(min_value=0.01, max_value=0.99,
-                             allow_nan=False, allow_infinity=False),
-           data_strategy=st.data(),
-           **hu.gcs)
-    def test_row_wise_sparse_adam(self, inputs, ITER, LR, beta1, beta2, epsilon,
-                                  data_strategy, gc, dc):
+    @given(
+        inputs=hu.tensors(n=3),
+        ITER=st.integers(min_value=0, max_value=10000),
+        LR=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta1=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta2=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        epsilon=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        data_strategy=st.data(),
+        **hu.gcs,
+    )
+    def test_row_wise_sparse_adam(
+        self, inputs, ITER, LR, beta1, beta2, epsilon, data_strategy, gc, dc
+    ):
         param, mom1, grad = inputs
         ITER = np.array([ITER], dtype=np.int64)
         LR = np.array([LR], dtype=np.float32)
 
         # Create a 1D row-wise average 2nd moment tensor.
         mom2 = data_strategy.draw(
-            hu.tensor1d(min_len=param.shape[0], max_len=param.shape[0],
-                        elements=hu.elements_of_type(dtype=np.float32))
+            hu.tensor1d(
+                min_len=param.shape[0],
+                max_len=param.shape[0],
+                elements=hu.elements_of_type(dtype=np.float32),
+            )
         )
         mom2 = np.absolute(mom2)
 
@@ -405,7 +527,7 @@ class TestAdam(hu.HypothesisTestCase):
         # 1-dimensional.
         indices = indices.flatten()
 
-        hypothesis.note('indices.shape: %s' % str(indices.shape))
+        hypothesis.note("indices.shape: %s" % str(indices.shape))
 
         # Verify that the generated indices are unique
         hypothesis.assume(np.array_equal(np.unique(indices), np.sort(indices)))
@@ -417,56 +539,84 @@ class TestAdam(hu.HypothesisTestCase):
             "RowWiseSparseAdam",
             ["param", "mom1", "mom2", "indices", "grad", "lr", "iter"],
             ["param", "mom1", "mom2"],
-            beta1=beta1, beta2=beta2, epsilon=epsilon)
+            beta1=beta1,
+            beta2=beta2,
+            epsilon=epsilon,
+        )
 
         def ref_row_wise_sparse(param, mom1, mom2, indices, grad, LR, ITER):
             param_out = np.copy(param)
             mom1_out = np.copy(mom1)
             mom2_out = np.copy(mom2)
             for i, index in enumerate(indices):
-                param_out[index], mom1_out[index], mom2_out[index] = \
-                    self.ref_row_wise_adam(param[index], mom1[index], mom2[index],
-                                           grad[i], LR, ITER,
-                                           beta1, beta2, epsilon)
+                (
+                    param_out[index],
+                    mom1_out[index],
+                    mom2_out[index],
+                ) = self.ref_row_wise_adam(
+                    param[index],
+                    mom1[index],
+                    mom2[index],
+                    grad[i],
+                    LR,
+                    ITER,
+                    beta1,
+                    beta2,
+                    epsilon,
+                )
             return (param_out, mom1_out, mom2_out)
 
         # Iter lives on the CPU
-        input_device_options = {'iter': hu.cpu_do}
+        input_device_options = {"iter": hu.cpu_do}
 
         self.assertDeviceChecks(
-            dc, op,
+            dc,
+            op,
             [param, mom1, mom2, indices, grad, LR, ITER],
             [0, 1, 2],
-            input_device_options=input_device_options)
+            input_device_options=input_device_options,
+        )
 
         self.assertReferenceChecks(
-            gc, op,
+            gc,
+            op,
             [param, mom1, mom2, indices, grad, LR, ITER],
             ref_row_wise_sparse,
-            input_device_options=input_device_options)
+            input_device_options=input_device_options,
+        )
 
-    @given(inputs=hu.tensors(n=3),
-           ITER=st.integers(min_value=0, max_value=10000),
-           LR=st.floats(min_value=0.01, max_value=0.99,
-                        allow_nan=False, allow_infinity=False),
-           beta1=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           beta2=st.floats(min_value=0.01, max_value=0.99,
-                           allow_nan=False, allow_infinity=False),
-           epsilon=st.floats(min_value=0.01, max_value=0.99,
-                             allow_nan=False, allow_infinity=False),
-           data_strategy=st.data(),
-           **hu.gcs)
-    def test_row_wise_sparse_adam_output_grad(self, inputs, ITER, LR, beta1, beta2,
-                                              epsilon, data_strategy, gc, dc):
+    @given(
+        inputs=hu.tensors(n=3),
+        ITER=st.integers(min_value=0, max_value=10000),
+        LR=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta1=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        beta2=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        epsilon=st.floats(
+            min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+        ),
+        data_strategy=st.data(),
+        **hu.gcs,
+    )
+    def test_row_wise_sparse_adam_output_grad(
+        self, inputs, ITER, LR, beta1, beta2, epsilon, data_strategy, gc, dc
+    ):
         param, mom1, grad = inputs
         ITER = np.array([ITER], dtype=np.int64)
         LR = np.array([LR], dtype=np.float32)
 
         # Create a 1D row-wise average 2nd moment tensor.
         mom2 = data_strategy.draw(
-            hu.tensor1d(min_len=param.shape[0], max_len=param.shape[0],
-                        elements=hu.elements_of_type(dtype=np.float32))
+            hu.tensor1d(
+                min_len=param.shape[0],
+                max_len=param.shape[0],
+                elements=hu.elements_of_type(dtype=np.float32),
+            )
         )
         mom2 = np.absolute(mom2)
 
@@ -487,7 +637,7 @@ class TestAdam(hu.HypothesisTestCase):
         # 1-dimensional.
         indices = indices.flatten()
 
-        hypothesis.note('indices.shape: %s' % str(indices.shape))
+        hypothesis.note("indices.shape: %s" % str(indices.shape))
 
         # Verify that the generated indices are unique
         hypothesis.assume(np.array_equal(np.unique(indices), np.sort(indices)))
@@ -499,40 +649,76 @@ class TestAdam(hu.HypothesisTestCase):
             "RowWiseSparseAdam",
             ["param", "mom1", "mom2", "indices", "grad", "lr", "iter"],
             ["param", "mom1", "mom2", "output_grad"],
-            beta1=beta1, beta2=beta2, epsilon=epsilon)
+            beta1=beta1,
+            beta2=beta2,
+            epsilon=epsilon,
+        )
 
-        def ref_row_wise_sparse_output_grad(param, mom1, mom2, indices, grad, LR, ITER,
-                                            beta1, beta2, epsilon, output_grad):
+        def ref_row_wise_sparse_output_grad(
+            param,
+            mom1,
+            mom2,
+            indices,
+            grad,
+            LR,
+            ITER,
+            beta1,
+            beta2,
+            epsilon,
+            output_grad,
+        ):
             param_out = np.copy(param)
             mom1_out = np.copy(mom1)
             mom2_out = np.copy(mom2)
             grad_out = np.copy(grad)
 
             for i, index in enumerate(indices):
-                param_out[index], mom1_out[index], mom2_out[index], grad_out[i] = \
-                    self.ref_row_wise_adam(param[index], mom1[index], mom2[index],
-                                           grad[i], LR, ITER,
-                                           beta1, beta2, epsilon, output_grad)
+                (
+                    param_out[index],
+                    mom1_out[index],
+                    mom2_out[index],
+                    grad_out[i],
+                ) = self.ref_row_wise_adam(
+                    param[index],
+                    mom1[index],
+                    mom2[index],
+                    grad[i],
+                    LR,
+                    ITER,
+                    beta1,
+                    beta2,
+                    epsilon,
+                    output_grad,
+                )
             return (param_out, mom1_out, mom2_out, grad_out)
 
         # Iter lives on the CPU
-        input_device_options = {'iter': hu.cpu_do}
+        input_device_options = {"iter": hu.cpu_do}
 
         self.assertDeviceChecks(
-            dc, op,
+            dc,
+            op,
             [param, mom1, mom2, indices, grad, LR, ITER],
             [0, 1, 2, 3],
-            input_device_options=input_device_options)
+            input_device_options=input_device_options,
+        )
 
         self.assertReferenceChecks(
-            gc, op,
+            gc,
+            op,
             [param, mom1, mom2, indices, grad, LR, ITER],
             functools.partial(
                 ref_row_wise_sparse_output_grad,
-                beta1=beta1, beta2=beta2, epsilon=epsilon, output_grad=True),
-            input_device_options=input_device_options)
+                beta1=beta1,
+                beta2=beta2,
+                epsilon=epsilon,
+                output_grad=True,
+            ),
+            input_device_options=input_device_options,
+        )
 
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

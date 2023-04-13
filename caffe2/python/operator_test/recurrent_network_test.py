@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import recurrent, workspace
 from caffe2.python.model_helper import ModelHelper
 from hypothesis import given, settings
@@ -11,59 +6,74 @@ import caffe2.python.serialized_test.serialized_test_util as serial
 import hypothesis.strategies as st
 import numpy as np
 
+
 class RecurrentNetworkTest(serial.SerializedTestCase):
-    @given(T=st.integers(1, 4),
-           n=st.integers(1, 5),
-           d=st.integers(1, 5))
+    @given(T=st.integers(1, 4), n=st.integers(1, 5), d=st.integers(1, 5))
     @settings(deadline=10000)
     def test_sum_mul(self, T, n, d):
-        model = ModelHelper(name='external')
+        model = ModelHelper(name="external")
 
         input_blob, initial_input_blob = model.net.AddExternalInputs(
-            'input', 'initial_input')
+            "input", "initial_input"
+        )
 
-        step = ModelHelper(name='step', param_model=model)
-        input_t, output_t_prev = step.net.AddExternalInput(
-            'input_t', 'output_t_prev')
+        step = ModelHelper(name="step", param_model=model)
+        input_t, output_t_prev = step.net.AddExternalInput("input_t", "output_t_prev")
         output_t_internal = step.net.Sum([input_t, output_t_prev])
         output_t = step.net.Mul([input_t, output_t_internal])
         step.net.AddExternalOutput(output_t)
 
-        self.simple_rnn(T, n, d, model, step, input_t, output_t, output_t_prev,
-                        input_blob, initial_input_blob)
+        self.simple_rnn(
+            T,
+            n,
+            d,
+            model,
+            step,
+            input_t,
+            output_t,
+            output_t_prev,
+            input_blob,
+            initial_input_blob,
+        )
 
-    @given(T=st.integers(1, 4),
-           n=st.integers(1, 5),
-           d=st.integers(1, 5))
+    @given(T=st.integers(1, 4), n=st.integers(1, 5), d=st.integers(1, 5))
     @settings(deadline=10000)
     def test_mul(self, T, n, d):
-        model = ModelHelper(name='external')
+        model = ModelHelper(name="external")
 
         input_blob, initial_input_blob = model.net.AddExternalInputs(
-            'input', 'initial_input')
+            "input", "initial_input"
+        )
 
-        step = ModelHelper(name='step', param_model=model)
-        input_t, output_t_prev = step.net.AddExternalInput(
-            'input_t', 'output_t_prev')
+        step = ModelHelper(name="step", param_model=model)
+        input_t, output_t_prev = step.net.AddExternalInput("input_t", "output_t_prev")
         output_t = step.net.Mul([input_t, output_t_prev])
         step.net.AddExternalOutput(output_t)
 
-        self.simple_rnn(T, n, d, model, step, input_t, output_t, output_t_prev,
-                        input_blob, initial_input_blob)
+        self.simple_rnn(
+            T,
+            n,
+            d,
+            model,
+            step,
+            input_t,
+            output_t,
+            output_t_prev,
+            input_blob,
+            initial_input_blob,
+        )
 
-    @given(T=st.integers(1, 4),
-           n=st.integers(1, 5),
-           d=st.integers(1, 5))
+    @given(T=st.integers(1, 4), n=st.integers(1, 5), d=st.integers(1, 5))
     def test_extract(self, T, n, d):
-        model = ModelHelper(name='external')
+        model = ModelHelper(name="external")
         workspace.ResetWorkspace()
 
         input_blob, initial_input_blob = model.net.AddExternalInputs(
-            'input', 'initial_input')
+            "input", "initial_input"
+        )
 
-        step = ModelHelper(name='step', param_model=model)
-        input_t, output_t_prev = step.net.AddExternalInput(
-            'input_t', 'output_t_prev')
+        step = ModelHelper(name="step", param_model=model)
+        input_t, output_t_prev = step.net.AddExternalInput("input_t", "output_t_prev")
         output_t = step.net.Mul([input_t, output_t_prev])
         step.net.AddExternalOutput(output_t)
 
@@ -87,9 +97,7 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
         prefix = "extractTest"
 
         workspace.RunNet(model.net.Proto().name, T)
-        retrieved_blobs = recurrent.retrieve_step_blobs(
-            model.net, prefix
-        )
+        retrieved_blobs = recurrent.retrieve_step_blobs(model.net, prefix)
 
         # needed for python3.6, which returns bytearrays instead of str
         retrieved_blobs = [x.decode() for x in retrieved_blobs]
@@ -100,11 +108,24 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
                 blob_name in retrieved_blobs,
                 "blob extraction failed on timestep {}\
                     . \n\n Extracted Blobs: {} \n\n Looking for {}\
-                    .".format(i, retrieved_blobs, blob_name)
+                    .".format(
+                    i, retrieved_blobs, blob_name
+                ),
             )
 
-    def simple_rnn(self, T, n, d, model, step, input_t, output_t, output_t_prev,
-                   input_blob, initial_input_blob):
+    def simple_rnn(
+        self,
+        T,
+        n,
+        d,
+        model,
+        step,
+        input_t,
+        output_t,
+        output_t_prev,
+        input_blob,
+        initial_input_blob,
+    ):
 
         input = np.random.randn(T, n, d).astype(np.float32)
         initial_input = np.random.randn(1, n, d).astype(np.float32)
@@ -185,22 +206,22 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
         # [batch_size, inputs_length, state_size]
         inputs_transposed = model.net.Transpose(
             inputs,
-            'inputs_transposed',
+            "inputs_transposed",
             axes=[1, 0, 2],
         )
         # [batch_size, 1, inputs_length, state_size]
         inputs_transposed_4d = model.net.ExpandDims(
             inputs_transposed,
-            'inputs_transposed_4d',
+            "inputs_transposed_4d",
             dims=[1],
         )
         # [batch_size, 1, inputs_length - conv_window + 1, state_size]
         output_transposed_4d = model.net.Conv(
             [inputs_transposed_4d, conv_filter, conv_bias],
-            output_name + '_transposed_4d',
+            output_name + "_transposed_4d",
             kernel_h=1,
             kernel_w=conv_window,
-            order='NHWC',
+            order="NHWC",
             pad_t=0,
             pad_l=padding_width,
             pad_b=0,
@@ -209,7 +230,7 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
         # [batch_size, inputs_length - conv_window + 1, state_size]
         output_transposed = model.net.Squeeze(
             output_transposed_4d,
-            output_name + '_transposed',
+            output_name + "_transposed",
             dims=[1],
         )
         # [inputs_length - conv_window + 1, batch_size, state_size]
@@ -220,10 +241,12 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
         )
         return output
 
-    @given(sequence_length=st.integers(3, 7),
-           conv_window=st.integers(1, 3),
-           batch_size=st.integers(1, 5),
-           state_size=st.integers(1, 5))
+    @given(
+        sequence_length=st.integers(3, 7),
+        conv_window=st.integers(1, 3),
+        batch_size=st.integers(1, 5),
+        state_size=st.integers(1, 5),
+    )
     def test_stateful_convolution_forward_only(
         self,
         sequence_length,
@@ -231,7 +254,7 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
         batch_size,
         state_size,
     ):
-        '''
+        """
         This unit test demonstrates another ways of using RecurrentNetwork.
 
         Imagine, that you want to compute convolution over a sequence,
@@ -271,52 +294,52 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
         In this test, we assert that we get the same result
         if we apply convolution over all elements simultaneously,
         since the whole input_state sequence was generated at the end.
-    '''
-        model = ModelHelper(name='model')
+        """
+        model = ModelHelper(name="model")
         fake_inputs = model.param_init_net.UniformFill(
             [],
-            'fake_inputs',
+            "fake_inputs",
             min=-1.0,
             max=1.0,
             shape=[sequence_length, batch_size, state_size],
         )
         initial_input_state = model.param_init_net.ConstantFill(
             [],
-            'initial_input_state',
+            "initial_input_state",
             value=0.0,
             shape=[conv_window - 1, batch_size, state_size],
         )
         initial_output_state = model.param_init_net.ConstantFill(
             [],
-            'initial_output_state',
+            "initial_output_state",
             value=0.0,
             shape=[1, batch_size, state_size],
         )
-        step_model = ModelHelper(name='step_model', param_model=model)
+        step_model = ModelHelper(name="step_model", param_model=model)
         (
             fake_input_t,
             timestep,
             input_state_t_prev,
         ) = step_model.net.AddExternalInputs(
-            'fake_input_t',
-            'timestep',
-            'input_state_t_prev',
+            "fake_input_t",
+            "timestep",
+            "input_state_t_prev",
         )
         conv_filter = step_model.param_init_net.XavierFill(
             [],
-            'conv_filter',
+            "conv_filter",
             shape=[state_size, 1, conv_window, state_size],
         )
         conv_bias = step_model.param_init_net.ConstantFill(
             [],
-            'conv_bias',
+            "conv_bias",
             shape=[state_size],
             value=0.0,
         )
         step_model.params.extend([conv_filter, conv_bias])
         input_state_t = step_model.net.UniformFill(
             [],
-            'input_state_t',
+            "input_state_t",
             min=-1.0,
             max=1.0,
             shape=[1, batch_size, state_size],
@@ -327,18 +350,16 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
             conv_window=conv_window,
             conv_filter=conv_filter,
             conv_bias=conv_bias,
-            output_name='output_state_t',
+            output_name="output_state_t",
             left_pad=False,
         )
         initial_recurrent_states = [initial_input_state, initial_output_state]
-        all_inputs = (
-            [fake_inputs] + step_model.params + initial_recurrent_states
-        )
-        all_outputs = ['input_state_all', 'output_state_all']
-        recurrent_states = ['input_state', 'output_state']
+        all_inputs = [fake_inputs] + step_model.params + initial_recurrent_states
+        all_outputs = ["input_state_all", "output_state_all"]
+        recurrent_states = ["input_state", "output_state"]
         input_state_all, output_state_all, _ = model.net.RecurrentNetwork(
             all_inputs,
-            all_outputs + ['step_workspaces'],
+            all_outputs + ["step_workspaces"],
             param=[all_inputs.index(p) for p in step_model.params],
             alias_src=recurrent_states,
             alias_dst=all_outputs,
@@ -352,14 +373,14 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
                 str(input_state_t),
                 str(output_state_t),
             ],
-            link_external=['input_state', 'input_state', 'output_state'],
+            link_external=["input_state", "input_state", "output_state"],
             link_offset=[0, conv_window - 1, 1],
             link_window=[conv_window, 1, 1],
             backward_link_internal=[],
             backward_link_external=[],
             backward_link_offset=[],
             step_net=step_model.net.Proto(),
-            timestep='timestep' if timestep is None else str(timestep),
+            timestep="timestep" if timestep is None else str(timestep),
             outputs_with_grads=[],
         )
 
@@ -369,7 +390,7 @@ class RecurrentNetworkTest(serial.SerializedTestCase):
             conv_window=conv_window,
             conv_filter=conv_filter,
             conv_bias=conv_bias,
-            output_name='output_states_2',
+            output_name="output_states_2",
             left_pad=True,
         )
 

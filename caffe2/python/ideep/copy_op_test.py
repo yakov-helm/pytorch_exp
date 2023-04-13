@@ -1,8 +1,3 @@
-
-
-
-
-
 import unittest
 import numpy as np
 from random import randint
@@ -83,7 +78,8 @@ class CopyTest(unittest.TestCase):
         op = core.CreateOperator(
             "CopyIDEEPToCPU",
             ["X_ideep"],
-            ["X"],)
+            ["X"],
+        )
         op.device_option.CopyFrom(self._get_deep_device())
         n = randint(1, 128)
         c = randint(1, 64)
@@ -94,6 +90,7 @@ class CopyTest(unittest.TestCase):
         workspace.RunOperatorOnce(op)
         X_ideep = workspace.FetchBlob("X")
         np.testing.assert_allclose(X, X_ideep)
+
 
 if __name__ == "__main__":
     unittest.main()

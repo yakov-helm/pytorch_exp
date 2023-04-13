@@ -32,13 +32,7 @@ class ArithmeticOpsTest(serial.SerializedTestCase):
         pred_net.name = "pred"
         pred_net.external_input.extend(["A", "B"])
         pred_net.external_output.append("C")
-        pred_net.op.add().CopyFrom(
-            core.CreateOperator(
-                name,
-                ["A", "B"],
-                ["C"]
-            )
-        )
+        pred_net.op.add().CopyFrom(core.CreateOperator(name, ["A", "B"], ["C"]))
         pred_net_ref = caffe2_pb2.NetDef()
         pred_net_ref.name = "ref"
         pred_net_ref.external_input.extend(["A", "B"])
@@ -52,14 +46,13 @@ class ArithmeticOpsTest(serial.SerializedTestCase):
         )
 
         shape_hints = {"A": A.shape, "B": B.shape}
-        pred_net_onnxified = onnxifi_caffe2_net(pred_net,
-                                                shape_hints,
-                                                debug=True,
-                                                adjust_batch=True,
-                                                use_onnx=False)
+        pred_net_onnxified = onnxifi_caffe2_net(
+            pred_net, shape_hints, debug=True, adjust_batch=True, use_onnx=False
+        )
         print(pred_net_onnxified)
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op)
+            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
         workspace.SwitchWorkspace("glow_test_ws", True)
         workspace.FeedBlob("A", A)
@@ -93,10 +86,20 @@ class ArithmeticOpsTest(serial.SerializedTestCase):
             # Results should be identical since we are comparing with the C2 emulation
             if not np.allclose(Y_c2[fp16_finite], Y_glow[fp16_finite]):
                 diff = np.abs((Y_glow - Y_c2) / (Y_c2 + kEpsilon))
-                print_test_debug_info(name, {
-                    "dims": dims, "iter": _, "seed": seed, "A": A, "B": B,
-                    "Y_glow": Y_glow, "Y_c2": Y_c2, "diff": diff})
-                assert(0)
+                print_test_debug_info(
+                    name,
+                    {
+                        "dims": dims,
+                        "iter": _,
+                        "seed": seed,
+                        "A": A,
+                        "B": B,
+                        "Y_glow": Y_glow,
+                        "Y_c2": Y_c2,
+                        "diff": diff,
+                    },
+                )
+                assert 0
 
     @given(seed=st.integers(0, 65534))
     @settings(deadline=datetime.timedelta(seconds=10))
@@ -127,32 +130,23 @@ class UnaryOpTest(serial.SerializedTestCase):
         pred_net.name = "pred"
         pred_net.external_input.append("X")
         pred_net.external_output.append("Y")
-        pred_net.op.add().CopyFrom(
-            core.CreateOperator(
-                opname,
-                ['X'],
-                ['Y'])
-        )
+        pred_net.op.add().CopyFrom(core.CreateOperator(opname, ["X"], ["Y"]))
         ref_net = caffe2_pb2.NetDef()
         ref_net.name = "ref"
         ref_net.external_input.append("X")
         ref_net.external_output.append("Y")
         ref_net.op.add().CopyFrom(
-            core.CreateOperator(
-                opname + 'FakeFp16NNPI',
-                ['X'],
-                ['Y'])
+            core.CreateOperator(opname + "FakeFp16NNPI", ["X"], ["Y"])
         )
         print("REF NET = {}".format(ref_net))
 
         shape_hints = {"X": X.shape}
-        pred_net_onnxified = onnxifi_caffe2_net(pred_net,
-                                                shape_hints,
-                                                debug=True,
-                                                adjust_batch=False,
-                                                use_onnx=False)
+        pred_net_onnxified = onnxifi_caffe2_net(
+            pred_net, shape_hints, debug=True, adjust_batch=False, use_onnx=False
+        )
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op)
+            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
         workspace.SwitchWorkspace("glow_test_ws", True)
         workspace.FeedBlob("X", X)
@@ -160,22 +154,19 @@ class UnaryOpTest(serial.SerializedTestCase):
         workspace.CreateNet(pred_net_onnxified)
         # Run Glow net
         workspace.RunNet(pred_net_onnxified.name)
-        Y_glow = workspace.FetchBlob('Y')
+        Y_glow = workspace.FetchBlob("Y")
         # Run caffe2 reference net
         workspace.RunNet(ref_net.name)
-        Y_c2 = workspace.FetchBlob('Y')
+        Y_c2 = workspace.FetchBlob("Y")
 
         if not np.allclose(Y_c2, Y_glow, rtol=atol, atol=atol):
             diff = np.abs(Y_c2 - Y_glow)
-            np.save('/tmp/' + opname + 'diff', diff)
-            np.save('/tmp/' + opname + 'result', Y_c2)
-            print_test_debug_info(opname, {
-                "X": X,
-                "Y_c2": Y_c2,
-                "Y_glow": Y_glow,
-                "diff": diff
-            })
-            assert(0)
+            np.save("/tmp/" + opname + "diff", diff)
+            np.save("/tmp/" + opname + "result", Y_c2)
+            print_test_debug_info(
+                opname, {"X": X, "Y_c2": Y_c2, "Y_glow": Y_glow, "diff": diff}
+            )
+            assert 0
 
         return Y_glow
 
@@ -186,9 +177,9 @@ class UnaryOpTest(serial.SerializedTestCase):
             Y_glow = self._test_unary_op(opname, X, atol=atol)
             region_err = compute_ulp_error(opname, X, Y_glow)
             ulp_err = max(np.max(np.abs(region_err)), ulp_err)
-        if (ulp_err > err_threshold):
-            print(r'{} Op detected ulp_err={}'.format(opname, ulp_err))
-            assert(0)
+        if ulp_err > err_threshold:
+            print(r"{} Op detected ulp_err={}".format(opname, ulp_err))
+            assert 0
 
     # These tests doesn't need to run multiple times given that it is a
     # linear sweep and it is deterministic.
@@ -199,9 +190,19 @@ class UnaryOpTest(serial.SerializedTestCase):
     def test_sigmoid(self, seed):
         np.random.seed(seed)
         opname = "Sigmoid"
-        regions = [[-8., -4.], [-4., -2.], [-2., -1.], [-1., -.5], [-.5, -.25],
-                   [-.25, .25], [.25, .5], [.5, 1.], [1., 2.], [2., 4.],
-                   [4., 8.]]
+        regions = [
+            [-8.0, -4.0],
+            [-4.0, -2.0],
+            [-2.0, -1.0],
+            [-1.0, -0.5],
+            [-0.5, -0.25],
+            [-0.25, 0.25],
+            [0.25, 0.5],
+            [0.5, 1.0],
+            [1.0, 2.0],
+            [2.0, 4.0],
+            [4.0, 8.0],
+        ]
         self._test_op_w_ulp_error(seed, opname, regions, atol=0, err_threshold=2.5)
 
     # These tests doesn't need to run multiple times given that it is a
@@ -213,11 +214,20 @@ class UnaryOpTest(serial.SerializedTestCase):
     def test_tanh(self, seed):
         np.random.seed(seed)
         opname = "Tanh"
-        regions = [[2.**(-9), 2.**(-8)], [2.**(-8), 2.**(-7)],
-                   [2.**(-7), 2.**(-6)], [2.**(-6), 2.**(-5)],
-                   [2.**(-5), 2.**(-4)], [2.**(-4), 2.**(-3)],
-                   [2.**(-3), 2.**(-2)], [2.**(-2), 2.**(-1)],
-                   [2.**(-1), 1.], [1., 2.], [2., 4.], [4., 8.]]
+        regions = [
+            [2.0 ** (-9), 2.0 ** (-8)],
+            [2.0 ** (-8), 2.0 ** (-7)],
+            [2.0 ** (-7), 2.0 ** (-6)],
+            [2.0 ** (-6), 2.0 ** (-5)],
+            [2.0 ** (-5), 2.0 ** (-4)],
+            [2.0 ** (-4), 2.0 ** (-3)],
+            [2.0 ** (-3), 2.0 ** (-2)],
+            [2.0 ** (-2), 2.0 ** (-1)],
+            [2.0 ** (-1), 1.0],
+            [1.0, 2.0],
+            [2.0, 4.0],
+            [4.0, 8.0],
+        ]
         self._test_op_w_ulp_error(seed, opname, regions, atol=0, err_threshold=2)
 
     # These tests doesn't need to run multiple times given that it is a
@@ -230,8 +240,15 @@ class UnaryOpTest(serial.SerializedTestCase):
     def test_swish(self, seed):
         np.random.seed(seed)
         opname = "Swish"
-        regions = [[-20.5, -11.], [-11., -8.], [-8., -1.], [-1., -0.1],
-                   [-1. / 8., 1. / 8.], [1. / 8, 5.], [5., 8.]]
+        regions = [
+            [-20.5, -11.0],
+            [-11.0, -8.0],
+            [-8.0, -1.0],
+            [-1.0, -0.1],
+            [-1.0 / 8.0, 1.0 / 8.0],
+            [1.0 / 8, 5.0],
+            [5.0, 8.0],
+        ]
         self._test_op_w_ulp_error(seed, opname, regions, atol=0.008, err_threshold=384)
 
     # These tests doesn't need to run multiple times given that it is a
@@ -251,34 +268,23 @@ class UnaryOpTest(serial.SerializedTestCase):
         pred_net.name = "pred"
         pred_net.external_input.append("X")
         pred_net.external_output.append("Y")
-        pred_net.op.add().CopyFrom(
-            core.CreateOperator(
-                'Logit',
-                ['X'],
-                ['Y'],
-                eps=1e-6)
-        )
+        pred_net.op.add().CopyFrom(core.CreateOperator("Logit", ["X"], ["Y"], eps=1e-6))
         ref_net = caffe2_pb2.NetDef()
         ref_net.name = "ref"
         ref_net.external_input.append("X")
         ref_net.external_output.append("Y")
         ref_net.op.add().CopyFrom(
-            core.CreateOperator(
-                'LogitFakeFp16NNPI',
-                ['X'],
-                ['Y'],
-                eps=1e-6)
+            core.CreateOperator("LogitFakeFp16NNPI", ["X"], ["Y"], eps=1e-6)
         )
         print("REF NET = {}".format(ref_net))
 
         shape_hints = {"X": (n, m)}
-        pred_net_onnxified = onnxifi_caffe2_net(pred_net,
-                                                shape_hints,
-                                                debug=True,
-                                                adjust_batch=False,
-                                                use_onnx=False)
+        pred_net_onnxified = onnxifi_caffe2_net(
+            pred_net, shape_hints, debug=True, adjust_batch=False, use_onnx=False
+        )
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op)
+            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
         workspace.SwitchWorkspace("glow_test_ws", True)
         workspace.FeedBlob("X", X)
@@ -286,22 +292,20 @@ class UnaryOpTest(serial.SerializedTestCase):
         workspace.CreateNet(pred_net_onnxified)
         # Run Glow net
         workspace.RunNet(pred_net_onnxified.name)
-        Y_glow = workspace.FetchBlob('Y')
+        Y_glow = workspace.FetchBlob("Y")
         # Run caffe2 reference net
         workspace.RunNet(ref_net.name)
-        Y_c2 = workspace.FetchBlob('Y')
+        Y_c2 = workspace.FetchBlob("Y")
 
         diff = np.abs(Y_c2 - Y_glow)
         if np.nanmax(diff) > 9e-3:
-            np.save('/tmp/logit_diff', diff)
-            np.save('/tmp/logit_result', Y_c2)
-            print_test_debug_info('Logit', {
-                "X": X,
-                "Y_c2": Y_c2,
-                "Y_glow": Y_glow,
-                "diff": diff
-            })
-            assert(0)
+            np.save("/tmp/logit_diff", diff)
+            np.save("/tmp/logit_result", Y_c2)
+            print_test_debug_info(
+                "Logit", {"X": X, "Y_c2": Y_c2, "Y_glow": Y_glow, "diff": diff}
+            )
+            assert 0
+
 
 class ReluTest(serial.SerializedTestCase):
     @given(seed=st.integers(0, 65534))
@@ -316,13 +320,7 @@ class ReluTest(serial.SerializedTestCase):
         pred_net.name = "pred"
         pred_net.external_input.extend(["X"])
         pred_net.external_output.append("Y")
-        pred_net.op.add().CopyFrom(
-            core.CreateOperator(
-                "Relu",
-                ["X"],
-                ["Y"]
-            )
-        )
+        pred_net.op.add().CopyFrom(core.CreateOperator("Relu", ["X"], ["Y"]))
         pred_net_ref = caffe2_pb2.NetDef()
         pred_net_ref.name = "ref"
         pred_net_ref.external_input.extend(["X"])
@@ -336,14 +334,13 @@ class ReluTest(serial.SerializedTestCase):
         )
 
         shape_hints = {"X": X.shape}
-        pred_net_onnxified = onnxifi_caffe2_net(pred_net,
-                                                shape_hints,
-                                                debug=True,
-                                                adjust_batch=True,
-                                                use_onnx=False)
+        pred_net_onnxified = onnxifi_caffe2_net(
+            pred_net, shape_hints, debug=True, adjust_batch=True, use_onnx=False
+        )
         print(pred_net_onnxified)
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op)
+            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
         workspace.SwitchWorkspace("glow_test_ws", True)
         workspace.FeedBlob("X", X)
@@ -362,7 +359,8 @@ class ReluTest(serial.SerializedTestCase):
         # Results should be identical since we are comparing with the C2 emulation
         if not np.allclose(Y_c2, Y_glow):
             diff = np.abs((Y_glow - Y_c2) / (Y_c2 + kEpsilon))
-            print_test_debug_info("Relu", {
-                "seed": seed, "X": X,
-                "Y_glow": Y_glow, "Y_c2": Y_c2, "diff": diff})
-            assert(0)
+            print_test_debug_info(
+                "Relu",
+                {"seed": seed, "X": X, "Y_glow": Y_glow, "Y_c2": Y_c2, "diff": diff},
+            )
+            assert 0

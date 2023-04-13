@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import scope, core, workspace
 
 import unittest
@@ -33,7 +28,6 @@ def thread_runner(idx, testobj):
 
 
 class TestScope(unittest.TestCase):
-
     def testNamescopeBasic(self):
         self.assertEqual(scope.CurrentNameScope(), "")
 
@@ -132,10 +126,12 @@ class TestScope(unittest.TestCase):
 
         threads = []
         for i in range(4):
-            threads.append(threading.Thread(
-                target=thread_runner,
-                args=(i, self),
-            ))
+            threads.append(
+                threading.Thread(
+                    target=thread_runner,
+                    args=(i, self),
+                )
+            )
         for t in threads:
             t.start()
 

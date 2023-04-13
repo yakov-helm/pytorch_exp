@@ -2,10 +2,13 @@ import torch
 from . import _functional as F
 from .optimizer import Optimizer, _maximize_doc
 
-__all__ = ['SparseAdam']
+__all__ = ["SparseAdam"]
+
 
 class SparseAdam(Optimizer):
-    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, maximize: bool = False):
+    def __init__(
+        self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, maximize: bool = False
+    ):
         if not 0.0 < lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 < eps:
@@ -21,8 +24,8 @@ class SparseAdam(Optimizer):
         for index, param in enumerate(params):
             if isinstance(param, dict):
                 # given param group, convert given params to a list first before iterating
-                param['params'] = list(param.get("params", []))
-                for d_index, d_param in enumerate(param['params']):
+                param["params"] = list(param.get("params", []))
+                for d_index, d_param in enumerate(param["params"]):
                     if d_param.is_sparse:
                         sparse_params.append([index, d_index])
             elif param.is_sparse:
@@ -54,48 +57,57 @@ class SparseAdam(Optimizer):
             exp_avgs = []
             exp_avg_sqs = []
             state_steps = []
-            eps = group['eps']
-            lr = group['lr']
-            beta1, beta2 = group['betas']
-            maximize = group.get('maximize', False)
+            eps = group["eps"]
+            lr = group["lr"]
+            beta1, beta2 = group["betas"]
+            maximize = group.get("maximize", False)
 
-            for p in group['params']:
+            for p in group["params"]:
                 if p.grad is not None:
                     params_with_grad.append(p)
                     if not p.grad.is_sparse:
-                        raise RuntimeError('SparseAdam does not support dense gradients, please consider Adam instead')
+                        raise RuntimeError(
+                            "SparseAdam does not support dense gradients, please consider Adam instead"
+                        )
                     grads.append(p.grad)
 
                     state = self.state[p]
 
                     # State initialization
                     if len(state) == 0:
-                        state['step'] = 0
+                        state["step"] = 0
                         # Exponential moving average of gradient values
-                        state['exp_avg'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                        state["exp_avg"] = torch.zeros_like(
+                            p, memory_format=torch.preserve_format
+                        )
                         # Exponential moving average of squared gradient values
-                        state['exp_avg_sq'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                        state["exp_avg_sq"] = torch.zeros_like(
+                            p, memory_format=torch.preserve_format
+                        )
 
-                    exp_avgs.append(state['exp_avg'])
-                    exp_avg_sqs.append(state['exp_avg_sq'])
+                    exp_avgs.append(state["exp_avg"])
+                    exp_avg_sqs.append(state["exp_avg_sq"])
 
                     # update the steps for each param group update
-                    state['step'] += 1
+                    state["step"] += 1
                     # record the step after step update
-                    state_steps.append(state['step'])
+                    state_steps.append(state["step"])
 
-            F.sparse_adam(params_with_grad,
-                          grads,
-                          exp_avgs,
-                          exp_avg_sqs,
-                          state_steps,
-                          beta1=beta1,
-                          beta2=beta2,
-                          lr=group['lr'],
-                          eps=group['eps'],
-                          maximize=maximize)
+            F.sparse_adam(
+                params_with_grad,
+                grads,
+                exp_avgs,
+                exp_avg_sqs,
+                state_steps,
+                beta1=beta1,
+                beta2=beta2,
+                lr=group["lr"],
+                eps=group["eps"],
+                maximize=maximize,
+            )
 
         return loss
+
 
 SparseAdam.__doc__ = r"""Implements lazy version of Adam algorithm suitable for sparse tensors.
 
@@ -115,4 +127,6 @@ SparseAdam.__doc__ = r"""Implements lazy version of Adam algorithm suitable for 
     .. _Adam\: A Method for Stochastic Optimization:
         https://arxiv.org/abs/1412.6980
 
-    """.format(maximize=_maximize_doc)
+    """.format(
+    maximize=_maximize_doc
+)

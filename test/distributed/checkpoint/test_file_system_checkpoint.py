@@ -122,9 +122,7 @@ class TestDistributedStateDictSaveLoad(TestCase):
             state_dict_to_load_to = MyTestModule().state_dict()
 
             with self.assertRaises(AssertionError):
-                assert_state_dict_equal(
-                    self, state_dict_to_load_to, state_dict_to_save
-                )
+                assert_state_dict_equal(self, state_dict_to_load_to, state_dict_to_save)
 
             # Load from file without any resharding
             fs_reader = FileSystemReader(path=path)
@@ -134,9 +132,7 @@ class TestDistributedStateDictSaveLoad(TestCase):
                 no_dist=True,
             )
 
-            assert_state_dict_equal(
-                self, state_dict_to_load_to, state_dict_to_save
-            )
+            assert_state_dict_equal(self, state_dict_to_load_to, state_dict_to_save)
 
         with tempfile.TemporaryDirectory() as path:
             state_dict_to_save = MyTestModule().state_dict()
@@ -151,9 +147,7 @@ class TestDistributedStateDictSaveLoad(TestCase):
             state_dict_to_load_to = MyTestModule().state_dict()
 
             with self.assertRaises(AssertionError):
-                assert_state_dict_equal(
-                    self, state_dict_to_load_to, state_dict_to_save
-                )
+                assert_state_dict_equal(self, state_dict_to_load_to, state_dict_to_save)
 
             # Load from file without any resharding
             fs_reader = FileSystemReader(path=path)
@@ -163,9 +157,7 @@ class TestDistributedStateDictSaveLoad(TestCase):
                 no_dist=True,
             )
 
-            assert_state_dict_equal(
-                self, state_dict_to_load_to, state_dict_to_save
-            )
+            assert_state_dict_equal(self, state_dict_to_load_to, state_dict_to_save)
 
 
 class TestDistributedStateDictSaveLoadWithSharedTensor(ShardedTensorTestBase):
@@ -212,15 +204,11 @@ class TestDistributedStateDictSaveLoadWithSharedTensor(ShardedTensorTestBase):
         dist.barrier()
 
         with self.assertRaises(AssertionError):
-            assert_state_dict_equal(
-                self, state_dict_to_load_to, state_dict_to_save
-            )
+            assert_state_dict_equal(self, state_dict_to_load_to, state_dict_to_save)
 
         # Test load.
         fs_reader = FileSystemReader(path=path)
-        load_state_dict(
-            state_dict=state_dict_to_load_to, storage_reader=fs_reader
-        )
+        load_state_dict(state_dict=state_dict_to_load_to, storage_reader=fs_reader)
 
         assert_state_dict_equal(self, state_dict_to_load_to, state_dict_to_save)
         dist.barrier()
@@ -238,9 +226,7 @@ class TestDistributedReshardOnLoad(ShardedTensorTestBase):
 
     def load_tensor(self, tensor: ShardedTensor) -> torch.Tensor:
         res = (
-            torch.zeros(tensor.shape, device="cuda:0")
-            if dist.get_rank() == 0
-            else None
+            torch.zeros(tensor.shape, device="cuda:0") if dist.get_rank() == 0 else None
         )
         tensor.gather(out=res)
         return res
@@ -335,9 +321,7 @@ class TestDistributedReshardOnLoad(ShardedTensorTestBase):
                 state_dict_to_save = model_to_save.state_dict()
 
                 fs_writer = FileSystemWriter(path=path)
-                save_state_dict(
-                    state_dict=state_dict_to_save, storage_writer=fs_writer
-                )
+                save_state_dict(state_dict=state_dict_to_save, storage_writer=fs_writer)
 
                 dist.barrier()
 
@@ -404,9 +388,7 @@ class TestDistributedReshardOnLoad(ShardedTensorTestBase):
 
         fs_reader = FileSystemReader(path=path)
 
-        load_state_dict(
-            state_dict=state_dict_to_load_to, storage_reader=fs_reader
-        )
+        load_state_dict(state_dict=state_dict_to_load_to, storage_reader=fs_reader)
 
         # We can't use torch.allclose since each ST has a different sharding spec
         store_tensor = self.load_tensor(model_to_save.sharded_tensor)
@@ -516,9 +498,7 @@ class TestDistributedReshardOnLoad(ShardedTensorTestBase):
                         f"save-spec {save_spec} load-spec {load_spec}",
                     )
                     self.assertTrue(
-                        torch.allclose(
-                            save_dict["replicated"], load_dict_replicated
-                        ),
+                        torch.allclose(save_dict["replicated"], load_dict_replicated),
                         f"save-spec {save_spec} load-spec {load_spec}",
                     )
 

@@ -2,10 +2,10 @@
 # Module caffe2.python.normalizer
 
 
-
 class Normalizer:
     def __init__(self):
         pass
+
     """
     Adds normalization to train_net for given parameter. Its factor ahead of
     regularization is given when initialization.
@@ -40,5 +40,8 @@ class LayerNormalizer(Normalizer):
 
     def _run(self, layer_model, param):
         return layer_model.LayerNormalization(
-            param, epsilon=self._epsilon, use_layer_norm_op=self._use_layer_norm_op, scale_init_value=self._scale_init_value
+            param,
+            epsilon=self._epsilon,
+            use_layer_norm_op=self._use_layer_norm_op,
+            scale_init_value=self._scale_init_value,
         )

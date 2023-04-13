@@ -2,6 +2,7 @@ import torch
 from torch.utils._pytree import tree_map
 from typing import Optional
 
+
 def _basic_validation(op, args=(), kwargs=None):
     """
     Common validation across all ops go in here.
@@ -36,13 +37,14 @@ def _basic_validation(op, args=(), kwargs=None):
         if isinstance(e, ShardedTensor):
             if cur_pg is not None and e._process_group is not cur_pg:
                 raise RuntimeError(
-                    'All distributed tensors should use the '
-                    'same ProcessGroup if used together in an op.'
+                    "All distributed tensors should use the "
+                    "same ProcessGroup if used together in an op."
                 )
             cur_pg = e._process_group
 
     tree_map(validate_pg, args)
     tree_map(validate_pg, kwargs)
+
 
 def _register_default_op(op, decorator):
     @decorator(op)

@@ -35,7 +35,7 @@ class FCWithBootstrap(SamplingTrainableMixin, ModelLayer):
         bias_reg=None,
         clip_param=None,
         axis=1,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(model, name, input_record, **kwargs)
         assert isinstance(
@@ -211,18 +211,18 @@ class FCWithBootstrap(SamplingTrainableMixin, ModelLayer):
 
     def _bootstrap_ops(self, net, copied_cur_layer, indices, iteration):
         """
-            This method contains all the bootstrapping logic used to bootstrap
-            the features. Only used by the train_net.
+        This method contains all the bootstrapping logic used to bootstrap
+        the features. Only used by the train_net.
 
-            Args:
-                net: the caffe2 net to insert bootstrapping operators
+        Args:
+            net: the caffe2 net to insert bootstrapping operators
 
-                copied_cur_layer: the blob representing the current features.
-                    Note, this layer should have a stop_gradient on it.
+            copied_cur_layer: the blob representing the current features.
+                Note, this layer should have a stop_gradient on it.
 
-            Returns:
-                bootstrapped_features: blob of bootstrapped version of cur_layer
-                    with same dimensions
+        Returns:
+            bootstrapped_features: blob of bootstrapped version of cur_layer
+                with same dimensions
         """
 
         # draw features based upon the bootstrapped indices
@@ -289,12 +289,12 @@ class FCWithBootstrap(SamplingTrainableMixin, ModelLayer):
 
     def add_ops(self, net):
         """
-            Both the predict net and the eval net will call this function.
+        Both the predict net and the eval net will call this function.
 
-            For bootstrapping approach, the goal is to pass the cur_layer feature
-            inputs through all the bootstrapped FCs that are stored under
-            self.bootstrapped_FCs. Return the preds in the same output_schema
-            with dummy indices (because they are not needed).
+        For bootstrapping approach, the goal is to pass the cur_layer feature
+        inputs through all the bootstrapped FCs that are stored under
+        self.bootstrapped_FCs. Return the preds in the same output_schema
+        with dummy indices (because they are not needed).
         """
 
         version_info = get_current_scope().get(

@@ -1,5 +1,3 @@
-
-
 import unittest
 
 import caffe2.python.hypothesis_test_util as hu
@@ -106,7 +104,7 @@ class TestConvolution(hu.HypothesisTestCase):
         engine=st.sampled_from(["", "CUDNN", "MKLDNN"]),
         use_bias=st.booleans(),
         deformable_group=st.integers(1, 3),
-        **hu.gcs_gpu_only
+        **hu.gcs_gpu_only,
     )
     def test_null_offset_convolution(
         self,
@@ -220,7 +218,7 @@ class TestConvolution(hu.HypothesisTestCase):
         engine=st.sampled_from(["", "CUDNN", "MKLDNN"]),
         use_bias=st.booleans(),
         deformable_group=st.integers(1, 4),
-        **hu.gcs_gpu_only
+        **hu.gcs_gpu_only,
     )
     def test_flat_input_convolution(
         self,
@@ -318,7 +316,7 @@ class TestConvolution(hu.HypothesisTestCase):
         engine=st.sampled_from(["", "CUDNN", "MKLDNN"]),
         use_bias=st.booleans(),
         deformable_group=st.integers(1, 4),
-        **hu.gcs_gpu_only
+        **hu.gcs_gpu_only,
     )
     def test_shuffle_input_convolution(
         self,
@@ -432,7 +430,7 @@ class TestConvolution(hu.HypothesisTestCase):
         shared_buffer=st.booleans(),
         use_bias=st.booleans(),
         deformable_group=st.integers(1, 3),
-        **hu.gcs_gpu_only
+        **hu.gcs_gpu_only,
     )
     def test_conv_separate_stride_pad_gradients(
         self,
@@ -520,7 +518,7 @@ class TestConvolution(hu.HypothesisTestCase):
         engine=st.sampled_from(["", "CUDNN", "MKLDNN"]),
         use_bias=st.booleans(),
         deformable_group=st.integers(1, 3),
-        **hu.gcs_gpu_only
+        **hu.gcs_gpu_only,
     )
     def test_conv_gradients(
         self,

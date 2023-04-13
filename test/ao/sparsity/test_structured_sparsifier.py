@@ -73,6 +73,7 @@ class BottomHalfLSTMPruner(BaseStructuredSparsifier):
                 new_mask = torch.cat(masks)
                 mask.data = new_mask.data
 
+
 class TestSaliencyPruner(TestCase):
     def test_saliency_pruner_update_mask(self):
         """Test that we prune out the row with the lowest saliency (first row)"""
@@ -103,14 +104,9 @@ class TestSaliencyPruner(TestCase):
             num_layers=1,
         )
 
-        manual_weights = torch.Tensor([[1, 1],
-                                       [2, 2],
-                                       [2, 2],
-                                       [1, 1],
-                                       [-1, -1],
-                                       [-2, -2],
-                                       [-2, -2],
-                                       [-1, -1]])
+        manual_weights = torch.Tensor(
+            [[1, 1], [2, 2], [2, 2], [1, 1], [-1, -1], [-2, -2], [-2, -2], [-1, -1]]
+        )
 
         with torch.no_grad():
             model.lstm.weight_ih_l0 = nn.Parameter(manual_weights)
@@ -137,18 +133,12 @@ class TestSaliencyPruner(TestCase):
         pruned_model(lstm_input)
 
         # make sure lowest saliency rows are pruned
-        expected = torch.Tensor([[2, 2],
-                                 [2, 2],
-                                 [-2, -2],
-                                 [-2, -2]])
+        expected = torch.Tensor([[2, 2], [2, 2], [-2, -2], [-2, -2]])
         pruned = model.lstm.weight_ih_l0
         assert expected.shape == pruned.shape
         assert torch.isclose(expected, pruned, rtol=1e-05, atol=1e-07).all()
 
-        expected = torch.Tensor([[2],
-                                 [2],
-                                 [-2],
-                                 [-2]])
+        expected = torch.Tensor([[2], [2], [-2], [-2]])
         pruned = model.lstm.weight_hh_l0
         assert expected.shape == pruned.shape
         assert torch.isclose(expected, pruned, rtol=1e-05, atol=1e-07).all()
@@ -157,7 +147,6 @@ class TestSaliencyPruner(TestCase):
         for pruned in [model.lstm.bias_ih_l0, model.lstm.bias_hh_l0]:
             assert expected.shape == pruned.shape
             assert torch.isclose(expected, pruned, rtol=1e-05, atol=1e-07).all()
-
 
 
 class TestBaseStructuredSparsifier(TestCase):

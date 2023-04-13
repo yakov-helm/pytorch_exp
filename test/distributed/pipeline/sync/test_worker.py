@@ -25,6 +25,7 @@ class fake_device:
     type = "fake"
     index = None
 
+
 def test_compute_multithreading():
     """Task.compute should be executed on multiple threads."""
     thread_ids = set()

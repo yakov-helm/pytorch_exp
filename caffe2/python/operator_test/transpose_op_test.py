@@ -1,7 +1,3 @@
-
-
-
-
 from caffe2.python import core, workspace
 from hypothesis import given, settings
 
@@ -14,20 +10,19 @@ import unittest
 
 
 class TestTransposeOp(serial.SerializedTestCase):
-    @given(
-        X=hu.tensor(dtype=np.float32), use_axes=st.booleans(), **hu.gcs)
+    @given(X=hu.tensor(dtype=np.float32), use_axes=st.booleans(), **hu.gcs)
     @settings(deadline=None, max_examples=50)
     def test_transpose(self, X, use_axes, gc, dc):
         ndim = len(X.shape)
         axes = np.arange(ndim)
         np.random.shuffle(axes)
 
-        if (use_axes):
+        if use_axes:
             op = core.CreateOperator(
-                "Transpose", ["X"], ["Y"], axes=axes, device_option=gc)
+                "Transpose", ["X"], ["Y"], axes=axes, device_option=gc
+            )
         else:
-            op = core.CreateOperator(
-                "Transpose", ["X"], ["Y"], device_option=gc)
+            op = core.CreateOperator("Transpose", ["X"], ["Y"], device_option=gc)
 
         def transpose_ref(X):
             if use_axes:
@@ -52,23 +47,26 @@ class TestTransposeOp(serial.SerializedTestCase):
         self.assertDeviceChecks(dc, op, [X], [0])
         self.assertGradientChecks(gc, op, [X], 0, [0])
 
-
     @unittest.skipIf(not workspace.has_cuda_support, "no cuda support")
-    @given(X=hu.tensor(dtype=np.float32), use_axes=st.booleans(),
-           **hu.gcs_cuda_only)
+    @given(X=hu.tensor(dtype=np.float32), use_axes=st.booleans(), **hu.gcs_cuda_only)
     def test_transpose_cudnn(self, X, use_axes, gc, dc):
         ndim = len(X.shape)
         axes = np.arange(ndim)
         np.random.shuffle(axes)
 
-        if (use_axes):
+        if use_axes:
             op = core.CreateOperator(
-                "Transpose", ["X"], ["Y"], axes=axes, engine="CUDNN",
-                device_option=hu.cuda_do)
+                "Transpose",
+                ["X"],
+                ["Y"],
+                axes=axes,
+                engine="CUDNN",
+                device_option=hu.cuda_do,
+            )
         else:
             op = core.CreateOperator(
-                "Transpose", ["X"], ["Y"], engine="CUDNN",
-                device_option=hu.cuda_do)
+                "Transpose", ["X"], ["Y"], engine="CUDNN", device_option=hu.cuda_do
+            )
 
         def transpose_ref(X):
             if use_axes:

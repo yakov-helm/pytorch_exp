@@ -113,7 +113,9 @@ def test_no_portal_without_pipe(train, monkeypatch, setup_rpc):
     def deny(*args, **kwargs):
         raise AssertionError("tried to create Portal without Pipe")
 
-    monkeypatch.setattr("torch.distributed.pipeline.sync.skip.portal.Portal.__init__", deny)
+    monkeypatch.setattr(
+        "torch.distributed.pipeline.sync.skip.portal.Portal.__init__", deny
+    )
 
     model = nn.Sequential(Stash(), Pop())
 

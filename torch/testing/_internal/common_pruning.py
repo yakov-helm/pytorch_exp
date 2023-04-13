@@ -6,14 +6,15 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+
 class ImplementedPruner(BasePruner):
     def __init__(self, **kwargs):
         super().__init__(defaults=kwargs)
 
     def update_mask(self, module, **kwargs):
         module.parametrizations.weight[0].mask[0] = 0
-        linear_state = self.state['linear1.weight']
-        linear_state['step_count'] = linear_state.get('step_count', 0) + 1
+        linear_state = self.state["linear1.weight"]
+        linear_state["step_count"] = linear_state.get("step_count", 0) + 1
 
 
 class MockSparseLinear(nn.Linear):
@@ -22,12 +23,11 @@ class MockSparseLinear(nn.Linear):
     It is the same as a normal Linear layer, except with a different type, as
     well as an additional from_dense method.
     """
+
     @classmethod
     def from_dense(cls, mod):
-        """
-        """
-        linear = cls(mod.in_features,
-                     mod.out_features)
+        """ """
+        linear = cls(mod.in_features, mod.out_features)
         return linear
 
 

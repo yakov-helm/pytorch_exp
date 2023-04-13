@@ -35,6 +35,7 @@ import inspect
 # - Before running the compiled code, enter the
 #   report_compile_source_on_error() context manager.
 
+
 @contextlib.contextmanager
 def report_compile_source_on_error():
     try:
@@ -51,27 +52,24 @@ def report_compile_source_on_error():
 
             if filename == "<string>" and source is not None:
                 # Don't delete the temporary file so the user can inspect it
-                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=".py") as f:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", delete=False, suffix=".py"
+                ) as f:
                     f.write(source)
                 # Create a frame.  Python doesn't let you construct
                 # FrameType directly, so just make one with compile
                 frame = tb.tb_frame
-                code = compile('__inspect_currentframe()', f.name, 'eval')
+                code = compile("__inspect_currentframe()", f.name, "eval")
                 # Python 3.8 only.  In earlier versions of Python
                 # just have less accurate name info
-                if hasattr(code, 'replace'):
+                if hasattr(code, "replace"):
                     code = code.replace(co_name=frame.f_code.co_name)
                 fake_frame = eval(
                     code,
                     frame.f_globals,
-                    {
-                        **frame.f_locals,
-                        '__inspect_currentframe': inspect.currentframe
-                    }
+                    {**frame.f_locals, "__inspect_currentframe": inspect.currentframe},
                 )
-                fake_tb = TracebackType(
-                    None, fake_frame, tb.tb_lasti, tb.tb_lineno
-                )
+                fake_tb = TracebackType(None, fake_frame, tb.tb_lasti, tb.tb_lineno)
                 stack.append(fake_tb)
             else:
                 stack.append(tb)

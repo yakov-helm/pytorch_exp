@@ -23,7 +23,9 @@ class TestExport(TestCase):
         def foo(x):
             return cond(torch.tensor(x.shape[0] > 4), true_fn, false_fn, [x])
 
-        exported_program = do_not_use_experimental_export(foo, (torch.ones(6, 4, requires_grad=True),))
+        exported_program = do_not_use_experimental_export(
+            foo, (torch.ones(6, 4, requires_grad=True),)
+        )
         print(exported_program.graph_module.graph)
 
     @unittest.skip("TypeError: <lambda>() missing 1 required positional argument")
@@ -81,9 +83,13 @@ class TestExport(TestCase):
         self.assertEqual(output, mod(*inp))
 
     @unittest.skipIf(not is_dynamo_supported(), "Dynamo not supported")
-    @config.patch(dynamic_shapes=True, capture_dynamic_output_shape_ops=True, specialize_int=True, capture_scalar_outputs=True)
+    @config.patch(
+        dynamic_shapes=True,
+        capture_dynamic_output_shape_ops=True,
+        specialize_int=True,
+        capture_scalar_outputs=True,
+    )
     def test_export_constraints(self):
-
         def f(x):
             b = x.item()
             constrain_as_size(b, min=2, max=5)
@@ -102,7 +108,12 @@ class TestExport(TestCase):
         self.assertTrue(torchdynamo.utils.same(ref, res))
 
     @unittest.skipIf(not is_dynamo_supported(), "Dynamo not supported")
-    @config.patch(dynamic_shapes=True, capture_dynamic_output_shape_ops=True, specialize_int=True, capture_scalar_outputs=True)
+    @config.patch(
+        dynamic_shapes=True,
+        capture_dynamic_output_shape_ops=True,
+        specialize_int=True,
+        capture_scalar_outputs=True,
+    )
     def test_export_constraints_error(self):
         def invalid_size(x):
             b = x.item()
@@ -110,8 +121,12 @@ class TestExport(TestCase):
             return torch.full((b, 1), 1)
 
         inp = (torch.tensor([3]),)
-        with self.assertRaisesRegex(torchdynamo.exc.UserError, "Unable to set min size"):
-            _ = torchdynamo.export(invalid_size, *inp, aten_graph=True, tracing_mode="symbolic")
+        with self.assertRaisesRegex(
+            torchdynamo.exc.UserError, "Unable to set min size"
+        ):
+            _ = torchdynamo.export(
+                invalid_size, *inp, aten_graph=True, tracing_mode="symbolic"
+            )
 
         def invalid_input(x):
             b = x.item()
@@ -120,8 +135,12 @@ class TestExport(TestCase):
 
         inp = (torch.tensor([6]),)
 
-        with self.assertRaisesRegex(torch.utils._sympy.value_ranges.ValueRangeError, "Invalid value 6 for range"):
-            _ = torchdynamo.export(invalid_input, *inp, aten_graph=True, tracing_mode="symbolic")
+        with self.assertRaisesRegex(
+            torch.utils._sympy.value_ranges.ValueRangeError, "Invalid value 6 for range"
+        ):
+            _ = torchdynamo.export(
+                invalid_input, *inp, aten_graph=True, tracing_mode="symbolic"
+            )
 
         def conflicting_constraints(x):
             b = x.item()
@@ -132,7 +151,10 @@ class TestExport(TestCase):
         inp = (torch.tensor([3]),)
 
         with self.assertRaisesRegex(torchdynamo.exc.UserError, "Invalid ranges"):
-            _ = torchdynamo.export(conflicting_constraints, *inp, aten_graph=True, tracing_mode="symbolic")
+            _ = torchdynamo.export(
+                conflicting_constraints, *inp, aten_graph=True, tracing_mode="symbolic"
+            )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_tests()

@@ -17,6 +17,7 @@ if not dist.is_available():
 
 INIT_METHOD_TEMPLATE = FILE_SCHEMA + "{file_name}"
 
+
 def dist_init(
     old_test_method=None,
     setup_rpc: bool = True,
@@ -65,7 +66,9 @@ def dist_init(
         if setup_rpc:
             if TEST_WITH_TSAN:
                 # TSAN runs much slower.
-                rpc_backend_options.rpc_timeout = rpc.constants.DEFAULT_RPC_TIMEOUT_SEC * 5
+                rpc_backend_options.rpc_timeout = (
+                    rpc.constants.DEFAULT_RPC_TIMEOUT_SEC * 5
+                )
                 rpc.constants.DEFAULT_SHUTDOWN_TIMEOUT = 60
 
             rpc.init_rpc(

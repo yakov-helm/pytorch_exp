@@ -144,10 +144,7 @@ class _OverlappingCpuLoader(_TensorLoader):
 
     def _refill(self):
         with torch.cuda.stream(self.stream):
-            while (
-                not self._done
-                and self.in_flight_data < self.inflight_threshhold
-            ):
+            while not self._done and self.in_flight_data < self.inflight_threshhold:
                 _, obj = self.items[self.idx]
                 self.idx += 1
                 tensor = self.resolve_fun(obj).detach()
@@ -205,9 +202,7 @@ def _item_size(item: WriteItem) -> int:
     return size * torch._utils._element_size(dtype)
 
 
-def _split_by_size_and_type(
-    bins, items: List[WriteItem]
-) -> List[List[WriteItem]]:
+def _split_by_size_and_type(bins, items: List[WriteItem]) -> List[List[WriteItem]]:
     if bins == 1:
         return [items]
 
@@ -270,16 +265,12 @@ def _write_files_from_queue(
                     lambda x: planner.resolve_data(x),
                 )
 
-            tensor_w = [
-                wi for wi in write_items if wi.type != WriteItemType.BYTE_IO
-            ]
+            tensor_w = [wi for wi in write_items if wi.type != WriteItemType.BYTE_IO]
             for write_item in tensor_w:
                 loader.add(_item_size(write_item), write_item)
             loader.start_loading()
 
-            bytes_w = [
-                wi for wi in write_items if wi.type == WriteItemType.BYTE_IO
-            ]
+            bytes_w = [wi for wi in write_items if wi.type == WriteItemType.BYTE_IO]
             write_results = []
 
             with open(file_name, "wb") as stream:
@@ -350,9 +341,7 @@ class FileSystemWriter(StorageWriter):
         self.path.mkdir(parents=True, exist_ok=True)
         return plan
 
-    def prepare_global_plan(
-        self, global_plan: List[SavePlan]
-    ) -> List[SavePlan]:
+    def prepare_global_plan(self, global_plan: List[SavePlan]) -> List[SavePlan]:
         new_plans = [
             dataclasses.replace(plan, storage_data=_StoragePrefix(f"__{i}_"))
             for i, plan in enumerate(global_plan)
@@ -375,9 +364,7 @@ class FileSystemWriter(StorageWriter):
 
         file_queue: queue.Queue = queue.Queue()
         if self.single_file_per_rank:
-            for bucket in _split_by_size_and_type(
-                self.thread_count, plan.items
-            ):
+            for bucket in _split_by_size_and_type(self.thread_count, plan.items):
                 file_name = gen_file()
                 file_queue.put((self.path / file_name, file_name, bucket))
         else:
@@ -424,9 +411,7 @@ class FileSystemWriter(StorageWriter):
             fut.set_result(res)
             return fut
 
-    def finish(
-        self, metadata: Metadata, results: List[List[WriteResult]]
-    ) -> None:
+    def finish(self, metadata: Metadata, results: List[List[WriteResult]]) -> None:
         storage_md = dict()
         for wr_list in results:
             storage_md.update({wr.index: wr.storage_data for wr in wr_list})
@@ -518,7 +503,5 @@ class FileSystemReader(StorageReader):
     def prepare_local_plan(self, plan: LoadPlan) -> LoadPlan:
         return plan
 
-    def prepare_global_plan(
-        self, global_plan: List[LoadPlan]
-    ) -> List[LoadPlan]:
+    def prepare_global_plan(self, global_plan: List[LoadPlan]) -> List[LoadPlan]:
         return global_plan

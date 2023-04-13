@@ -36,7 +36,7 @@ def capture(f, args):
         f,
         *copy.deepcopy(args),
         aten_graph=True,
-        tracing_mode='fake',
+        tracing_mode="fake",
     )
 
     def graph_with_interpreter(*args):
@@ -45,9 +45,11 @@ def capture(f, args):
 
     functionalized_callable = functionalize(
         graph_with_interpreter,
-        remove='mutations_and_views',
+        remove="mutations_and_views",
     )
-    gm = make_fx(functionalized_callable, tracing_mode='fake', _allow_non_fake_inputs=True)(*args)
+    gm = make_fx(
+        functionalized_callable, tracing_mode="fake", _allow_non_fake_inputs=True
+    )(*args)
     return gm
 
 
@@ -120,10 +122,10 @@ class FeedForwardBlock(nn.Module):
 
 
 def skip_condition():
-    return sys.version_info >= (3, 11) or os.name == 'nt'
+    return sys.version_info >= (3, 11) or os.name == "nt"
+
 
 class VerifierTest(TestCase):
-
     @unittest.skipIf(skip_condition(), "dynamo doesnt support 3.11")
     def test_verifier(self) -> None:
         m = ElementwiseAdd()
@@ -199,5 +201,5 @@ class VerifierTest(TestCase):
         self.assertFalse(is_valid_aten_dialect(egm))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

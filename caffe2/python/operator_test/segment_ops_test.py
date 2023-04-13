@@ -1,8 +1,3 @@
-
-
-
-
-
 from functools import partial
 from hypothesis import given, settings
 
@@ -13,6 +8,7 @@ import hypothesis.strategies as st
 from caffe2.python import core, workspace
 import caffe2.python.hypothesis_test_util as hu
 import caffe2.python.serialized_test.serialized_test_util as serial
+
 
 def sparse_lengths_sum_ref(D, I, L, normalize_by_lengths=False):
     R = np.zeros(shape=(L.size,) + D.shape[1:], dtype=np.float32)
@@ -33,6 +29,7 @@ def sparse_lengths_sum_ref(D, I, L, normalize_by_lengths=False):
 
     return [R]
 
+
 def sparse_lengths_mean_ref(D, I, L):
     return sparse_lengths_sum_ref(D, I, L, normalize_by_lengths=True)
 
@@ -40,7 +37,7 @@ def sparse_lengths_mean_ref(D, I, L):
 class TesterBase:
     def segment_reduce_op(self, data, segment_ids, reducer, indices=None):
         segments = self.split(data, segment_ids, indices)
-        output = np.zeros((len(segments), ) + data.shape[1:])
+        output = np.zeros((len(segments),) + data.shape[1:])
         for i, segment in enumerate(segments):
             if len(segment) > 0:
                 output[i] = reducer(segment)
@@ -49,13 +46,7 @@ class TesterBase:
         return output
 
     def segment_reduce_grad_op(
-        self,
-        data,
-        segment_ids,
-        reducer_grad,
-        grad_out,
-        output,
-        indices=None
+        self, data, segment_ids, reducer_grad, grad_out, output, indices=None
     ):
         segments = self.split(data, segment_ids, indices)
         segment_grads = [
@@ -66,39 +57,32 @@ class TesterBase:
 
     def _test(self, prefix, input_strategy, refs, gpu=False, **kwargs):
         tester = self
-        operator_args = kwargs.pop('operator_args', {})
-        threshold = kwargs.pop('threshold', 1e-4)
-        grad_check = kwargs.pop('grad_check', True)
+        operator_args = kwargs.pop("operator_args", {})
+        threshold = kwargs.pop("threshold", 1e-4)
+        grad_check = kwargs.pop("grad_check", True)
 
         @given(X=input_strategy, **hu.gcs)
         def test_segment_ops(self, X, gc, dc):
             if not gpu and gc.device_type > 0:
                 return
             for op_name, ref, grad_ref in refs:
-                inputs = ['input%d' % i for i in range(0, len(X))]
+                inputs = ["input%d" % i for i in range(0, len(X))]
                 op = core.CreateOperator(
-                    prefix + op_name, inputs, ['output'], **operator_args
+                    prefix + op_name, inputs, ["output"], **operator_args
                 )
-                print('Operator %s, ' % op.type, gc.device_type)
+                print("Operator %s, " % op.type, gc.device_type)
 
                 def seg_reduce(data, *args):
-                    indices, segments = (
-                        args if len(args) == 2 else (None, args[0])
-                    )
+                    indices, segments = args if len(args) == 2 else (None, args[0])
                     out = tester.segment_reduce_op(
-                        data=data,
-                        segment_ids=segments,
-                        indices=indices,
-                        reducer=ref
+                        data=data, segment_ids=segments, indices=indices, reducer=ref
                     )
-                    return (out, )
+                    return (out,)
 
                 def seg_reduce_grad(grad_out, outputs, inputs):
                     data = inputs[0]
                     args = inputs[1:]
-                    indices, segments = (
-                        args if len(args) == 2 else (None, args[0])
-                    )
+                    indices, segments = args if len(args) == 2 else (None, args[0])
                     # grad r.t. data
                     grad_val = tester.segment_reduce_grad_op(
                         data, segments, grad_ref, grad_out, outputs[0], indices
@@ -108,20 +92,21 @@ class TesterBase:
                         (grad_val, indices) if indices is not None else grad_val
                     )
                     # other inputs don't have gradient
-                    return (data_grad_slice, ) + (None, ) * (len(inputs) - 1)
+                    return (data_grad_slice,) + (None,) * (len(inputs) - 1)
 
                 kwargs = {}
                 if grad_check:
-                    kwargs['output_to_grad'] = 'output'
-                    kwargs['grad_reference'] = seg_reduce_grad
+                    kwargs["output_to_grad"] = "output"
+                    kwargs["grad_reference"] = seg_reduce_grad
                 self.assertReferenceChecks(
                     device_option=gc,
                     op=op,
                     inputs=X,
                     reference=seg_reduce,
                     threshold=threshold,
-                    **kwargs
+                    **kwargs,
                 )
+
         return test_segment_ops
 
 
@@ -144,9 +129,10 @@ class SegmentsTester(TesterBase):
         K = max(segment_ids) + 1
         outputs = [
             np.zeros(
-                (np.count_nonzero(segment_ids == seg_id), ) + data.shape[1:],
-                dtype=data.dtype
-            ) for seg_id in range(0, K)
+                (np.count_nonzero(segment_ids == seg_id),) + data.shape[1:],
+                dtype=data.dtype,
+            )
+            for seg_id in range(0, K)
         ]
         counts = np.zeros(K, dtype=int)
         for i, seg_id in enumerate(segment_ids):
@@ -156,8 +142,8 @@ class SegmentsTester(TesterBase):
         return outputs
 
     def unsplit(self, extra_shape, inputs, segment_ids):
-        """ Inverse operation to `split`, with indices=None """
-        output = np.zeros((len(segment_ids), ) + extra_shape)
+        """Inverse operation to `split`, with indices=None"""
+        output = np.zeros((len(segment_ids),) + extra_shape)
         if len(segment_ids) == 0:
             return output
         K = max(segment_ids) + 1
@@ -172,8 +158,8 @@ class LengthsTester(TesterBase):
     def split(self, data, lengths, indices=None):
         K = len(lengths)
         outputs = [
-            np.zeros((lengths[seg_id], ) + data.shape[1:],
-                     dtype=data.dtype) for seg_id in range(0, K)
+            np.zeros((lengths[seg_id],) + data.shape[1:], dtype=data.dtype)
+            for seg_id in range(0, K)
         ]
         start = 0
         for i in range(0, K):
@@ -187,7 +173,7 @@ class LengthsTester(TesterBase):
 
     def unsplit(self, extra_shape, inputs, lengths):
         N = sum(lengths)
-        output = np.zeros((N, ) + extra_shape)
+        output = np.zeros((N,) + extra_shape)
         K = len(lengths)
         assert len(inputs) == K
         current = 0
@@ -199,11 +185,7 @@ class LengthsTester(TesterBase):
 
 
 def sum_grad(grad_out, outputs, inputs):
-    return np.repeat(
-        np.expand_dims(grad_out, axis=0),
-        inputs[0].shape[0],
-        axis=0
-    )
+    return np.repeat(np.expand_dims(grad_out, axis=0), inputs[0].shape[0], axis=0)
 
 
 def logsumexp(x):
@@ -213,9 +195,7 @@ def logsumexp(x):
 def logsumexp_grad(grad_out, outputs, inputs):
     sum_exps = np.sum(np.exp(inputs[0]), axis=0)
     return np.repeat(
-        np.expand_dims(grad_out / sum_exps, 0),
-        inputs[0].shape[0],
-        axis=0
+        np.expand_dims(grad_out / sum_exps, 0), inputs[0].shape[0], axis=0
     ) * np.exp(inputs[0])
 
 
@@ -229,9 +209,7 @@ def mean(x):
 
 def mean_grad(grad_out, outputs, inputs):
     return np.repeat(
-        np.expand_dims(grad_out / inputs[0].shape[0], 0),
-        inputs[0].shape[0],
-        axis=0
+        np.expand_dims(grad_out / inputs[0].shape[0], 0), inputs[0].shape[0], axis=0
     )
 
 
@@ -262,26 +240,26 @@ def max_grad(grad_out, outputs, inputs):
 
 
 REFERENCES_ALL = [
-    ('Sum', partial(np.sum, axis=0), sum_grad),
-    ('Mean', partial(np.mean, axis=0), mean_grad),
+    ("Sum", partial(np.sum, axis=0), sum_grad),
+    ("Mean", partial(np.mean, axis=0), mean_grad),
 ]
 
 REFERENCES_SORTED = [
-    ('RangeSum', partial(np.sum, axis=0), sum_grad),
-    ('RangeLogSumExp', logsumexp, logsumexp_grad),
+    ("RangeSum", partial(np.sum, axis=0), sum_grad),
+    ("RangeLogSumExp", logsumexp, logsumexp_grad),
     # gradient is the same as sum
-    ('RangeLogMeanExp', logmeanexp, logsumexp_grad),
-    ('RangeMean', mean, mean_grad),
-    ('RangeMax', max_fwd, max_grad),
+    ("RangeLogMeanExp", logmeanexp, logsumexp_grad),
+    ("RangeMean", mean, mean_grad),
+    ("RangeMax", max_fwd, max_grad),
 ]
 
 REFERENCES_LENGTHS_ONLY = [
-    ('Max', partial(np.amax, axis=0), max_grad),
+    ("Max", partial(np.amax, axis=0), max_grad),
 ]
 
 
 def sparse_lengths_weighted_sum_ref(D, W, I, L):
-    R = np.zeros(shape=(len(L), ) + D.shape[1:], dtype=D.dtype)
+    R = np.zeros(shape=(len(L),) + D.shape[1:], dtype=D.dtype)
     line = 0
     for g in range(len(L)):
         for _ in range(L[g]):
@@ -293,10 +271,9 @@ def sparse_lengths_weighted_sum_ref(D, W, I, L):
     return [R]
 
 
-def sparse_lengths_weighted_sum_grad_ref(
-        GO, fwd_out, fwd_in, grad_on_weights=False):
+def sparse_lengths_weighted_sum_grad_ref(GO, fwd_out, fwd_in, grad_on_weights=False):
     D, W, I, L = fwd_in
-    GI = np.zeros(shape=(len(I), ) + D.shape[1:], dtype=D.dtype)
+    GI = np.zeros(shape=(len(I),) + D.shape[1:], dtype=D.dtype)
     GW = np.zeros(shape=W.shape, dtype=W.dtype) if grad_on_weights else None
     line = 0
     for g in range(len(L)):
@@ -318,29 +295,21 @@ def sparse_lengths_weighted_sum_grad_ref(
 class TestSegmentOps(hu.HypothesisTestCase):
     def test_sorted_segment_ops(self):
         SegmentsTester()._test(
-            'SortedSegment',
-            hu.segmented_tensor(
-                dtype=np.float32,
-                is_sorted=True,
-                allow_empty=True
-            ),
-            REFERENCES_ALL + REFERENCES_SORTED
+            "SortedSegment",
+            hu.segmented_tensor(dtype=np.float32, is_sorted=True, allow_empty=True),
+            REFERENCES_ALL + REFERENCES_SORTED,
         )(self)
 
     def test_unsorted_segment_ops(self):
         SegmentsTester()._test(
-            'UnsortedSegment',
-            hu.segmented_tensor(
-                dtype=np.float32,
-                is_sorted=False,
-                allow_empty=True
-            ),
+            "UnsortedSegment",
+            hu.segmented_tensor(dtype=np.float32, is_sorted=False, allow_empty=True),
             REFERENCES_ALL,
         )(self)
 
     def test_unsorted_segment_ops_gpu(self):
         SegmentsTester()._test(
-            'UnsortedSegment',
+            "UnsortedSegment",
             hu.segmented_tensor(
                 dtype=np.float32,
                 is_sorted=False,
@@ -353,34 +322,27 @@ class TestSegmentOps(hu.HypothesisTestCase):
 
     def test_sparse_sorted_segment_ops(self):
         SegmentsTester()._test(
-            'SparseSortedSegment',
+            "SparseSortedSegment",
             hu.sparse_segmented_tensor(
-                dtype=np.float32,
-                is_sorted=True,
-                allow_empty=True
+                dtype=np.float32, is_sorted=True, allow_empty=True
             ),
-            REFERENCES_ALL
+            REFERENCES_ALL,
         )(self)
 
     def test_sparse_unsorted_segment_ops(self):
         SegmentsTester()._test(
-            'SparseUnsortedSegment',
+            "SparseUnsortedSegment",
             hu.sparse_segmented_tensor(
-                dtype=np.float32,
-                is_sorted=False,
-                allow_empty=True
+                dtype=np.float32, is_sorted=False, allow_empty=True
             ),
-            REFERENCES_ALL
+            REFERENCES_ALL,
         )(self)
 
     def test_lengths_ops(self):
         LengthsTester()._test(
-            'Lengths',
+            "Lengths",
             hu.lengths_tensor(
-                dtype=np.float32,
-                min_value=1,
-                max_value=5,
-                allow_empty=True
+                dtype=np.float32, min_value=1, max_value=5, allow_empty=True
             ),
             REFERENCES_ALL + REFERENCES_LENGTHS_ONLY,
         )(self)
@@ -388,7 +350,7 @@ class TestSegmentOps(hu.HypothesisTestCase):
     def test_sparse_lengths_ops(self):
         for itype in [np.int32, np.int64]:
             LengthsTester()._test(
-                'SparseLengths',
+                "SparseLengths",
                 hu.sparse_lengths_tensor(
                     dtype=np.float32,
                     min_value=1,
@@ -412,11 +374,7 @@ class TestSegmentOps(hu.HypothesisTestCase):
     def test_sorted_segment_range_mean(self, gc, dc):
         X = np.random.rand(6, 32, 12).astype(np.float32)
         segments = np.array([0, 0, 1, 1, 2, 3]).astype(np.int32)
-        op = core.CreateOperator(
-            "SortedSegmentRangeMean",
-            ["X", "segments"],
-            "out"
-        )
+        op = core.CreateOperator("SortedSegmentRangeMean", ["X", "segments"], "out")
         self.assertDeviceChecks(dc, op, [X, segments], [0])
         self.assertGradientChecks(gc, op, [X, segments], 0, [0])
 
@@ -426,9 +384,7 @@ class TestSegmentOps(hu.HypothesisTestCase):
         X = np.random.rand(7, 32, 12).astype(np.float32)
         segments = np.array([0, 0, 1, 1, 2, 2, 3]).astype(np.int32)
         op = core.CreateOperator(
-            "SortedSegmentRangeLogMeanExp",
-            ["X", "segments"],
-            "out"
+            "SortedSegmentRangeLogMeanExp", ["X", "segments"], "out"
         )
         self.assertDeviceChecks(dc, op, [X, segments], [0])
         self.assertGradientChecks(gc, op, [X, segments], 0, [0])
@@ -448,14 +404,14 @@ class TestSegmentOps(hu.HypothesisTestCase):
             max_value=5,
             allow_empty=True,
         ),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_lengths_sum(self, inputs, gc, dc):
         X, Y = inputs
         op = core.CreateOperator("LengthsSum", ["X", "Y"], "out")
 
         def ref(D, L):
-            R = np.zeros(shape=(L.size, ) + D.shape[1:], dtype=D.dtype)
+            R = np.zeros(shape=(L.size,) + D.shape[1:], dtype=D.dtype)
             line = 0
             for g in range(L.size):
                 for _ in range(L[g]):
@@ -472,19 +428,16 @@ class TestSegmentOps(hu.HypothesisTestCase):
 
     @serial.given(
         inputs=hu.sparse_lengths_tensor(
-            dtype=np.float32,
-            min_value=1,
-            max_value=5,
-            allow_empty=True
+            dtype=np.float32, min_value=1, max_value=5, allow_empty=True
         ),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_sparse_lengths_sum(self, inputs, gc, dc):
         X, Y, Z = inputs
         op = core.CreateOperator("SparseLengthsSum", ["X", "Y", "Z"], "out")
 
         def ref(D, I, L):
-            R = np.zeros(shape=(L.size, ) + D.shape[1:], dtype=D.dtype)
+            R = np.zeros(shape=(L.size,) + D.shape[1:], dtype=D.dtype)
             line = 0
             for g in range(L.size):
                 for _ in range(L[g]):
@@ -506,14 +459,14 @@ class TestSegmentOps(hu.HypothesisTestCase):
             max_value=5,
             allow_empty=True,
         ),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_lengths_mean(self, inputs, gc, dc):
         X, Y = inputs
         op = core.CreateOperator("LengthsMean", ["X", "Y"], "out")
 
         def ref(D, L):
-            R = np.zeros(shape=(L.size, ) + D.shape[1:], dtype=D.dtype)
+            R = np.zeros(shape=(L.size,) + D.shape[1:], dtype=D.dtype)
             line = 0
             for g in range(L.size):
                 for _ in range(L[g]):
@@ -536,19 +489,16 @@ class TestSegmentOps(hu.HypothesisTestCase):
 
     @serial.given(
         inputs=hu.sparse_lengths_tensor(
-            dtype=np.float32,
-            min_value=1,
-            max_value=5,
-            allow_empty=True
+            dtype=np.float32, min_value=1, max_value=5, allow_empty=True
         ),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_sparse_lengths_mean(self, inputs, gc, dc):
         X, Y, Z = inputs
         op = core.CreateOperator("SparseLengthsMean", ["X", "Y", "Z"], "out")
 
         def ref(D, I, L):
-            R = np.zeros(shape=(L.size, ) + D.shape[1:], dtype=D.dtype)
+            R = np.zeros(shape=(L.size,) + D.shape[1:], dtype=D.dtype)
             line = 0
             for g in range(L.size):
                 for _ in range(L[g]):
@@ -573,16 +523,12 @@ class TestSegmentOps(hu.HypothesisTestCase):
     @serial.given(
         grad_on_weights=st.booleans(),
         inputs=hu.sparse_lengths_tensor(
-            dtype=np.float32,
-            min_value=1,
-            max_value=5,
-            allow_empty=True
+            dtype=np.float32, min_value=1, max_value=5, allow_empty=True
         ),
         seed=st.integers(min_value=0, max_value=100),
-        **hu.gcs
+        **hu.gcs,
     )
-    def test_sparse_lengths_weighted_sum(
-            self, grad_on_weights, inputs, seed, gc, dc):
+    def test_sparse_lengths_weighted_sum(self, grad_on_weights, inputs, seed, gc, dc):
         D, I, L = inputs
 
         np.random.seed(int(seed))
@@ -592,7 +538,8 @@ class TestSegmentOps(hu.HypothesisTestCase):
             "SparseLengthsWeightedSum",
             ["D", "W", "I", "L"],
             "out",
-            grad_on_weights=grad_on_weights)
+            grad_on_weights=grad_on_weights,
+        )
         self.assertDeviceChecks(dc, op, [D, W, I, L], [0])
         self.assertReferenceChecks(
             device_option=gc,
@@ -600,10 +547,10 @@ class TestSegmentOps(hu.HypothesisTestCase):
             inputs=[D, W, I, L],
             reference=sparse_lengths_weighted_sum_ref,
             threshold=1e-4,
-            output_to_grad='out',
+            output_to_grad="out",
             grad_reference=partial(
-                sparse_lengths_weighted_sum_grad_ref,
-                grad_on_weights=grad_on_weights),
+                sparse_lengths_weighted_sum_grad_ref, grad_on_weights=grad_on_weights
+            ),
         )
         self.assertGradientChecks(gc, op, [D, W, I, L], 0, [0])
         if grad_on_weights:
@@ -649,37 +596,34 @@ class TestSegmentOps(hu.HypothesisTestCase):
         D = np.random.rand(50, 3, 4, 5).astype(np.float32)
         I = (np.random.randint(0, 10000, size=10) + 10000).astype(np.int64)
         L = np.asarray([4, 4, 2]).astype(np.int32)
-        op = core.CreateOperator(
-            "SparseLengthsSum",
-            ["D", "I", "L"],
-            "out")
-        workspace.FeedBlob('D', D)
-        workspace.FeedBlob('I', I)
-        workspace.FeedBlob('L', L)
+        op = core.CreateOperator("SparseLengthsSum", ["D", "I", "L"], "out")
+        workspace.FeedBlob("D", D)
+        workspace.FeedBlob("I", I)
+        workspace.FeedBlob("L", L)
         with self.assertRaises(RuntimeError):
             workspace.RunOperatorOnce(op)
 
     @serial.given(**hu.gcs_cpu_only)
-    def test_sparse_lengths_positional_weighted_sum(
-            self, gc, dc):
+    def test_sparse_lengths_positional_weighted_sum(self, gc, dc):
         D = np.random.rand(50, 3, 4, 5).astype(np.float32)
         W = np.random.rand(50).astype(np.float32)
         indices = np.random.randint(0, 50, size=10).astype(np.int64)
         L = np.asarray([4, 4, 2]).astype(np.int32)
         op = core.CreateOperator(
-            "SparseLengthsPositionalWeightedSum",
-            ["D", "W", "indices", "L"],
-            "out")
+            "SparseLengthsPositionalWeightedSum", ["D", "W", "indices", "L"], "out"
+        )
 
         def ref_sparse(D, W, indices, L):
             workspace.FeedBlob("L", L)
             lengths_range_fill_op = core.CreateOperator(
-                "LengthsRangeFill", ["L"], ["L_pos_seq"])
+                "LengthsRangeFill", ["L"], ["L_pos_seq"]
+            )
             workspace.RunOperatorOnce(lengths_range_fill_op)
 
             workspace.FeedBlob("W", W)
             gather_op = core.CreateOperator(
-                "Gather", ["W", "L_pos_seq"], ["W_gathered"])
+                "Gather", ["W", "L_pos_seq"], ["W_gathered"]
+            )
             workspace.RunOperatorOnce(gather_op)
 
             workspace.FeedBlob("D", D)
@@ -687,20 +631,20 @@ class TestSegmentOps(hu.HypothesisTestCase):
             sparse_op = core.CreateOperator(
                 "SparseLengthsWeightedSum",
                 ["D", "W_gathered", "indices", "L"],
-                "out_ref")
+                "out_ref",
+            )
             workspace.RunOperatorOnce(sparse_op)
 
             return (workspace.FetchBlob("out_ref"),)
 
-        self.assertReferenceChecks(
-            gc, op, [D, W, indices, L], ref_sparse)
+        self.assertReferenceChecks(gc, op, [D, W, indices, L], ref_sparse)
 
     @unittest.skipIf(not workspace.has_gpu_support, "No GPU support")
     @given(
         input=hu.tensor(min_dim=2, max_dim=2, max_value=20, dtype=np.float16),
         data_strategy=st.data(),
         is_mean=st.booleans(),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=None)
     def test_sparse_lengths_fp16(self, input, data_strategy, is_mean, gc, dc):
@@ -725,51 +669,57 @@ class TestSegmentOps(hu.HypothesisTestCase):
             op = core.CreateOperator(
                 "SparseLengthsMean", ["input", "indices", "lengths"], "out"
             )
-            self.assertReferenceChecks(gc, op, [input, indices, lengths], sparse_lengths_mean_ref)
+            self.assertReferenceChecks(
+                gc, op, [input, indices, lengths], sparse_lengths_mean_ref
+            )
 
         else:
             op = core.CreateOperator(
                 "SparseLengthsSum", ["input", "indices", "lengths"], "out"
             )
-            self.assertReferenceChecks(gc, op, [input, indices, lengths], sparse_lengths_sum_ref)
+            self.assertReferenceChecks(
+                gc, op, [input, indices, lengths], sparse_lengths_sum_ref
+            )
 
-   # @given(
-   #     inputs=hu.lengths_tensor(
-   #         dtype=np.float32,
-   #         min_value=1,
-   #         max_value=5,
-   #         min_dim=1,
-   #         max_dim=1,
-   #         allow_empty=False,
-   #     ),
-   #     **hu.gcs
-   # )
-   # def test_lengths_max_gpu(self, inputs, gc, dc):
-   #     def lengths_max_ref(I, L):
-   #         R = np.zeros(shape=(len(L)), dtype=I.dtype)
-   #         line = 0
-   #         for g in range(len(L)):
-   #             for i in range(L[g]):
-   #                 if i == 0:
-   #                     R[g] = I[line]
-   #                 else:
-   #                     R[g] = max(R[g], I[line])
-   #                 line += 1
-   #         return [R]
 
-   #     X, lengths = inputs
-   #     op = core.CreateOperator("LengthsMax", ["X", "lengths"], "out")
-   #     self.assertDeviceChecks(dc, op, [X, lengths], [0])
-   #     self.assertReferenceChecks(
-   #         device_option=gc,
-   #         op=op,
-   #         inputs=[X, lengths],
-   #         reference=lengths_max_ref,
-   #         threshold=1e-4,
-   #         output_to_grad='out',
-   #     )
+# @given(
+#     inputs=hu.lengths_tensor(
+#         dtype=np.float32,
+#         min_value=1,
+#         max_value=5,
+#         min_dim=1,
+#         max_dim=1,
+#         allow_empty=False,
+#     ),
+#     **hu.gcs
+# )
+# def test_lengths_max_gpu(self, inputs, gc, dc):
+#     def lengths_max_ref(I, L):
+#         R = np.zeros(shape=(len(L)), dtype=I.dtype)
+#         line = 0
+#         for g in range(len(L)):
+#             for i in range(L[g]):
+#                 if i == 0:
+#                     R[g] = I[line]
+#                 else:
+#                     R[g] = max(R[g], I[line])
+#                 line += 1
+#         return [R]
+
+#     X, lengths = inputs
+#     op = core.CreateOperator("LengthsMax", ["X", "lengths"], "out")
+#     self.assertDeviceChecks(dc, op, [X, lengths], [0])
+#     self.assertReferenceChecks(
+#         device_option=gc,
+#         op=op,
+#         inputs=[X, lengths],
+#         reference=lengths_max_ref,
+#         threshold=1e-4,
+#         output_to_grad='out',
+#     )
 
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

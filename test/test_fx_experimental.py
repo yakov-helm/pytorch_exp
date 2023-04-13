@@ -537,7 +537,9 @@ class TestFXExperimental(JitTestCase):
             def __init__(self):
                 super().__init__()
                 self.conv = torch.nn.Conv2d(32, 64, 3, stride=2)
-                self.bn = torch.nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=False)
+                self.bn = torch.nn.BatchNorm2d(
+                    64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=False
+                )
 
             def forward(self, x):
                 x = self.conv(x)
@@ -593,27 +595,30 @@ class TestFXExperimental(JitTestCase):
 
             def forward(self, x):
                 emb = self.emb(x)
-                emb = emb + torch.arange(emb.shape[-1], dtype=torch.float, device=emb.device)
+                emb = emb + torch.arange(
+                    emb.shape[-1], dtype=torch.float, device=emb.device
+                )
                 lol = self.layernorm(emb)
                 return torch.relu(lol) if lol.shape[0] < 30 else torch.sigmoid(lol)
 
         mttm = MetaTracerTestModule()
         for BS in [15, 35]:
             x = torch.zeros(BS, dtype=torch.long).random_(42)
-            meta_args = {'x' : x.to(device='meta')}
-            gm = torch.fx.experimental.meta_tracer.symbolic_trace(mttm, meta_args=meta_args)
+            meta_args = {"x": x.to(device="meta")}
+            gm = torch.fx.experimental.meta_tracer.symbolic_trace(
+                mttm, meta_args=meta_args
+            )
             torch.testing.assert_close(gm(x), mttm(x))
 
             # Test serialization/deserialization
             with tempfile.TemporaryDirectory() as tmp_dir:
-                with open(f'{tmp_dir}/meta_module.pkl', 'wb') as f:
+                with open(f"{tmp_dir}/meta_module.pkl", "wb") as f:
                     pickle.dump(gm, f)
 
-                with open(f'{tmp_dir}/meta_module.pkl', 'rb') as f:
+                with open(f"{tmp_dir}/meta_module.pkl", "rb") as f:
                     loaded = pickle.load(f)
 
                 torch.testing.assert_close(loaded(x), mttm(x))
-
 
     def test_call_to_assert_with_msg(self):
         class M(torch.nn.Module):
@@ -765,7 +770,7 @@ terrible spacing
     def test_split_module_kwargs_expansion(self):
         class ModuleWithKwargsExpansion(torch.nn.Module):
             def forward(self, x, **kwargs):
-                return x + kwargs['foo']
+                return x + kwargs["foo"]
 
         mod = ModuleWithKwargsExpansion()
         traced = torch.fx.symbolic_trace(mod)
@@ -810,7 +815,7 @@ terrible spacing
                 return x
 
         mtt = ModelToTrace()
-        traced = torch.fx.symbolic_trace(mtt, concrete_args={'targets': None})
+        traced = torch.fx.symbolic_trace(mtt, concrete_args={"targets": None})
 
         split = split_module(traced, mtt, lambda node: 0)
 
@@ -1042,7 +1047,7 @@ class {test_classname}(torch.nn.Module):
                         ("call_function", operator.add),
                         ("call_function", torch.flatten),
                         ("output", "output"),
-                    }
+                    },
                 )
 
         # Smoke test torchscript compilation since now we're emitting type annotations
@@ -1087,7 +1092,12 @@ class {test_classname}(torch.nn.Module):
             y: float
 
         class MyModule(torch.nn.Module):
-            def forward(self, inp: Tuple[CustomType, torch.Tensor], inp2: List[CustomType], inp3: CustomNamedTuple):
+            def forward(
+                self,
+                inp: Tuple[CustomType, torch.Tensor],
+                inp2: List[CustomType],
+                inp3: CustomNamedTuple,
+            ):
                 inp_0 = inp[0]
                 inp_1 = inp[1]
                 inp2_0 = inp2[0]
@@ -1107,7 +1117,9 @@ class {test_classname}(torch.nn.Module):
 
         for node in my_module_traced.graph.nodes:
             if node.target == operator.getitem:
-                self.assertIsNotNone(node.type, f"Node {node} should be annotated but is not.")
+                self.assertIsNotNone(
+                    node.type, f"Node {node} should be annotated but is not."
+                )
 
     def test_subgraph_uniquename(self):
         class MyModule(torch.nn.Module):
@@ -1162,20 +1174,18 @@ class {test_classname}(torch.nn.Module):
 
         part_idx = 0
 
-        def split_callback(n : torch.fx.Node):
+        def split_callback(n: torch.fx.Node):
             nonlocal part_idx
-            if (n.op, n.target) == ('call_module', 'lin'):
+            if (n.op, n.target) == ("call_module", "lin"):
                 part_idx += 1
             return part_idx
 
         # split module in module with submodules
-        qualname_map : Dict[str, str] = {}
+        qualname_map: Dict[str, str] = {}
         module_with_submodules = split_module(
             my_module_traced, my_module, split_callback, qualname_map
         )
-        expected_qualname_map = {
-            'submod_1.lin': 'lin', 'submod_2.lin': 'lin'
-        }
+        expected_qualname_map = {"submod_1.lin": "lin", "submod_2.lin": "lin"}
         self.assertEqual(qualname_map, expected_qualname_map)
 
     def test_traceable_function_with_nonstandard_name(self):
@@ -1196,7 +1206,9 @@ class {test_classname}(torch.nn.Module):
                 self.register_buffer("attr3", torch.ones(2, dtype=torch.int32))
 
             def forward(self, x):
-                return self.linear(self.seq(self.W + self.attr + self.attr2 + self.attr3 + x))
+                return self.linear(
+                    self.seq(self.W + self.attr + self.attr2 + self.attr3 + x)
+                )
 
         mod = symbolic_trace(Test())
         module_name = "Foo"
@@ -1508,7 +1520,15 @@ class TestNormalizeOperators(JitTestCase):
     @ops(op_db, allowed_dtypes=(torch.float,))
     def test_normalize_operator_exhaustive(self, device, dtype, op):
         # These ops currently don't trace in FX for various reasons (i.e. they take a list of tensors)
-        fx_fail = {"cat", "stack", "hstack", "vstack", "dstack", "linalg.multi_dot", "_upsample_bilinear2d_aa"}
+        fx_fail = {
+            "cat",
+            "stack",
+            "hstack",
+            "vstack",
+            "dstack",
+            "linalg.multi_dot",
+            "_upsample_bilinear2d_aa",
+        }
         sample_inputs_itr = op.sample_inputs(device, dtype, requires_grad=False)
         if isinstance(op.op, torch._ops.OpOverload):
             self.skipTest("normalize operator doesn't work on torch.ops")
@@ -1641,9 +1661,15 @@ class TestModule(torch.nn.Module):
         for target in [torch.ops.aten.resize_as_.default, torch.ops.aten.resize_as_]:
             inp1 = torch.rand([1])
             inp2 = torch.rand([4])
-            args, kwargs = normalize_function(target, (inp1,), {"the_template": inp2}, normalize_to_only_use_kwargs=True)
+            args, kwargs = normalize_function(
+                target,
+                (inp1,),
+                {"the_template": inp2},
+                normalize_to_only_use_kwargs=True,
+            )
             self.assertIs(kwargs["input"], inp1)
             self.assertIs(kwargs["the_template"], inp2)
+
 
 instantiate_device_type_tests(TestNormalizeOperators, globals())
 

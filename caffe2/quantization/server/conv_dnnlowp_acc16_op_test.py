@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -9,7 +7,7 @@ from caffe2.python import core, dyndep, utils, workspace
 from caffe2.quantization.server import utils as dnnlowp_utils
 from caffe2.quantization.server.dnnlowp_test_utils import (
     check_quantized_results_close,
-    run_conv_or_fc
+    run_conv_or_fc,
 )
 from hypothesis import assume, given, settings
 
@@ -42,7 +40,7 @@ class DNNLowPOpConvAcc16OpTest(hu.HypothesisTestCase):
         share_col_buffer=st.booleans(),
         preserve_activation_sparsity=st.booleans(),
         preserve_weight_sparsity=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(deadline=10000)
     def test_dnnlowp_conv_acc16_int(
@@ -144,7 +142,10 @@ class DNNLowPOpConvAcc16OpTest(hu.HypothesisTestCase):
                 net.Proto().op.extend([quantize])
 
             if do_quantize_weight:
-                int8_given_tensor_fill, w_q_param = dnnlowp_utils.create_int8_given_tensor_fill(
+                (
+                    int8_given_tensor_fill,
+                    w_q_param,
+                ) = dnnlowp_utils.create_int8_given_tensor_fill(
                     W, "W_q", preserve_weight_sparsity
                 )
                 net.Proto().op.extend([int8_given_tensor_fill])
@@ -219,7 +220,7 @@ class DNNLowPOpConvAcc16OpTest(hu.HypothesisTestCase):
         share_col_buffer=st.booleans(),
         preserve_activation_sparsity=st.booleans(),
         preserve_weight_sparsity=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(deadline=10000)
     def test_dnnlowp_conv_acc16_outlier(
@@ -316,7 +317,10 @@ class DNNLowPOpConvAcc16OpTest(hu.HypothesisTestCase):
                 X_min, X_max, preserve_activation_sparsity
             )
             if do_quantize_weight:
-                int8_given_tensor_fill, w_q_param = dnnlowp_utils.create_int8_given_tensor_fill(
+                (
+                    int8_given_tensor_fill,
+                    w_q_param,
+                ) = dnnlowp_utils.create_int8_given_tensor_fill(
                     W, "W_q", preserve_weight_sparsity
                 )
                 init_net.Proto().op.extend([int8_given_tensor_fill])

@@ -30,6 +30,7 @@ def _view_with_sharding_dim_change(
     else:
         return tensor.view(shape)
 
+
 def _infer_dtensor_stride(
     local_tensor: torch.Tensor, mesh: DeviceMesh, placements: Sequence[Placement]
 ) -> Tuple[int, ...]:
@@ -116,7 +117,9 @@ class _ViewAndRedistribute(torch.autograd.Function):
                 shape=torch.Size(shape),
                 dtype=new_local_tensor.dtype,
                 requires_grad=new_local_tensor.requires_grad,
-                stride=_infer_dtensor_stride(new_local_tensor, device_mesh, new_sharding_placement),
+                stride=_infer_dtensor_stride(
+                    new_local_tensor, device_mesh, new_sharding_placement
+                ),
             )
 
     @staticmethod
@@ -135,7 +138,9 @@ class _ViewAndRedistribute(torch.autograd.Function):
                 shape=previous_global_shape,
                 dtype=grad_output.dtype,
                 requires_grad=grad_output.requires_grad,
-                stride=_infer_dtensor_stride(new_local_tensor, previous_device_mesh, previous_placement),
+                stride=_infer_dtensor_stride(
+                    new_local_tensor, previous_device_mesh, previous_placement
+                ),
             ),
             None,
             None,

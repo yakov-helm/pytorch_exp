@@ -9,19 +9,20 @@ from typing import List, Union, Dict
 
 # Copied from torchgen/model.py
 class ScalarType(Enum):
-    u8 = auto()     # torch.uint8
-    i8 = auto()     # torch.int8
-    i16 = auto()    # torch.int16 or torch.short
-    i32 = auto()    # torch.int32 or torch.int
-    i64 = auto()    # torch.int64 or torch.long
-    f16 = auto()    # torch.float16 or torch.half
-    f32 = auto()    # torch.float32 or torch.float
-    f64 = auto()    # torch.float64 or torch.double
-    c32 = auto()    # torch.complex32
-    c64 = auto()    # torch.complex64 or torch.cfloat
-    c128 = auto()   # torch.complex128 or torch.cdouble
-    b8 = auto()     # torch.bool
-    bf16 = auto()   # torch.bfloat16
+    u8 = auto()  # torch.uint8
+    i8 = auto()  # torch.int8
+    i16 = auto()  # torch.int16 or torch.short
+    i32 = auto()  # torch.int32 or torch.int
+    i64 = auto()  # torch.int64 or torch.long
+    f16 = auto()  # torch.float16 or torch.half
+    f32 = auto()  # torch.float32 or torch.float
+    f64 = auto()  # torch.float64 or torch.double
+    c32 = auto()  # torch.complex32
+    c64 = auto()  # torch.complex64 or torch.cfloat
+    c128 = auto()  # torch.complex128 or torch.cdouble
+    b8 = auto()  # torch.bool
+    bf16 = auto()  # torch.bfloat16
+
 
 # Copied from torch/_C/__init__.pyi.in
 class Layout(Enum):
@@ -51,10 +52,12 @@ class Device:
     type: str
     index: int
 
+
 @dataclass
 class SymInt:  # Union, ONLY EXACTLY ONE of the following fields can be set
     as_int: int = None
     as_sym: str = None
+
 
 # !!! To support t.item(), we need to introduce SymFloat
 # @dataclass
@@ -69,14 +72,16 @@ class SymInt:  # Union, ONLY EXACTLY ONE of the following fields can be set
 # In another word, this field is an reference to the tensor, not the tensor itself.
 @dataclass
 class TensorArgument:
-    name: str   # identifier of the tensor, which must exist in graph's tensor_values
+    name: str  # identifier of the tensor, which must exist in graph's tensor_values
+
 
 # This is a SymInt Arugment used in the args of an node
 # We intentionally don't store the SymInt's value here, as the same SymInt argument can be used in multiple nodes
 # This field is an reference to the SymInt
 @dataclass
 class SymIntArgument:
-    name: str   # identifier of the symint, which must exist in graph's symint_values
+    name: str  # identifier of the symint, which must exist in graph's symint_values
+
 
 #  Permissible return types for operators
 # !!! Notice: this assumes that a node can only return Tensor(s) and Symint(s), and not other int/float/bool types...
@@ -100,26 +105,32 @@ class Argument:  # Union, ONLY EXACTLY ONE of the following fields can be set
     as_none: bool = None
 
     as_tensor: TensorArgument = None
-    as_tensors: List[TensorArgument] = None   # Tensor[], used by aten.cat, and condition ops
+    as_tensors: List[
+        TensorArgument
+    ] = None  # Tensor[], used by aten.cat, and condition ops
 
-    as_symint: SymIntArgument = None         # Symint can be an argument, there are symint in native_function.yaml
-    as_symints: List[SymIntArgument] = None   # Symint[] can be an argement, there are symint[] in native_function.yaml
+    as_symint: SymIntArgument = (
+        None  # Symint can be an argument, there are symint in native_function.yaml
+    )
+    as_symints: List[
+        SymIntArgument
+    ] = None  # Symint[] can be an argement, there are symint[] in native_function.yaml
 
     as_bool: bool = None
 
     # !!! There are use of bool[3] in canonical aten ops, consider if we can simplify this
-    as_bools: List[bool] = None     # for bool[]
+    as_bools: List[bool] = None  # for bool[]
 
     as_int: int = None
-    as_ints: List[int] = None      # for int[]
+    as_ints: List[int] = None  # for int[]
     as_float: float = None
-    as_floats: List[float] = None    # for float[]
+    as_floats: List[float] = None  # for float[]
     as_str: str = None
     # List[str],        # !!! There is no str[] in native_function.yaml. Consider if this is needed for expressiveness
 
     # Graph,            # !!! Consider how to handle condition op, which need to pass in a graph for the branch
     # List[Graph],      # !!! What about list of graphs? Do we need this?
-    as_gm: "GraphModule" = None     # !!! ATM, torch.cond models branch as GraphModule
+    as_gm: "GraphModule" = None  # !!! ATM, torch.cond models branch as GraphModule
 
     # !!! Following types doesn't have a list version in native_function.yaml
     as_scalar_type: ScalarType = None
@@ -170,8 +181,8 @@ class Buffer:
 @dataclass
 class ExternalBuffer:
     location: str
-    offset: str     # !!! Consider using int, but int has int_max limitation
-    length: str     # !!! Consider using int, but int has int_max limitation
+    offset: str  # !!! Consider using int, but int has int_max limitation
+    length: str  # !!! Consider using int, but int has int_max limitation
     checksum: str
 
 
@@ -203,20 +214,21 @@ class Tensor:
 # TensorValue is a named virtual tensor, with an TensorMeta that describes the properties of the tensor
 @dataclass
 class TensorValue:
-    name: str           # unique identifier of the TensorValue, referenced in Argument.as_tensor field
-    meta: TensorMeta    # tensor meta
+    name: str  # unique identifier of the TensorValue, referenced in Argument.as_tensor field
+    meta: TensorMeta  # tensor meta
 
 
 @dataclass
 class SymIntValue:
-    name: str       # unique identifier of the SymIntValue, referenced in Argument.as_symint field
+    name: str  # unique identifier of the SymIntValue, referenced in Argument.as_symint field
     value: SymInt
+
 
 @dataclass
 class NodeMetadata:
-    stack_trace: str                      # source info of a node
-    nn_module_stack: str                  # stack of nn.Module that the node originates from
-    extra: Dict[str, str]                 # arbitrary string-string pairs for extra metadata
+    stack_trace: str  # source info of a node
+    nn_module_stack: str  # stack of nn.Module that the node originates from
+    extra: Dict[str, str]  # arbitrary string-string pairs for extra metadata
 
 
 # Maps to fx.Node
@@ -240,7 +252,7 @@ class Node:
     # A list of Argument returned by this node
     outputs: List[ReturnArgument]
 
-    metadata: NodeMetadata          # metadata fields for this node
+    metadata: NodeMetadata  # metadata fields for this node
 
 
 # Maps to fx.Graph
@@ -277,10 +289,10 @@ class GraphModule:
     # This is not an identified for GraphModule
     name: str
 
-    graph: Graph    # Only one Graph per GraphModule
+    graph: Graph  # Only one Graph per GraphModule
 
     # maps to GraphModule's meta, which is a Dict[str, Any], but we only support string key and string value.
-    metadata : Dict[str, str]
+    metadata: Dict[str, str]
 
     # Stateful fields of the graph module
 

@@ -7,8 +7,10 @@ from torch import Tensor
 
 # A workaround to support both TorchScript and MyPy:
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from torch.types import _dtype as DType
+
     DimOrDims = Optional[Union[int, Tuple[int], List[int]]]
 else:
     # The JIT doesn't understand Union, nor torch.dtype here
@@ -17,16 +19,18 @@ else:
 
 
 __all__ = [
-    'addmm',
-    'check_sparse_tensor_invariants',
-    'mm',
-    'sum',
-    'softmax',
-    'log_softmax',
+    "addmm",
+    "check_sparse_tensor_invariants",
+    "mm",
+    "sum",
+    "softmax",
+    "log_softmax",
 ]
 
 
-addmm = _add_docstr(_sparse._sparse_addmm, r"""
+addmm = _add_docstr(
+    _sparse._sparse_addmm,
+    r"""
 sparse.addmm(mat, mat1, mat2, *, beta=1., alpha=1.) -> Tensor
 
 This function does exact same thing as :func:`torch.addmm` in the forward,
@@ -45,10 +49,13 @@ Args:
     mat2 (Tensor): a dense matrix to be multiplied
     beta (Number, optional): multiplier for :attr:`mat` (:math:`\beta`)
     alpha (Number, optional): multiplier for :math:`mat1 @ mat2` (:math:`\alpha`)
-""")
+""",
+)
 
 
-mm = _add_docstr(_sparse._sparse_mm, r"""
+mm = _add_docstr(
+    _sparse._sparse_mm,
+    r"""
     Performs a matrix multiplication of the sparse matrix :attr:`mat1`
     and the (sparse or strided) matrix :attr:`mat2`. Similar to :func:`torch.mm`, if :attr:`mat1` is a
     :math:`(n \times m)` tensor, :attr:`mat2` is a :math:`(m \times p)` tensor, out will be a
@@ -119,10 +126,13 @@ Example::
     >>> y2
     tensor([[0., 1.],
             [6., 0.]], grad_fn=<SparseMmReduceImplBackward0>)
-""")
+""",
+)
 
 
-sampled_addmm = _add_docstr(_sparse.sparse_sampled_addmm, r"""
+sampled_addmm = _add_docstr(
+    _sparse.sparse_sampled_addmm,
+    r"""
 sparse.sampled_addmm(input, mat1, mat2, *, beta=1., alpha=1., out=None) -> Tensor
 
 Performs a matrix multiplication of the dense matrices :attr:`mat1` and :attr:`mat2` at the locations
@@ -171,10 +181,11 @@ Examples::
         col_indices=tensor([0, 1, 2]),
         values=tensor([ 0.1423, -0.3903, -0.0950]), device='cuda:0',
         size=(3, 3), nnz=3, layout=torch.sparse_csr)
-""")
+""",
+)
 
-def sum(input: Tensor, dim: DimOrDims = None,
-        dtype: Optional[DType] = None) -> Tensor:
+
+def sum(input: Tensor, dim: DimOrDims = None, dtype: Optional[DType] = None) -> Tensor:
     r"""
     Returns the sum of each row of the sparse tensor :attr:`input` in the given
     dimensions :attr:`dim`. If :attr:`dim` is a list of dimensions,
@@ -242,7 +253,9 @@ def sum(input: Tensor, dim: DimOrDims = None,
             return torch._sparse_sum(input, dtype=dtype)
 
 
-softmax = _add_docstr(_sparse._sparse_softmax, r"""
+softmax = _add_docstr(
+    _sparse._sparse_softmax,
+    r"""
 sparse.softmax(input, dim, *, dtype=None) -> Tensor
 
 Applies a softmax function.
@@ -267,10 +280,13 @@ Args:
         casted to :attr:`dtype` before the operation is
         performed. This is useful for preventing data type
         overflows. Default: None
-""")
+""",
+)
 
 
-log_softmax = _add_docstr(_sparse._sparse_log_softmax, r"""
+log_softmax = _add_docstr(
+    _sparse._sparse_log_softmax,
+    r"""
 sparse.log_softmax(input, dim, *, dtype=None) -> Tensor
 
 Applies a softmax function followed by logarithm.
@@ -285,7 +301,8 @@ Args:
         casted to :attr:`dtype` before the operation is
         performed. This is useful for preventing data type
         overflows. Default: None
-""")
+""",
+)
 
 
 spdiags = _add_docstr(
@@ -379,62 +396,63 @@ Specifying a positive offset::
             [0, 0, 3, 0, 0],
             [0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0]])
-""")
+""",
+)
 
 
 class check_sparse_tensor_invariants:
     """A tool to control checking sparse tensor invariants.
 
-The following options exists to manage sparsr tensor invariants
-checking in sparse tensor construction:
+    The following options exists to manage sparsr tensor invariants
+    checking in sparse tensor construction:
 
-1. Using a context manager:
+    1. Using a context manager:
 
-   .. code:: python
+       .. code:: python
 
-       with torch.sparse.check_sparse_tensor_invariants():
+           with torch.sparse.check_sparse_tensor_invariants():
+               run_my_model()
+
+    2. Using a procedural approach:
+
+       .. code:: python
+
+           prev_checks_enabled = torch.sparse.check_sparse_tensor_invariants.is_enabled()
+           torch.sparse.check_sparse_tensor_invariants.enable()
+
            run_my_model()
 
-2. Using a procedural approach:
+           if not prev_checks_enabled:
+               torch.sparse.check_sparse_tensor_invariants.disable()
 
-   .. code:: python
+    3. Using function decoration:
 
-       prev_checks_enabled = torch.sparse.check_sparse_tensor_invariants.is_enabled()
-       torch.sparse.check_sparse_tensor_invariants.enable()
+       .. code:: python
 
-       run_my_model()
+           @torch.sparse.check_sparse_tensor_invariants()
+           def run_my_model():
+               ...
 
-       if not prev_checks_enabled:
-           torch.sparse.check_sparse_tensor_invariants.disable()
+           run_my_model()
 
-3. Using function decoration:
+    4. Using ``check_invariants`` keyword argument in sparse tensor constructor call.
+       For example:
 
-   .. code:: python
-
-       @torch.sparse.check_sparse_tensor_invariants()
-       def run_my_model():
-           ...
-
-       run_my_model()
-
-4. Using ``check_invariants`` keyword argument in sparse tensor constructor call.
-   For example:
-
-   >>> torch.sparse_csr_tensor([0, 1, 3], [0, 1], [1, 2], check_invariants=True)
-   Traceback (most recent call last):
-     File "<stdin>", line 1, in <module>
-   RuntimeError: `crow_indices[..., -1] == nnz` is not satisfied.
+       >>> torch.sparse_csr_tensor([0, 1, 3], [0, 1], [1, 2], check_invariants=True)
+       Traceback (most recent call last):
+         File "<stdin>", line 1, in <module>
+       RuntimeError: `crow_indices[..., -1] == nnz` is not satisfied.
     """
 
     @staticmethod
     def is_enabled():
         r"""Returns True if the sparse tensor invariants checking is enabled.
 
-.. note::
+        .. note::
 
-    Use :func:`torch.sparse.check_sparse_tensor_invariants.enable` or
-    :func:`torch.sparse.check_sparse_tensor_invariants.disable` to
-    manage the state of the sparse tensor invariants checks.
+            Use :func:`torch.sparse.check_sparse_tensor_invariants.enable` or
+            :func:`torch.sparse.check_sparse_tensor_invariants.disable` to
+            manage the state of the sparse tensor invariants checks.
         """
         return torch._C._check_sparse_tensor_invariants()
 
@@ -442,19 +460,19 @@ checking in sparse tensor construction:
     def enable():
         r"""Enable sparse tensor invariants checking in sparse tensor constructors.
 
-.. note::
+        .. note::
 
-    By default, the sparse tensor invariants checks are disabled. Use
-    :func:`torch.sparse.check_sparse_tensor_invariants.is_enabled` to
-    retrieve the current state of sparse tensor invariants checking.
+            By default, the sparse tensor invariants checks are disabled. Use
+            :func:`torch.sparse.check_sparse_tensor_invariants.is_enabled` to
+            retrieve the current state of sparse tensor invariants checking.
 
-.. note::
+        .. note::
 
-    The sparse tensor invariants check flag is effective to all sparse
-    tensor constructors, both in Python and ATen.
+            The sparse tensor invariants check flag is effective to all sparse
+            tensor constructors, both in Python and ATen.
 
-    The flag can be locally overridden by the ``check_invariants``
-    optional argument of the sparse tensor constructor functions.
+            The flag can be locally overridden by the ``check_invariants``
+            optional argument of the sparse tensor constructor functions.
         """
         torch._C._set_check_sparse_tensor_invariants(True)
 
@@ -462,19 +480,21 @@ checking in sparse tensor construction:
     def disable():
         r"""Disable sparse tensor invariants checking in sparse tensor constructors.
 
-See :func:`torch.sparse.check_sparse_tensor_invariants.enable` for more information.
+        See :func:`torch.sparse.check_sparse_tensor_invariants.enable` for more information.
         """
         torch._C._set_check_sparse_tensor_invariants(False)
 
     # context manager support
     def __init__(self, enable=True):
         self.state = enable
-        self.saved_state : Optional[bool] = None
+        self.saved_state: Optional[bool] = None
 
     def __enter__(self):
         if self.saved_state is not None:
-            raise RuntimeError('This context manager instance is already activated.'
-                               ' Use a different context manager instance for context nesting.')
+            raise RuntimeError(
+                "This context manager instance is already activated."
+                " Use a different context manager instance for context nesting."
+            )
         self.saved_state = self.is_enabled()
         torch._C._set_check_sparse_tensor_invariants(self.state)
 
@@ -485,7 +505,6 @@ See :func:`torch.sparse.check_sparse_tensor_invariants.enable` for more informat
 
     # decorator support
     def __call__(self, mth):
-
         def test_mth(*args, **kwargs):
             with type(self)(self.state):
                 return mth(*args, **kwargs)

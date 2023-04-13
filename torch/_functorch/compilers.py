@@ -104,9 +104,7 @@ def _draw_graph_compile(fx_g, _, name, clear_meta=True):
 
 
 def draw_graph_compile(name):
-    return make_boxed_compiler(
-        partial(_draw_graph_compile, name=name)
-    )
+    return make_boxed_compiler(partial(_draw_graph_compile, name=name))
 
 
 @make_boxed_compiler
@@ -121,13 +119,13 @@ def nop(fx_g: fx.GraphModule, _) -> Callable:
     """
     return fx_g
 
+
 class DebugInterpreter(fx.Interpreter):
     def run(self, *args):
         self.symbol_mapping = bind_symbols(self.module, *args)
         super().run(*args)
 
     def run_node(self, n):
-
         def subst_symint(ni):
             if not isinstance(ni, SymInt):
                 return ni
@@ -141,21 +139,27 @@ class DebugInterpreter(fx.Interpreter):
         def check_significant_strides(a, b):
             if subst_symint(a.numel()) > 0:
                 for idx in range(a.ndim):
-                    if subst_symint(a.stride(idx)) != b.stride(idx) and subst_symint(a.size(idx)) > 1:
+                    if (
+                        subst_symint(a.stride(idx)) != b.stride(idx)
+                        and subst_symint(a.size(idx)) > 1
+                    ):
                         return False
             return True
 
         def check(nv, rv, desc):
             assert callable(desc)
             assert nv.dtype == rv.dtype, f"{desc()}: {nv.dtype} != {rv.dtype}"
-            assert subst_symint_tuple(nv.size()) == rv.size(), \
-                f"{desc()}: {nv.size()} aka {subst_symint_tuple(nv.size())} != {rv.size()}"
+            assert (
+                subst_symint_tuple(nv.size()) == rv.size()
+            ), f"{desc()}: {nv.size()} aka {subst_symint_tuple(nv.size())} != {rv.size()}"
             same_strides = check_significant_strides(nv, rv)
-            assert same_strides, f"{desc()}: {nv.stride()} aka {subst_symint_tuple(nv.stride())} != {rv.stride()}"
+            assert (
+                same_strides
+            ), f"{desc()}: {nv.stride()} aka {subst_symint_tuple(nv.stride())} != {rv.stride()}"
 
         r = super().run_node(n)
-        if 'val' in n.meta:
-            n_vals, n_spec = pytree.tree_flatten(n.meta['val'])
+        if "val" in n.meta:
+            n_vals, n_spec = pytree.tree_flatten(n.meta["val"])
             r_vals, r_spec = pytree.tree_flatten(r)
             # TODO: There is some sort of problem where we record that an
             # operator returned a tuple/list, and then later it turns out the
@@ -179,6 +183,7 @@ def debug_nop(fx_g: fx.GraphModule, _) -> Callable:
     strides.)
     """
     return DebugInterpreter(fx_g).run
+
 
 @make_boxed_compiler
 def simple_ts_compile(fx_g, _):

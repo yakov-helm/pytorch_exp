@@ -135,22 +135,22 @@ class CRFWithLoss:
 
     def build_crf_net(self, input_blob, initial_state, transitions):
         """
-            Adds the crf_net recurrent operator to the model.
+        Adds the crf_net recurrent operator to the model.
 
-            model: model_helper.ModelHelper object new operators would be added
-            to
+        model: model_helper.ModelHelper object new operators would be added
+        to
 
-            input_blob: the input sequence in a format T x N x D
-            where T is sequence size, N - batch size and D - input dimension
-            ##Only supports batch-size 1##
+        input_blob: the input sequence in a format T x N x D
+        where T is sequence size, N - batch size and D - input dimension
+        ##Only supports batch-size 1##
 
-            seq_lengths: blob containing sequence lengths (unused)
-            """
+        seq_lengths: blob containing sequence lengths (unused)
+        """
 
         scope = "crf_net"
 
         def s(name):
-            ""
+            """"""
             # We have to manually scope due to our internal/external blob
             # relationships.
             return "{}/{}".format(str(scope), str(name))

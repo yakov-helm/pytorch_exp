@@ -5,7 +5,6 @@ from torch import nn
 
 
 class NeuralNetwork(nn.Module):
-
     def __init__(self):
         super().__init__()
         self.flatten = nn.Flatten()
@@ -23,7 +22,7 @@ class NeuralNetwork(nn.Module):
         return logits
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     jit_module = torch.jit.script(NeuralNetwork())
     torch.jit.save(jit_module, sys.argv[1])
     orig_module = nn.Sequential(

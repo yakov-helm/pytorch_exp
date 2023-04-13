@@ -16,5 +16,5 @@ from torch.ao.quantization.fx.utils import (
     create_getattr_from_value,
     all_node_args_have_no_tensors,
     get_non_observable_arg_indexes_and_types,
-    maybe_get_next_module
+    maybe_get_next_module,
 )

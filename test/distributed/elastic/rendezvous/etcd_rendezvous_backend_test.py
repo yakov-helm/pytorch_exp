@@ -13,7 +13,10 @@ from unittest import TestCase
 
 from etcd import EtcdKeyNotFound  # type: ignore[import]
 
-from torch.distributed.elastic.rendezvous import RendezvousConnectionError, RendezvousParameters
+from torch.distributed.elastic.rendezvous import (
+    RendezvousConnectionError,
+    RendezvousParameters,
+)
 from torch.distributed.elastic.rendezvous.etcd_rendezvous_backend import (
     EtcdRendezvousBackend,
     create_backend,
@@ -45,7 +48,9 @@ class EtcdRendezvousBackendTest(TestCase, RendezvousBackendTestMixin):
         except EtcdKeyNotFound:
             pass
 
-        self._backend = EtcdRendezvousBackend(self._client, "dummy_run_id", "/dummy_prefix")
+        self._backend = EtcdRendezvousBackend(
+            self._client, "dummy_run_id", "/dummy_prefix"
+        )
 
     def _corrupt_state(self) -> None:
         self._client.write("/dummy_prefix/dummy_run_id", "non_base64")
@@ -107,7 +112,9 @@ class CreateBackendTest(TestCase):
 
         self.test_create_backend_returns_backend()
 
-    def test_create_backend_returns_backend_if_read_timeout_is_not_specified(self) -> None:
+    def test_create_backend_returns_backend_if_read_timeout_is_not_specified(
+        self,
+    ) -> None:
         del self._params.config["read_timeout"]
 
         self._expected_read_timeout = 60
@@ -126,7 +133,9 @@ class CreateBackendTest(TestCase):
     def test_create_backend_raises_error_if_protocol_is_invalid(self) -> None:
         self._params.config["protocol"] = "dummy"
 
-        with self.assertRaisesRegex(ValueError, r"^The protocol must be HTTP or HTTPS.$"):
+        with self.assertRaisesRegex(
+            ValueError, r"^The protocol must be HTTP or HTTPS.$"
+        ):
             create_backend(self._params)
 
     def test_create_backend_raises_error_if_read_timeout_is_invalid(self) -> None:

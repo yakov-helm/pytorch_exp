@@ -19,6 +19,7 @@ if os.getenv("CIRCLECI"):
     print("T85992919 temporarily disabling in circle ci", file=sys.stderr)
     sys.exit(0)
 
+
 class EtcdServerTest(unittest.TestCase):
     def test_etcd_server_start_stop(self):
         server = EtcdServer()

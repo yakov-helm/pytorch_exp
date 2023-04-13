@@ -1,8 +1,3 @@
-
-
-
-
-
 import numpy as np
 import hypothesis.strategies as st
 import unittest
@@ -14,15 +9,19 @@ import caffe2.python.ideep_test_util as mu
 
 @unittest.skipIf(not workspace.C.use_mkldnn, "No MKLDNN support.")
 class TestWeightedSumOp(hu.HypothesisTestCase):
-    @given(n=st.integers(5, 8), m=st.integers(1, 1),
-           d=st.integers(2, 4), grad_on_w=st.booleans(),
-           **mu.gcs_ideep_only)
+    @given(
+        n=st.integers(5, 8),
+        m=st.integers(1, 1),
+        d=st.integers(2, 4),
+        grad_on_w=st.booleans(),
+        **mu.gcs_ideep_only,
+    )
     def test_weighted_sum(self, n, m, d, grad_on_w, gc, dc):
         input_names = []
         input_vars = []
         for i in range(m):
-            X_name = 'X' + str(i)
-            w_name = 'w' + str(i)
+            X_name = "X" + str(i)
+            w_name = "w" + str(i)
             input_names.extend([X_name, w_name])
             var = np.random.rand(n, d).astype(np.float32)
             vars()[X_name] = var
@@ -36,12 +35,12 @@ class TestWeightedSumOp(hu.HypothesisTestCase):
             for i in range(m):
                 res = res + args[2 * i + 1] * args[2 * i]
 
-            return (res, )
+            return (res,)
 
         op = core.CreateOperator(
             "WeightedSum",
             input_names,
-            ['Y'],
+            ["Y"],
             grad_on_w=grad_on_w,
         )
 

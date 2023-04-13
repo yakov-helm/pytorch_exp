@@ -622,7 +622,8 @@ class TestDatasetOps(TestCase):
 
         self.assertTrue(
             np.array_equal(
-                shapes["output"], np.array([7, *list(workspace.blobs["output"].shape[1:])])
+                shapes["output"],
+                np.array([7, *list(workspace.blobs["output"].shape[1:])]),
             )
         )
 

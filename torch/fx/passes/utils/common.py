@@ -6,7 +6,8 @@ from torch.fx.passes.utils.matcher_utils import SubgraphMatcher
 from torch.fx._compatibility import compatibility
 
 
-__all__ = ['HolderModule', 'lift_subgraph_as_module', 'compare_graphs']
+__all__ = ["HolderModule", "lift_subgraph_as_module", "compare_graphs"]
+
 
 @compatibility(is_backward_compatible=False)
 class HolderModule(Module):
@@ -22,7 +23,9 @@ class HolderModule(Module):
 
 
 @compatibility(is_backward_compatible=False)
-def lift_subgraph_as_module(gm: GraphModule, subgraph: Graph, class_name: str = 'GraphModule') -> GraphModule:
+def lift_subgraph_as_module(
+    gm: GraphModule, subgraph: Graph, class_name: str = "GraphModule"
+) -> GraphModule:
     """
     Create a GraphModule for subgraph, which copies the necessary attributes from the original parent graph_module.
 

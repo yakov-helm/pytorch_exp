@@ -4,7 +4,10 @@ import torch
 from torch.testing._internal.common_utils import TestCase
 from torch.ao.quantization.utils import get_fqn_to_example_inputs
 from torch.ao.nn.quantized.modules.utils import _quantize_weight
-from torch.ao.quantization import MovingAverageMinMaxObserver, MovingAveragePerChannelMinMaxObserver
+from torch.ao.quantization import (
+    MovingAverageMinMaxObserver,
+    MovingAveragePerChannelMinMaxObserver,
+)
 
 
 class TestUtils(TestCase):
@@ -48,14 +51,14 @@ class TestUtils(TestCase):
             "linear2": (2,),
             "sub": (2,),
             "sub.linear1": (2,),
-            "sub.linear2": (2,)
+            "sub.linear2": (2,),
         }
         example_inputs = (torch.rand(1, 5),)
         self._test_get_fqn_to_example_inputs(M, example_inputs, expected_fqn_to_dim)
 
     def test_get_fqn_to_example_inputs_default_kwargs(self):
-        """ Test that we can get example inputs for functions with default keyword arguments
-        """
+        """Test that we can get example inputs for functions with default keyword arguments"""
+
         class Sub(torch.nn.Module):
             def __init__(self):
                 super().__init__()
@@ -89,14 +92,14 @@ class TestUtils(TestCase):
             # third arg is `key2`, override by callsite
             "sub": (2, 1, 2),
             "sub.linear1": (2,),
-            "sub.linear2": (2,)
+            "sub.linear2": (2,),
         }
         example_inputs = (torch.rand(1, 5),)
         self._test_get_fqn_to_example_inputs(M, example_inputs, expected_fqn_to_dim)
 
     def test_get_fqn_to_example_inputs_complex_args(self):
-        """ Test that we can record complex example inputs such as lists and dicts
-        """
+        """Test that we can record complex example inputs such as lists and dicts"""
+
         class Sub(torch.nn.Module):
             def __init__(self):
                 super().__init__()
@@ -126,12 +129,13 @@ class TestUtils(TestCase):
         fqn_to_example_inputs = get_fqn_to_example_inputs(m, example_inputs)
         assert "sub" in fqn_to_example_inputs
         assert isinstance(fqn_to_example_inputs["sub"][1], list)
-        assert isinstance(fqn_to_example_inputs["sub"][2], dict) and \
-            "3" in fqn_to_example_inputs["sub"][2]
+        assert (
+            isinstance(fqn_to_example_inputs["sub"][2], dict)
+            and "3" in fqn_to_example_inputs["sub"][2]
+        )
 
     def test_quantize_weight_clamping_per_tensor(self):
-        """ Test quant_{min, max} from per tensor observer is honored by `_quantize_weight` method
-        """
+        """Test quant_{min, max} from per tensor observer is honored by `_quantize_weight` method"""
         fp_min, fp_max = -1000.0, 1000.0
         q8_min, q8_max = -10, 10
 
@@ -161,8 +165,7 @@ class TestUtils(TestCase):
         assert quantized_tensor.int_repr().min().item() == q8_min
 
     def test_quantize_weight_clamping_per_channel(self):
-        """ Test quant_{min, max} from per channel observer is honored by `_quantize_weight` method
-        """
+        """Test quant_{min, max} from per channel observer is honored by `_quantize_weight` method"""
         fp_min, fp_max = -1000.0, 1000.0
         q8_min, q8_max = -10, 10
 

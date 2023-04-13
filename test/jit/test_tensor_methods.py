@@ -18,6 +18,7 @@ if __name__ == "__main__":
         "instead."
     )
 
+
 class TestTensorMethods(JitTestCase):
     def test_getitem(self):
         def tensor_getitem(inp: torch.Tensor):
@@ -25,7 +26,7 @@ class TestTensorMethods(JitTestCase):
             return inp.__getitem__(indices)
 
         inp = torch.rand(3, 4)
-        self.checkScript(tensor_getitem, (inp, ))
+        self.checkScript(tensor_getitem, (inp,))
 
         scripted = torch.jit.script(tensor_getitem)
         FileCheck().check("aten::index").run(scripted.graph)
@@ -35,5 +36,6 @@ class TestTensorMethods(JitTestCase):
             return inp.__getitem__()
 
         with self.assertRaisesRegexWithHighlight(
-                RuntimeError, "expected exactly 1 argument", "inp.__getitem__"):
+            RuntimeError, "expected exactly 1 argument", "inp.__getitem__"
+        ):
             torch.jit.script(tensor_getitem_invalid)

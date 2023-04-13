@@ -1,5 +1,3 @@
-
-
 import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 import numpy as np
@@ -12,7 +10,7 @@ class TestLengthsReducerOpsFusedNBitRowwise(hu.HypothesisTestCase):
         num_rows=st.integers(1, 20),
         blocksize=st.sampled_from([8, 12, 16, 32, 64, 96, 128]),
         weighted=st.booleans(),
-        seed=st.integers(0, 2 ** 32 - 1),
+        seed=st.integers(0, 2**32 - 1),
         empty_indices=st.booleans(),
         engine=st.sampled_from(["", "GREEDY"]),
         bit_rate=st.sampled_from([2, 4]),
@@ -110,7 +108,7 @@ class TestLengthsReducerOpsFusedNBitRowwise(hu.HypothesisTestCase):
     @given(
         num_rows=st.integers(1, 20),
         blocksize=st.sampled_from([8, 12, 16, 32, 64, 96, 128]),
-        seed=st.integers(0, 2 ** 32 - 1),
+        seed=st.integers(0, 2**32 - 1),
         empty_indices=st.booleans(),
         engine=st.sampled_from(["", "GREEDY"]),
         bit_rate=st.sampled_from([2, 4]),
@@ -316,7 +314,7 @@ class TestLengthsReducerOpsFusedNBitRowwise(hu.HypothesisTestCase):
     @given(
         num_rows=st.integers(1, 20),
         blocksize=st.sampled_from([8, 12, 16, 32, 64, 96, 128]),
-        seed=st.integers(0, 2 ** 32 - 1),
+        seed=st.integers(0, 2**32 - 1),
         empty_indices=st.booleans(),
         engine=st.sampled_from(["", "GREEDY"]),
         bit_rate=st.sampled_from([2, 4]),

@@ -3,6 +3,7 @@ from torch.overrides import TorchFunctionMode
 from torch.utils._contextlib import context_decorator
 import functools
 
+
 @functools.lru_cache(1)
 def _device_constructors():
     return {
@@ -51,6 +52,7 @@ def _device_constructors():
         torch.scalar_tensor,
     }
 
+
 # NB: This is directly called from C++ in torch/csrc/Device.cpp
 class DeviceContext(TorchFunctionMode):
     def __init__(self, device):
@@ -58,13 +60,15 @@ class DeviceContext(TorchFunctionMode):
 
     def __torch_function__(self, func, types, args=(), kwargs=None):
         kwargs = kwargs or {}
-        if func in _device_constructors() and kwargs.get('device') is None:
-            kwargs['device'] = self.device
+        if func in _device_constructors() and kwargs.get("device") is None:
+            kwargs["device"] = self.device
         return func(*args, **kwargs)
+
 
 # NB: This is directly called from C++ in torch/csrc/Device.cpp
 def device_decorator(device, func):
     return context_decorator(lambda: device, func)
+
 
 def set_device(device):
     """

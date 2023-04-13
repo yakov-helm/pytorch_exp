@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core
 import caffe2.python.hypothesis_test_util as hu
 import caffe2.python.serialized_test.serialized_test_util as serial
@@ -22,22 +17,22 @@ def rowmux(select_vec, left, right):
 
 
 class TestWhere(serial.SerializedTestCase):
-
     def test_reference(self):
-        self.assertTrue((
-            np.array([1, 4]) == mux([True, False],
-                                    [1, 2],
-                                    [3, 4])[0]
-        ).all())
-        self.assertTrue((
-            np.array([[1], [4]]) == mux([[True], [False]],
-                                        [[1], [2]],
-                                        [[3], [4]])[0]
-        ).all())
+        self.assertTrue(
+            (np.array([1, 4]) == mux([True, False], [1, 2], [3, 4])[0]).all()
+        )
+        self.assertTrue(
+            (
+                np.array([[1], [4]])
+                == mux([[True], [False]], [[1], [2]], [[3], [4]])[0]
+            ).all()
+        )
 
-    @given(N=st.integers(min_value=1, max_value=10),
-           engine=st.sampled_from(["", "CUDNN"]),
-           **hu.gcs_cpu_only)
+    @given(
+        N=st.integers(min_value=1, max_value=10),
+        engine=st.sampled_from(["", "CUDNN"]),
+        **hu.gcs_cpu_only,
+    )
     @settings(deadline=10000)
     def test_where(self, N, gc, dc, engine):
         C = np.random.rand(N).astype(bool)
@@ -47,9 +42,11 @@ class TestWhere(serial.SerializedTestCase):
         self.assertDeviceChecks(dc, op, [C, X, Y], [0])
         self.assertReferenceChecks(gc, op, [C, X, Y], mux)
 
-    @given(N=st.integers(min_value=1, max_value=10),
-           engine=st.sampled_from(["", "CUDNN"]),
-           **hu.gcs_cpu_only)
+    @given(
+        N=st.integers(min_value=1, max_value=10),
+        engine=st.sampled_from(["", "CUDNN"]),
+        **hu.gcs_cpu_only,
+    )
     @settings(deadline=10000)
     def test_where_dim2(self, N, gc, dc, engine):
         C = np.random.rand(N, N).astype(bool)
@@ -61,22 +58,20 @@ class TestWhere(serial.SerializedTestCase):
 
 
 class TestRowWhere(hu.HypothesisTestCase):
-
     def test_reference(self):
-        self.assertTrue((
-            np.array([1, 2]) == rowmux([True],
-                                       [1, 2],
-                                       [3, 4])[0]
-        ).all())
-        self.assertTrue((
-            np.array([[1, 2], [7, 8]]) == rowmux([True, False],
-                                                 [[1, 2], [3, 4]],
-                                                 [[5, 6], [7, 8]])[0]
-        ).all())
+        self.assertTrue((np.array([1, 2]) == rowmux([True], [1, 2], [3, 4])[0]).all())
+        self.assertTrue(
+            (
+                np.array([[1, 2], [7, 8]])
+                == rowmux([True, False], [[1, 2], [3, 4]], [[5, 6], [7, 8]])[0]
+            ).all()
+        )
 
-    @given(N=st.integers(min_value=1, max_value=10),
-           engine=st.sampled_from(["", "CUDNN"]),
-           **hu.gcs_cpu_only)
+    @given(
+        N=st.integers(min_value=1, max_value=10),
+        engine=st.sampled_from(["", "CUDNN"]),
+        **hu.gcs_cpu_only,
+    )
     def test_rowwhere(self, N, gc, dc, engine):
         C = np.random.rand(N).astype(bool)
         X = np.random.rand(N).astype(np.float32)
@@ -91,9 +86,11 @@ class TestRowWhere(hu.HypothesisTestCase):
         self.assertDeviceChecks(dc, op, [C, X, Y], [0])
         self.assertReferenceChecks(gc, op, [C, X, Y], mux)
 
-    @given(N=st.integers(min_value=1, max_value=10),
-           engine=st.sampled_from(["", "CUDNN"]),
-           **hu.gcs_cpu_only)
+    @given(
+        N=st.integers(min_value=1, max_value=10),
+        engine=st.sampled_from(["", "CUDNN"]),
+        **hu.gcs_cpu_only,
+    )
     def test_rowwhere_dim2(self, N, gc, dc, engine):
         C = np.random.rand(N).astype(bool)
         X = np.random.rand(N, N).astype(np.float32)
@@ -110,10 +107,11 @@ class TestRowWhere(hu.HypothesisTestCase):
 
 
 class TestIsMemberOf(serial.SerializedTestCase):
-
-    @given(N=st.integers(min_value=1, max_value=10),
-           engine=st.sampled_from(["", "CUDNN"]),
-           **hu.gcs_cpu_only)
+    @given(
+        N=st.integers(min_value=1, max_value=10),
+        engine=st.sampled_from(["", "CUDNN"]),
+        **hu.gcs_cpu_only,
+    )
     @settings(deadline=10000)
     def test_is_member_of(self, N, gc, dc, engine):
         X = np.random.randint(10, size=N).astype(np.int64)
@@ -130,6 +128,7 @@ class TestIsMemberOf(serial.SerializedTestCase):
 
         def test(x):
             return [np.vectorize(lambda x: x in values)(x)]
+
         self.assertReferenceChecks(gc, op, [X], test)
 
 

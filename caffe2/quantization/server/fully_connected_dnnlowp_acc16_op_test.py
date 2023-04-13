@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -9,7 +7,7 @@ from caffe2.python import core, dyndep, workspace
 from caffe2.quantization.server import utils as dnnlowp_utils
 from caffe2.quantization.server.dnnlowp_test_utils import (
     check_quantized_results_close,
-    run_conv_or_fc
+    run_conv_or_fc,
 )
 from hypothesis import given
 
@@ -27,7 +25,7 @@ class DNNLowPFullyConnectedAcc16OpTest(hu.HypothesisTestCase):
         batch_size=st.sampled_from([0, 32, 64, 128, 256]),
         in_quantized=st.booleans(),
         out_quantized=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_dnnlowp_fully_connected_acc16_int(
         self,
@@ -108,9 +106,7 @@ class DNNLowPFullyConnectedAcc16OpTest(hu.HypothesisTestCase):
                 )
                 net.Proto().op.extend([dequantize])
 
-            run_conv_or_fc(
-                self, None, net, X, W, b, op_type, engine, None, gc, outputs
-            )
+            run_conv_or_fc(self, None, net, X, W, b, op_type, engine, None, gc, outputs)
 
         check_quantized_results_close(outputs)
 
@@ -122,7 +118,7 @@ class DNNLowPFullyConnectedAcc16OpTest(hu.HypothesisTestCase):
         in_quantized=st.booleans(),
         out_quantized=st.booleans(),
         prepack_weight=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_dnnlowp_fully_connected_acc16_outlier(
         self,

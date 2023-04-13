@@ -26,5 +26,5 @@ from torch.ao.quantization.qconfig import (
     _assert_valid_qconfig,
     QConfigAny,
     _add_module_to_qconfig_obs_ctr,
-    qconfig_equals
+    qconfig_equals,
 )

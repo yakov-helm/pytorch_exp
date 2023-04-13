@@ -14,10 +14,6 @@
 ##############################################################################
 
 
-
-
-
-
 import numpy as np
 from scipy.sparse import coo_matrix
 
@@ -29,15 +25,16 @@ import caffe2.python.hypothesis_test_util as hu
 
 
 class TestFunHash(hu.HypothesisTestCase):
-    @given(n_out=st.integers(min_value=5, max_value=20),
-           n_in=st.integers(min_value=10, max_value=20),
-           n_data=st.integers(min_value=2, max_value=8),
-           n_weight=st.integers(min_value=8, max_value=15),
-           n_alpha=st.integers(min_value=3, max_value=8),
-           sparsity=st.floats(min_value=0.1, max_value=1.0),
-           **hu.gcs)
-    def test_funhash(self, n_out, n_in, n_data, n_weight, n_alpha, sparsity,
-                     gc, dc):
+    @given(
+        n_out=st.integers(min_value=5, max_value=20),
+        n_in=st.integers(min_value=10, max_value=20),
+        n_data=st.integers(min_value=2, max_value=8),
+        n_weight=st.integers(min_value=8, max_value=15),
+        n_alpha=st.integers(min_value=3, max_value=8),
+        sparsity=st.floats(min_value=0.1, max_value=1.0),
+        **hu.gcs,
+    )
+    def test_funhash(self, n_out, n_in, n_data, n_weight, n_alpha, sparsity, gc, dc):
         A = np.random.rand(n_data, n_in)
         A[A > sparsity] = 0
         A_coo = coo_matrix(A)
@@ -50,30 +47,24 @@ class TestFunHash(hu.HypothesisTestCase):
         seg = seg.astype(np.int32)
 
         op = core.CreateOperator(
-            'FunHash',
-            ['val', 'key', 'seg', 'weight', 'alpha'],
-            ['out'],
-            num_outputs=n_out)
+            "FunHash",
+            ["val", "key", "seg", "weight", "alpha"],
+            ["out"],
+            num_outputs=n_out,
+        )
 
         # Check over multiple devices
-        self.assertDeviceChecks(
-            dc, op, [val, key, seg, weight, alpha], [0])
+        self.assertDeviceChecks(dc, op, [val, key, seg, weight, alpha], [0])
         # Gradient check wrt weight
-        self.assertGradientChecks(
-            gc, op, [val, key, seg, weight, alpha], 3, [0])
+        self.assertGradientChecks(gc, op, [val, key, seg, weight, alpha], 3, [0])
         # Gradient check wrt alpha
-        self.assertGradientChecks(
-            gc, op, [val, key, seg, weight, alpha], 4, [0])
+        self.assertGradientChecks(gc, op, [val, key, seg, weight, alpha], 4, [0])
 
         op2 = core.CreateOperator(
-            'FunHash',
-            ['val', 'key', 'seg', 'weight'],
-            ['out'],
-            num_outputs=n_out)
+            "FunHash", ["val", "key", "seg", "weight"], ["out"], num_outputs=n_out
+        )
 
         # Check over multiple devices
-        self.assertDeviceChecks(
-            dc, op2, [val, key, seg, weight], [0])
+        self.assertDeviceChecks(dc, op2, [val, key, seg, weight], [0])
         # Gradient check wrt weight
-        self.assertGradientChecks(
-            gc, op2, [val, key, seg, weight], 3, [0])
+        self.assertGradientChecks(gc, op2, [val, key, seg, weight], 3, [0])

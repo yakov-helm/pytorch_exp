@@ -32,7 +32,15 @@ from torch.distributed.elastic.multiprocessing import (
 )
 from torch.distributed.elastic.utils.logging import get_logger
 
-__all__ = ['WorkerSpec', 'Worker', 'WorkerState', 'WorkerGroup', 'RunResult', 'ElasticAgent', 'SimpleElasticAgent']
+__all__ = [
+    "WorkerSpec",
+    "Worker",
+    "WorkerState",
+    "WorkerGroup",
+    "RunResult",
+    "ElasticAgent",
+    "SimpleElasticAgent",
+]
 _TERMINAL_STATE_SYNC_ID = "torchelastic/agent/terminal_state"
 
 DEFAULT_ROLE = "default"
@@ -586,8 +594,8 @@ class SimpleElasticAgent(ElasticAgent):
                 "role_ranks": [worker.role_rank for worker in workers],
                 "global_ranks": [worker.global_rank for worker in workers],
                 "role_world_sizes": [worker.role_world_size for worker in workers],
-                "global_world_sizes": [worker.world_size for worker in workers]
-            }
+                "global_world_sizes": [worker.world_size for worker in workers],
+            },
         )
 
     def _get_ranks(
@@ -886,7 +894,8 @@ class SimpleElasticAgent(ElasticAgent):
                 log.info(
                     "[%s] worker group successfully finished."
                     " Waiting %s seconds for other agents to finish.",
-                    role, self._exit_barrier_timeout
+                    role,
+                    self._exit_barrier_timeout,
                 )
                 self._exit_barrier()
                 return run_result
@@ -896,7 +905,10 @@ class SimpleElasticAgent(ElasticAgent):
                         "[%s] Worker group %s. "
                         "%s/%s attempts left;"
                         " will restart worker group",
-                        role, state.name, self._remaining_restarts, spec.max_restarts
+                        role,
+                        state.name,
+                        self._remaining_restarts,
+                        spec.max_restarts,
                     )
                     self._remaining_restarts -= 1
                     self._restart_workers(self._worker_group)
@@ -914,7 +926,9 @@ class SimpleElasticAgent(ElasticAgent):
                         "[%s] Detected %s "
                         "new nodes from group_rank=%s; "
                         "will restart worker group",
-                        role, num_nodes_waiting, group_rank
+                        role,
+                        num_nodes_waiting,
+                        group_rank,
                     )
                     self._restart_workers(self._worker_group)
             else:
@@ -930,7 +944,8 @@ class SimpleElasticAgent(ElasticAgent):
         log.info(
             "Local worker group finished (%s). "
             "Waiting %s seconds for other agents to finish",
-            self._worker_group.state, self._exit_barrier_timeout
+            self._worker_group.state,
+            self._exit_barrier_timeout,
         )
         start = time.time()
         try:
@@ -942,7 +957,8 @@ class SimpleElasticAgent(ElasticAgent):
                 barrier_timeout=self._exit_barrier_timeout,
             )
             log.info(
-                "Done waiting for other agents. Elapsed: %s seconds", time.time() - start
+                "Done waiting for other agents. Elapsed: %s seconds",
+                time.time() - start,
             )
         except SignalException as e:
             log.warning("Got termination signal: %s", e.sigval)
@@ -950,5 +966,5 @@ class SimpleElasticAgent(ElasticAgent):
         except Exception:
             log.exception(
                 "Error waiting on exit barrier. Elapsed: %s seconds",
-                time.time() - start
+                time.time() - start,
             )

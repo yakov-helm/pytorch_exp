@@ -43,9 +43,13 @@ class TestMatmulCuda(TestCase):
     @onlyCUDA
     @unittest.skipIf(TEST_WITH_ROCM, "Only CUDA 11+ is supported")
     # imported 'tol' as 'xtol' to avoid aliasing in code above
-    @toleranceOverride({torch.float16: xtol(atol=1e-1, rtol=1e-1),
-                        torch.bfloat16: xtol(atol=1e-1, rtol=1e-1),
-                        torch.float32: xtol(atol=1e-1, rtol=1e-1)})
+    @toleranceOverride(
+        {
+            torch.float16: xtol(atol=1e-1, rtol=1e-1),
+            torch.bfloat16: xtol(atol=1e-1, rtol=1e-1),
+            torch.float32: xtol(atol=1e-1, rtol=1e-1),
+        }
+    )
     @dtypes(torch.float16, torch.bfloat16, torch.float32)
     @parametrize("size", [100, 1000, 10000])
     def test_cublas_addmm(self, size: int, dtype: torch.dtype):
@@ -104,8 +108,10 @@ class TestMatmulCuda(TestCase):
     @onlyCUDA
     def test_cublas_addmm_alignment(self):
         dtype = torch.half
-        device = 'cuda'
-        A = torch.rand((5120 * 2560 + 1), requires_grad=True, dtype=dtype, device=device)
+        device = "cuda"
+        A = torch.rand(
+            (5120 * 2560 + 1), requires_grad=True, dtype=dtype, device=device
+        )
         A = A[1:].reshape(5120, 2560)
         # check that heuristic does not fail on 2-byte alignment
         X = torch.rand((26, 1, 2560), requires_grad=True, dtype=dtype, device=device)
@@ -117,14 +123,21 @@ class TestMatmulCuda(TestCase):
     @unittest.skipIf(TEST_WITH_ROCM, "Only CUDA 11+ is supported")
     @unittest.skipIf(IS_JETSON, "Too large for Jetson")
     @toleranceOverride({torch.float32: xtol(atol=1e-5, rtol=1e-5)})
-    @dtypes(*([torch.float32, torch.float16] +
-              [torch.bfloat16] if TEST_WITH_ROCM or SM53OrLater else []))
+    @dtypes(
+        *(
+            [torch.float32, torch.float16] + [torch.bfloat16]
+            if TEST_WITH_ROCM or SM53OrLater
+            else []
+        )
+    )
     @parametrize(
         "batch_size, N, M, P",
-        [(2, 100, 100, 100),
-         (2, 1000, 1000, 1000),
-         (1, 10000, 1000, 10000),
-         (1, 10000, 10000, 10000)],
+        [
+            (2, 100, 100, 100),
+            (2, 1000, 1000, 1000),
+            (1, 10000, 1000, 10000),
+            (1, 10000, 10000, 10000),
+        ],
         name_fn=lambda batch_size, N, M, P: "{}_{}_{}_{}".format(batch_size, N, M, P),
     )
     def test_cublas_baddbmm_large_input(self, device, batch_size, N, M, P, dtype):
@@ -137,7 +150,8 @@ class TestMatmulCuda(TestCase):
         A = torch.rand((N, P), device=device, dtype=dtype)
 
         def _convert_to_cpu(t):
-            return t.to(device='cpu', dtype=cpu_dtype)
+            return t.to(device="cpu", dtype=cpu_dtype)
+
         M1_cpu, M2_cpu, A_cpu = map(_convert_to_cpu, [M1, M2, A])
 
         # linear
@@ -147,22 +161,31 @@ class TestMatmulCuda(TestCase):
         # test multiply the identity matrix
         if N == M and M == P:
             M2_eye = torch.eye(N, device=device, dtype=dtype)
-            out1_eye_gpu = torch.nn.functional.linear(M1, M2_eye.t(), torch.zeros_like(A))
+            out1_eye_gpu = torch.nn.functional.linear(
+                M1, M2_eye.t(), torch.zeros_like(A)
+            )
             self.assertEqual(M1_cpu.to(dtype=dtype), out1_eye_gpu.cpu())
 
         # baddbmm
         def _expand_to_batch(t: torch.Tensor):
-            return t.expand((batch_size, ) + t.size())
-        alpha, beta = 1.0, 1.0
-        M1, M2, A, M1_cpu, M2_cpu, A_cpu = map(_expand_to_batch, [M1, M2, A, M1_cpu, M2_cpu, A_cpu])
+            return t.expand((batch_size,) + t.size())
 
-        out2_cpu = torch.baddbmm(A_cpu, M1_cpu, M2_cpu, beta=beta, alpha=alpha).to(dtype=dtype)
+        alpha, beta = 1.0, 1.0
+        M1, M2, A, M1_cpu, M2_cpu, A_cpu = map(
+            _expand_to_batch, [M1, M2, A, M1_cpu, M2_cpu, A_cpu]
+        )
+
+        out2_cpu = torch.baddbmm(A_cpu, M1_cpu, M2_cpu, beta=beta, alpha=alpha).to(
+            dtype=dtype
+        )
         out2_gpu = torch.baddbmm(A, M1, M2, beta=beta, alpha=alpha).cpu()
         self.assertEqual(out2_cpu, out2_gpu)
         # test multiply the identity matrix
         if N == M and M == P:
             M2_eye = torch.eye(N, device=device, dtype=dtype).expand(batch_size, N, N)
-            out2_eye_gpu = torch.baddbmm(torch.zeros_like(A), M1, M2_eye, beta=beta, alpha=alpha)
+            out2_eye_gpu = torch.baddbmm(
+                torch.zeros_like(A), M1, M2_eye, beta=beta, alpha=alpha
+            )
             self.assertEqual(M1_cpu.to(dtype=dtype), out2_eye_gpu.cpu())
 
         # cross comparison
@@ -171,5 +194,5 @@ class TestMatmulCuda(TestCase):
 
 instantiate_device_type_tests(TestMatmulCuda, globals(), except_for="cpu")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

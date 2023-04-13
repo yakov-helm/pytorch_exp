@@ -23,6 +23,7 @@ FP16_ENGINES = ["SIMD_Q_FP16", "SIMD_Q_STOC_FP16", "SIMD_Q_STOC_MKL_FP16"]
 
 logger = logging.getLogger(__name__)
 
+
 def reset_optimizer_instance_count():
     """
     This function clears the _optimizer_instance_count. And keeps it
@@ -120,7 +121,7 @@ class Optimizer:
         learning_rate_blob=None,
         policy="fixed",
         iter_val=0,
-        **kwargs
+        **kwargs,
     ):
         if learning_rate_blob is None:
             learning_rate_blob = self.make_unique_blob_name("lr")
@@ -133,9 +134,13 @@ class Optimizer:
                 iter_mutex=utils.ITERATION_MUTEX_LR_NAME,
                 iter_val=iter_val,
             )
-            logger.info(f"Created dedicated learning rate iteration counter: {iteration}")
+            logger.info(
+                f"Created dedicated learning rate iteration counter: {iteration}"
+            )
         else:
-            iteration = utils.BuildUniqueMutexIter(param_init_net, net, iter_val=iter_val)
+            iteration = utils.BuildUniqueMutexIter(
+                param_init_net, net, iter_val=iter_val
+            )
 
         if not net.BlobIsDefined(learning_rate_blob):
             # There is one interesting thing here: since we are minimizing, we are
@@ -145,7 +150,7 @@ class Optimizer:
                 learning_rate_blob,
                 base_lr=-base_learning_rate,
                 policy=policy,
-                **kwargs
+                **kwargs,
             )
         else:
             lr = net.GetBlobRef(learning_rate_blob)
@@ -194,7 +199,9 @@ class Optimizer:
         ), "This method should be only called when dedicated learning rate iteration counter is used."
 
         iteration = utils.BuildUniqueMutexIter(param_init_net, net, iter_val=iter_val)
-        logger.info(f"Created iteration counter for non learning rate purposes: {iteration}")
+        logger.info(
+            f"Created iteration counter for non learning rate purposes: {iteration}"
+        )
 
         # We need to create a dummy learning rate operator to enforce that
         # iteration counter blob being placed in the trainer nodes. Otherwise,
@@ -300,7 +307,7 @@ class SgdOptimizer(Optimizer):
         nesterov=True,
         sparse_dedup_aggregator=None,
         lars=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.base_learning_rate = base_learning_rate
@@ -353,7 +360,7 @@ class SgdOptimizer(Optimizer):
             param_init_net,
             base_learning_rate=self.base_learning_rate * lr_sign,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
 
         dev = scope.CurrentDeviceScope()
@@ -416,7 +423,7 @@ class MultiPrecisionSgdOptimizer(SgdOptimizer):
         policy="fixed",
         nesterov=True,
         sparse_dedup_aggregator=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             base_learning_rate=base_learning_rate,
@@ -424,7 +431,7 @@ class MultiPrecisionSgdOptimizer(SgdOptimizer):
             momentum=momentum,
             nesterov=nesterov,
             sparse_dedup_aggregator=sparse_dedup_aggregator,
-            **kwargs
+            **kwargs,
         )
 
     def _run(self, net, param_init_net, param_info):
@@ -451,7 +458,7 @@ class MultiPrecisionSgdOptimizer(SgdOptimizer):
             param_init_net,
             base_learning_rate=-self.base_learning_rate,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
 
         momentum_data = param_init_net.ConstantFill(
@@ -487,7 +494,7 @@ class FP16SgdOptimizer(SgdOptimizer):
         nesterov=True,
         weight_decay=0.0001,
         sparse_dedup_aggregator=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             base_learning_rate=base_learning_rate,
@@ -495,7 +502,7 @@ class FP16SgdOptimizer(SgdOptimizer):
             momentum=momentum,
             nesterov=nesterov,
             sparse_dedup_aggregator=sparse_dedup_aggregator,
-            **kwargs
+            **kwargs,
         )
         self.weight_decay = weight_decay
 
@@ -550,7 +557,7 @@ class FP16SgdOptimizer(SgdOptimizer):
             param_init_net,
             base_learning_rate=-self.base_learning_rate,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
 
         momentum_data_fp32 = param_init_net.ConstantFill(
@@ -633,7 +640,7 @@ class AdagradOptimizer(Optimizer):
         weight_scale=None,
         counter_halflife=-1,
         use_dedicated_lr_iteration_counter=False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.alpha = alpha
@@ -656,7 +663,9 @@ class AdagradOptimizer(Optimizer):
         self._process_swa_options(swa_options)
         self._process_ema_options(ema_options)
 
-    def set_mapping_for_param2ema_teacher_param(self, param_mapping: Dict[str, Any]) -> None:
+    def set_mapping_for_param2ema_teacher_param(
+        self, param_mapping: Dict[str, Any]
+    ) -> None:
         self.param2ema_teacher_param = param_mapping
 
     def _process_swa_options(self, swa_options):
@@ -671,7 +680,9 @@ class AdagradOptimizer(Optimizer):
     def _process_ema_options(self, ema_options):
         logger.info(f"ema_options: {str(ema_options)}")
         self.ema_enabled = True if ema_options and "ema_alpha" in ema_options else False
-        self.ema_teacher_enabled = True if ema_options and "ema_teacher_alpha" in ema_options else False
+        self.ema_teacher_enabled = (
+            True if ema_options and "ema_teacher_alpha" in ema_options else False
+        )
         self.param2ema_teacher_param = {}
         if self.ema_enabled or self.ema_teacher_enabled:
             self.ema_start = ema_options.get("ema_start", None)
@@ -787,7 +798,7 @@ class AdagradOptimizer(Optimizer):
             param_init_net,
             base_learning_rate=self.alpha,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
         iteration = (
             self.build_non_lr_iter(net, param_init_net, iter_val=0)
@@ -1154,7 +1165,6 @@ class AdagradOptimizer(Optimizer):
                 ema_alpha=self.ema_alpha,
             )
 
-
         if self.ema_teacher_enabled:
             if param in self.param2ema_teacher_param:
                 param_ema_teacher = self.param2ema_teacher_param[param]
@@ -1205,7 +1215,7 @@ class WngradOptimizer(Optimizer):
         lars=None,
         output_effective_lr=False,
         output_effective_lr_and_update=False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.alpha = alpha
@@ -1255,7 +1265,7 @@ class WngradOptimizer(Optimizer):
             param_init_net,
             base_learning_rate=self.alpha,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
 
         moment = param_init_net.ConstantFill(
@@ -1302,7 +1312,7 @@ class StormOptimizer(Optimizer):
         policy="fixed",
         sparse_dedup_aggregator=None,
         lars=None,
-        **kwargs
+        **kwargs,
     ):
         """Constructor function to add STORM Optimizer
 
@@ -1365,7 +1375,7 @@ class StormOptimizer(Optimizer):
             param_init_net,
             base_learning_rate=self.lr,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
 
         moment = param_init_net.ConstantFill(param, str(param) + "_moment", value=0.0)
@@ -1405,7 +1415,7 @@ class AdadeltaOptimizer(Optimizer):
         policy="fixed",
         sparse_dedup_aggregator=None,
         engine="",
-        **kwargs
+        **kwargs,
     ):
         """Constructor function to add Adadelta Optimizer
 
@@ -1441,7 +1451,7 @@ class AdadeltaOptimizer(Optimizer):
             param_init_net,
             base_learning_rate=self.alpha,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
 
         moment = param_init_net.ConstantFill(
@@ -1596,7 +1606,7 @@ class AdamOptimizer(Optimizer):
         engine="",
         enableRAdam=False,
         use_smart_decay=False,  # See https://fburl.com/2jdiwrhy for context.
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.alpha = alpha
@@ -1613,14 +1623,26 @@ class AdamOptimizer(Optimizer):
         self.enableRAdam = enableRAdam
         if use_smart_decay:
             if rowWise:
-                raise NotImplementedError(('Smart decay is not implemented for rowWise Adam.  '
-                                           'Set rowWise or use_smart_decay to False.'))
+                raise NotImplementedError(
+                    (
+                        "Smart decay is not implemented for rowWise Adam.  "
+                        "Set rowWise or use_smart_decay to False."
+                    )
+                )
             if enableRAdam:
-                raise NotImplementedError(('Smart decay is not implemented for RAdam.  '
-                                           'Set enableRAdam or use_smart_decay to False.'))
+                raise NotImplementedError(
+                    (
+                        "Smart decay is not implemented for RAdam.  "
+                        "Set enableRAdam or use_smart_decay to False."
+                    )
+                )
             if use_lr_adaption:
-                raise NotImplementedError(('Smart decay is not implemented with lr_adaption.  '
-                                           'Set use_lr_adaption or use_smart_decay to False.'))
+                raise NotImplementedError(
+                    (
+                        "Smart decay is not implemented with lr_adaption.  "
+                        "Set use_lr_adaption or use_smart_decay to False."
+                    )
+                )
 
         self.use_smart_decay = use_smart_decay
         self.init_kwargs = kwargs
@@ -1637,7 +1659,7 @@ class AdamOptimizer(Optimizer):
             param_init_net,
             base_learning_rate=self.alpha,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
 
         m1 = param_init_net.ConstantFill([param], param + "_first_moment", value=0.0)
@@ -1656,7 +1678,11 @@ class AdamOptimizer(Optimizer):
         if self.use_smart_decay:
             shapes, _ = workspace.InferShapesAndTypes([param_init_net])
             last_seen = param_init_net.ConstantFill(
-                [], param + "_last_seen", shape=[shapes[param][0]], value=0, dtype=core.DataType.INT64
+                [],
+                param + "_last_seen",
+                shape=[shapes[param][0]],
+                value=0,
+                dtype=core.DataType.INT64,
             )
             self._aux_params.local.append(last_seen)
 
@@ -1701,7 +1727,16 @@ class AdamOptimizer(Optimizer):
                 )
             elif op == "SmartDecaySparseAdam":
                 net.__getattr__(op)(
-                    [param, m1, m2, last_seen, grad.indices, grad.values, lr, iteration],
+                    [
+                        param,
+                        m1,
+                        m2,
+                        last_seen,
+                        grad.indices,
+                        grad.values,
+                        lr,
+                        iteration,
+                    ],
                     output_blobs,
                     beta1=self.beta1,
                     beta2=self.beta2,
@@ -1747,6 +1782,7 @@ class AdamOptimizer(Optimizer):
         self.alpha *= scale
         return
 
+
 class DecayAdagradOptimizer(Optimizer):
     def __init__(
         self,
@@ -1759,7 +1795,7 @@ class DecayAdagradOptimizer(Optimizer):
         bias_correction_first=True,
         policy="fixed",
         engine="",
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.alpha = alpha
@@ -1773,12 +1809,16 @@ class DecayAdagradOptimizer(Optimizer):
         self.init_kwargs = kwargs
         self._process_ema_options(ema_options)
 
-    def set_mapping_for_param2ema_teacher_param(self, param_mapping: Dict[str, Any]) -> None:
+    def set_mapping_for_param2ema_teacher_param(
+        self, param_mapping: Dict[str, Any]
+    ) -> None:
         self.param2ema_teacher_param = param_mapping
 
     def _process_ema_options(self, ema_options):
         self.ema_enabled = True if ema_options and "ema_alpha" in ema_options else False
-        self.ema_teacher_enabled = True if ema_options and "ema_teacher_alpha" in ema_options else False
+        self.ema_teacher_enabled = (
+            True if ema_options and "ema_teacher_alpha" in ema_options else False
+        )
         self.param2ema_teacher_param = {}
         if self.ema_enabled or self.ema_teacher_enabled:
             self.ema_start = ema_options.get("ema_start", None)
@@ -1802,12 +1842,14 @@ class DecayAdagradOptimizer(Optimizer):
             param_init_net,
             base_learning_rate=self.alpha,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
 
         if isinstance(grad, core.GradientSlice):
             # hack for position weighted.
-            param_squared_sum = param_init_net.ConstantFill([param], param + "_squared_sum", value=0.0)
+            param_squared_sum = param_init_net.ConstantFill(
+                [param], param + "_squared_sum", value=0.0
+            )
             self._aux_params.local.append(param_squared_sum)
             output_blobs = [param, param_squared_sum]
             net.SparseAdagrad(
@@ -1816,8 +1858,12 @@ class DecayAdagradOptimizer(Optimizer):
                 epsilon=self.epsilon,
             )
         else:
-            m1 = param_init_net.ConstantFill([param], param + "_first_mo1ment", value=0.0)
-            m2 = param_init_net.ConstantFill([param], param + "_second_moment", value=0.0)
+            m1 = param_init_net.ConstantFill(
+                [param], param + "_first_mo1ment", value=0.0
+            )
+            m2 = param_init_net.ConstantFill(
+                [param], param + "_second_moment", value=0.0
+            )
             self._aux_params.shared.append(iteration)
             self._aux_params.local.append(m1)
             self._aux_params.local.append(m2)
@@ -1851,7 +1897,9 @@ class DecayAdagradOptimizer(Optimizer):
                 if param in self.param2ema_teacher_param:
                     param_ema_teacher = self.param2ema_teacher_param[param]
                     if not param_init_net.BlobIsDefined(param_ema_teacher):
-                        param_init_net.ConstantFill([param], param_ema_teacher, value=0.0)
+                        param_init_net.ConstantFill(
+                            [param], param_ema_teacher, value=0.0
+                        )
                         self._aux_params.local.append(param_ema_teacher)
 
                     net.EMA(
@@ -1867,6 +1915,7 @@ class DecayAdagradOptimizer(Optimizer):
         self.alpha *= scale
         return
 
+
 class YellowFinOptimizer(Optimizer):
     """YellowFin: An automatic tuner for momentum SGD
 
@@ -1880,10 +1929,10 @@ class YellowFinOptimizer(Optimizer):
         beta=0.999,
         curv_win_width=20,
         zero_debias=True,
-        epsilon=0.1 ** 6,
+        epsilon=0.1**6,
         policy="fixed",
         sparse_dedup_aggregator=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.alpha = alpha
@@ -1971,7 +2020,7 @@ class RmsPropOptimizer(Optimizer):
         epsilon=1e-5,
         policy="fixed",
         engine="",
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.alpha = alpha
@@ -2004,7 +2053,7 @@ class RmsPropOptimizer(Optimizer):
             param_init_net,
             base_learning_rate=-self.alpha,
             policy=self.policy,
-            **(self.init_kwargs)
+            **(self.init_kwargs),
         )
 
         grad_o = param_init_net.ConstantFill(
@@ -2202,7 +2251,7 @@ def build_sgd(
     base_learning_rate,
     max_gradient_norm=None,
     allow_lr_injection=False,
-    **kwargs
+    **kwargs,
 ):
     sgd_optimizer = SgdOptimizer(base_learning_rate, **kwargs)
     return _build(
@@ -2218,7 +2267,7 @@ def build_multi_precision_sgd(
     base_learning_rate,
     max_gradient_norm=None,
     allow_lr_injection=False,
-    **kwargs
+    **kwargs,
 ):
     multi_prec_sgd_optimizer = MultiPrecisionSgdOptimizer(base_learning_rate, **kwargs)
     return _build(
@@ -2255,7 +2304,7 @@ def build_adagrad(
     parameters=None,
     max_gradient_norm=None,
     allow_lr_injection=False,
-    **kwargs
+    **kwargs,
 ):
     adagrad_optimizer = AdagradOptimizer(alpha=base_learning_rate, **kwargs)
     return _build(
@@ -2272,7 +2321,7 @@ def build_wngrad(
     parameters=None,
     max_gradient_norm=None,
     allow_lr_injection=False,
-    **kwargs
+    **kwargs,
 ):
     wngrad_optimizer = WngradOptimizer(alpha=base_learning_rate, **kwargs)
     return _build(
@@ -2289,7 +2338,7 @@ def build_storm(
     parameters=None,
     max_gradient_norm=None,
     allow_lr_injection=False,
-    **kwargs
+    **kwargs,
 ):
     storm_optimizer = StormOptimizer(lr=base_learning_rate, **kwargs)
     return _build(
@@ -2306,7 +2355,7 @@ def build_adadelta(
     parameters=None,
     max_gradient_norm=None,
     allow_lr_injection=False,
-    **kwargs
+    **kwargs,
 ):
     adadelta_optimizer = AdadeltaOptimizer(alpha=base_learning_rate, **kwargs)
     return _build(
@@ -2322,7 +2371,7 @@ def build_adam(
     base_learning_rate,
     max_gradient_norm=None,
     allow_lr_injection=False,
-    **kwargs
+    **kwargs,
 ):
     adam_optimizer = AdamOptimizer(alpha=base_learning_rate, **kwargs)
     return _build(
@@ -2332,12 +2381,13 @@ def build_adam(
         allow_lr_injection=allow_lr_injection,
     )
 
+
 def build_decay_adagrad(
     model,
     base_learning_rate,
     max_gradient_norm=None,
     allow_lr_injection=False,
-    **kwargs
+    **kwargs,
 ):
     decay_adagrad_optimizer = DecayAdagradOptimizer(alpha=base_learning_rate, **kwargs)
     return _build(
@@ -2346,6 +2396,7 @@ def build_decay_adagrad(
         max_gradient_norm=max_gradient_norm,
         allow_lr_injection=allow_lr_injection,
     )
+
 
 def build_yellowfin(model, base_learning_rate=0.1, **kwargs):
     yellowfin_optimizer = YellowFinOptimizer(alpha=base_learning_rate, **kwargs)
@@ -2357,7 +2408,7 @@ def build_rms_prop(
     base_learning_rate,
     max_gradient_norm=None,
     allow_lr_injection=False,
-    **kwargs
+    **kwargs,
 ):
     rms_prop_optimizer = RmsPropOptimizer(alpha=base_learning_rate, **kwargs)
     return _build(

@@ -14,6 +14,7 @@ def constrain_as_value(symbol, min: Optional[int] = None, max: Optional[int] = N
     constrain_range(symbol, min=min, max=max)
     return symbol
 
+
 def constrain_as_size(symbol, min: int = 2, max: Optional[int] = None):
     """
     Add min/max constraint on the intermediate symbol which will be used as a size

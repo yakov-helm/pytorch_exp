@@ -69,7 +69,9 @@ def _aot_capture(mod, flat_args):
         fw_metadata = run_functionalized_fw_and_collect_metadata(
             lambda *args: pytree.tree_flatten(functional_call(*args))[0],
             keep_input_mutations=False,
-        )(*copy.deepcopy(full_args))  # type: ignore[operator]
+        )(
+            *copy.deepcopy(full_args)
+        )  # type: ignore[operator]
 
     assert len(fw_metadata.input_info) == len(full_args)
     mutated_input_indices = [
@@ -199,4 +201,9 @@ def do_not_use_experimental_export(f: Callable, args: Tuple, training=False):
     graph_module, guards = torchdynamo.export(f, *args, aten_graph=False)
     # TODO (tmanlaibaatar) do sth with guards?
     graph_module, _, out_spec = _aot_capture(graph_module, flat_args)
-    return ExportedProgram(fw_module=graph_module, example_inputs=original_flat_args, in_spec=in_spec, out_spec=out_spec)
+    return ExportedProgram(
+        fw_module=graph_module,
+        example_inputs=original_flat_args,
+        in_spec=in_spec,
+        out_spec=out_spec,
+    )

@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core
 from hypothesis import given, settings
 import caffe2.python.hypothesis_test_util as hu
@@ -11,9 +6,7 @@ import unittest
 
 
 class TestSoftplus(hu.HypothesisTestCase):
-
-    @given(X=hu.tensor(),
-           **hu.gcs)
+    @given(X=hu.tensor(), **hu.gcs)
     @settings(deadline=10000)
     def test_softplus(self, X, gc, dc):
         op = core.CreateOperator("Softplus", ["X"], ["Y"])

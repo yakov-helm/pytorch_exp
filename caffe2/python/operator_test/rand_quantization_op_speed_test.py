@@ -1,5 +1,3 @@
-
-
 import time
 
 import caffe2.python.hypothesis_test_util as hu
@@ -25,7 +23,7 @@ class TestSpeedFloatToFusedRandRowwiseQuantized(hu.HypothesisTestCase):
                 np.array([512, 969]),
             ]
         ),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=10000)
     def test_speed_of_rand_quantization(self, bitwidth_, random_, data_shape_, gc, dc):

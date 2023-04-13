@@ -6,6 +6,7 @@ import sys
 import torch
 from torch.fx import symbolic_trace, subgraph_rewriter
 from torch.fx.annotate import annotate
+
 # Make the helper files in test/ importable
 from torch.fx.experimental.rewriter import RewritingTracer
 
@@ -13,10 +14,13 @@ pytorch_test_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(pytorch_test_dir)
 from torch.testing._internal.jit_utils import JitTestCase
 
-if __name__ == '__main__':
-    raise RuntimeError("This test file is not meant to be run directly, use:\n\n"
-                       "\tpython test/test_fx.py TESTNAME\n\n"
-                       "instead.")
+if __name__ == "__main__":
+    raise RuntimeError(
+        "This test file is not meant to be run directly, use:\n\n"
+        "\tpython test/test_fx.py TESTNAME\n\n"
+        "instead."
+    )
+
 
 @torch.fx.wrap
 def wrapped_gemm_bias_mul(a, b, bias):
@@ -24,14 +28,15 @@ def wrapped_gemm_bias_mul(a, b, bias):
     mul_res = lin_res * a
     return lin_res, mul_res
 
+
 @torch.fx.wrap
 def wrapped_gemm_bias_mul_with_c(a, b, bias, c):
     lin_res = torch.nn.functional.linear(a, b, bias=bias)
     mul_res = lin_res * c
     return lin_res, mul_res
 
-class TestSubgraphRewriter(JitTestCase):
 
+class TestSubgraphRewriter(JitTestCase):
     def test_subgraph_rewriter_preserves_logic(self):
         class M(torch.nn.Module):
             def forward(self, x):
@@ -109,7 +114,9 @@ class TestSubgraphRewriter(JitTestCase):
 
         x = torch.randn(1, 5)
 
-        matches = subgraph_rewriter.replace_pattern_with_filters(traced, pattern, replacement, [])
+        matches = subgraph_rewriter.replace_pattern_with_filters(
+            traced, pattern, replacement, []
+        )
 
         traced.graph.lint()
 
@@ -296,7 +303,9 @@ class TestSubgraphRewriter(JitTestCase):
         test_outs = traced.forward(x)
         self.assertEqual(ref_outs, test_outs)
 
-    def test_subgraph_rewriter_pattern_output_pattern_node_can_have_users_that_are_not_matched(self):
+    def test_subgraph_rewriter_pattern_output_pattern_node_can_have_users_that_are_not_matched(
+        self,
+    ):
         class M(torch.nn.Module):
             def forward(self, x):
                 y = torch.relu(x)
@@ -325,7 +334,9 @@ class TestSubgraphRewriter(JitTestCase):
         test_outs = traced.forward(x)
         self.assertEqual(ref_outs, test_outs)
 
-    def test_subgraph_rewriter_internal_pattern_nodes_cannot_have_users_that_are_not_matched(self):
+    def test_subgraph_rewriter_internal_pattern_nodes_cannot_have_users_that_are_not_matched(
+        self,
+    ):
         class M(torch.nn.Module):
             def forward(self, x, w1, w2, b1, b2):
                 m0 = torch.cat([w1, w2])
@@ -384,6 +395,7 @@ class TestSubgraphRewriter(JitTestCase):
 
         Credit to Jerry Zhang (GitHub: jerryzh168) for this test case
         """
+
         class M(torch.nn.Module):
             def __init__(self):
                 super().__init__()
@@ -482,7 +494,6 @@ class TestSubgraphRewriter(JitTestCase):
         self.assertEqual(type(submod), torch.nn.ReLU)
 
     def test_subgraph_rewriter_annotations_int(self):
-
         class M1(torch.nn.Module):
             def forward(self, x):
                 y: int = x
@@ -499,12 +510,11 @@ class TestSubgraphRewriter(JitTestCase):
         module = M2()
         symbolic_traced: torch.fx.GraphModule = symbolic_trace(module)
         for n, m in zip(symbolic_traced.graph.nodes, graph.nodes):
-            if n.op == 'placeholder':
+            if n.op == "placeholder":
                 assert n.type == int
                 assert m.type == int
 
     def test_subgraph_rewriter_replace_consecutive_submodules(self):
-
         def f(x):
             x = torch.sigmoid(x)
             x = torch.sigmoid(x)
@@ -535,7 +545,6 @@ class TestSubgraphRewriter(JitTestCase):
         self.assertEqual(ref_outs, test_outs)
 
     def test_subgraph_rewriter_with_overlapping_matches(self):
-
         def f(x):
             x = torch.sigmoid(x)
             x = torch.sigmoid(x)
@@ -568,7 +577,6 @@ class TestSubgraphRewriter(JitTestCase):
         self.assertEqual(ref_outs, test_outs)
 
     def test_subgraph_rewriter_replace_with_multiple_outputs(self):
-
         def f(x):
             y = torch.sigmoid(x)
             z = torch.relu(x)
@@ -601,7 +609,6 @@ class TestSubgraphRewriter(JitTestCase):
         self.assertEqual(ref_outs, test_outs)
 
     def test_subgraph_rewriter_replace_with_duplicated_outputs(self):
-
         def f(x1, x2):
             x = x1 - x2
             y = torch.sigmoid(x)
@@ -669,7 +676,6 @@ class TestSubgraphRewriter(JitTestCase):
         self.assertEqual(ref_outs, test_outs)
 
     def test_subgraph_rewriter_call_method(self):
-
         class M(torch.nn.Module):
             def forward(self, x):
                 x = x.dequantize()
@@ -700,7 +706,6 @@ class TestSubgraphRewriter(JitTestCase):
         self.assertEqual(ref_outs, test_outs)
 
     def test_subgraph_rewriter_nodes_with_kwargs(self):
-
         class M(torch.nn.Module):
             def __init__(self) -> None:
                 super().__init__()
@@ -762,9 +767,7 @@ class TestSubgraphRewriter(JitTestCase):
                 # potential match at anchor 1
                 mul_res_1 = in1 * lin_res_2
                 sum_res_1 = mul_res_1 + in1
-                lin_res_3 = torch.nn.functional.linear(
-                    sum_res_1, self.w2, bias=self.b2
-                )
+                lin_res_3 = torch.nn.functional.linear(sum_res_1, self.w2, bias=self.b2)
                 sigmoid_res_1 = torch.sigmoid(lin_res_3)
                 # potential match at anchor 2
                 mul_res_2 = lin_res_3 * sigmoid_res_1
@@ -790,9 +793,8 @@ class TestSubgraphRewriter(JitTestCase):
 
         traced = symbolic_trace(M())
         matches = subgraph_rewriter.replace_pattern(
-            traced,
-            gemm_bias_mul_pattern_with_c,
-            gemm_bias_mul_replacement_with_c)
+            traced, gemm_bias_mul_pattern_with_c, gemm_bias_mul_replacement_with_c
+        )
 
         self.assertEqual(len(matches), 2)
 
@@ -833,7 +835,7 @@ class TestSubgraphRewriter(JitTestCase):
             return x
 
         def second_input_is_scalar(match, original_graph, pattern_graph):
-            """ check the node that's matched to the second input of the pattern graph
+            """check the node that's matched to the second input of the pattern graph
             is a scalar number
             """
             input_idx = 0
@@ -847,19 +849,21 @@ class TestSubgraphRewriter(JitTestCase):
             return True
 
         def check_replacement_nodes(self, traced, matches):
-            replacement_nodes_in_graph = [node for node in traced.graph.nodes if node.target == torch.mul]
+            replacement_nodes_in_graph = [
+                node for node in traced.graph.nodes if node.target == torch.mul
+            ]
             replacement_nodes_in_res = [r for m in matches for r in m.replacements]
-            self.assertEqual(len(replacement_nodes_in_graph), len(replacement_nodes_in_res))
+            self.assertEqual(
+                len(replacement_nodes_in_graph), len(replacement_nodes_in_res)
+            )
             self.assertEqual(replacement_nodes_in_graph, replacement_nodes_in_res)
             return len(replacement_nodes_in_graph)
 
         # match without filter, should find 2 match
         traced = symbolic_trace(M())
         matches = subgraph_rewriter.replace_pattern_with_filters(
-            traced,
-            BinaryOpScalarReLUPattern,
-            BinaryOpScalarReLUReplacement,
-            None)
+            traced, BinaryOpScalarReLUPattern, BinaryOpScalarReLUReplacement, None
+        )
         self.assertEqual(len(matches), 2)
         self.assertEqual(check_replacement_nodes(self, traced, matches), 2)
 
@@ -869,7 +873,8 @@ class TestSubgraphRewriter(JitTestCase):
             traced,
             BinaryOpScalarReLUPattern,
             BinaryOpScalarReLUReplacement,
-            [second_input_is_scalar])
+            [second_input_is_scalar],
+        )
         self.assertEqual(len(matches), 1)
         self.assertEqual(check_replacement_nodes(self, traced, matches), 1)
 
@@ -889,10 +894,13 @@ class TestSubgraphRewriter(JitTestCase):
 
         self.assertEqual(len(matches), 1)
 
-        self.assertExpectedInline(traced.code.strip(), """\
+        self.assertExpectedInline(
+            traced.code.strip(),
+            """\
 def forward(self, x):
     _reshape_alias_copy_default_1 = torch.ops.aten._reshape_alias_copy.default(x, [3, 4], [1, 2]);  x = None
-    return _reshape_alias_copy_default_1""")  # noqa: B950
+    return _reshape_alias_copy_default_1""",
+        )  # noqa: B950
 
     def test_replacement_with_attrs(self):
         class M(torch.nn.Module):

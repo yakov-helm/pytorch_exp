@@ -40,4 +40,10 @@ import sympy
 # )
 def dynamic_dim(t: torch.Tensor, index: int):
     from torch._dynamo.eval_frame import Constraint
-    return Constraint(weakref.ref(t), id(t), index, StrictMinMaxConstraint(ValueRanges(lower=2, upper=sympy.oo)))
+
+    return Constraint(
+        weakref.ref(t),
+        id(t),
+        index,
+        StrictMinMaxConstraint(ValueRanges(lower=2, upper=sympy.oo)),
+    )

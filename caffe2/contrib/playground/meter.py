@@ -1,13 +1,7 @@
-
-
-
-
-
 from abc import abstractmethod
 
 
 class Meter:
-
     @abstractmethod
     def __init__(self, **kwargs):
         pass

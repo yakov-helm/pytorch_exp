@@ -1,7 +1,3 @@
-
-
-
-
 import functools
 
 import numpy as np
@@ -16,13 +12,13 @@ class TestNormalizeOp(hu.HypothesisTestCase):
         X=hu.tensor(
             min_dim=1, max_dim=5, elements=hu.floats(min_value=0.5, max_value=1.0)
         ),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(max_examples=10, deadline=None)
     def test_normalize(self, X, gc, dc):
         def ref_normalize(X, axis):
             x_normed = X / np.maximum(
-                np.sqrt((X ** 2).sum(axis=axis, keepdims=True)), 1e-12
+                np.sqrt((X**2).sum(axis=axis, keepdims=True)), 1e-12
             )
             return (x_normed,)
 
@@ -39,7 +35,7 @@ class TestNormalizeOp(hu.HypothesisTestCase):
         X=hu.tensor(
             min_dim=1, max_dim=5, elements=hu.floats(min_value=0.5, max_value=1.0)
         ),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(max_examples=10, deadline=None)
     def test_normalize_L1(self, X, gc, dc):

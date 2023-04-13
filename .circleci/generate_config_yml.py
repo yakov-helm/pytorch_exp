@@ -82,15 +82,19 @@ def _for_all_items(items, functor) -> None:
 
 def filter_master_only_jobs(items):
     def _is_main_or_master_item(item):
-        filters = item.get('filters', None)
-        branches = filters.get('branches', None) if filters is not None else None
-        branches_only = branches.get('only', None) if branches is not None else None
-        return ('main' in branches_only or 'master' in branches_only) if branches_only is not None else False
+        filters = item.get("filters", None)
+        branches = filters.get("branches", None) if filters is not None else None
+        branches_only = branches.get("only", None) if branches is not None else None
+        return (
+            ("main" in branches_only or "master" in branches_only)
+            if branches_only is not None
+            else False
+        )
 
     master_deps = set()
 
     def _save_requires_if_master(item_type, item):
-        requires = item.get('requires', None)
+        requires = item.get("requires", None)
         item_name = item.get("name", None)
         if not isinstance(requires, list):
             return
@@ -107,9 +111,9 @@ def filter_master_only_jobs(items):
         item_name = item_name.strip('"') if item_name is not None else None
         if not _is_main_or_master_item(item) and item_name not in master_deps:
             return None
-        if 'filters' in item:
+        if "filters" in item:
             item = item.copy()
-            item.pop('filters')
+            item.pop("filters")
         return {item_type: item}
 
     # Scan of dependencies twice to pick up nested required jobs
@@ -123,12 +127,12 @@ def generate_required_docker_images(items):
     required_docker_images = set()
 
     def _requires_docker_image(item_type, item):
-        requires = item.get('requires', None)
+        requires = item.get("requires", None)
         if not isinstance(requires, list):
             return
         for requirement in requires:
-            requirement = requirement.replace('"', '')
-            if requirement.startswith('docker-'):
+            requirement = requirement.replace('"', "")
+            if requirement.startswith("docker-"):
                 required_docker_images.add(requirement)
 
     _for_all_items(items, _requires_docker_image)

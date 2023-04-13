@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core, workspace
 from hypothesis import given
 import caffe2.python.hypothesis_test_util as hu
@@ -29,7 +24,7 @@ class RoIAlignRotatedOp(hu.HypothesisTestCase):
         C=st.integers(min_value=1, max_value=3),
         num_rois=st.integers(min_value=0, max_value=10),
         pooled_size=st.sampled_from([7, 14]),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_horizontal_rois(self, H, W, C, num_rois, pooled_size, gc, dc):
         """
@@ -86,11 +81,9 @@ class RoIAlignRotatedOp(hu.HypothesisTestCase):
         num_rois=st.integers(min_value=0, max_value=10),
         pooled_size=st.sampled_from([7, 14]),
         angle=st.sampled_from([-270, -180, -90, 90, 180, 270]),
-        **hu.gcs
+        **hu.gcs,
     )
-    def test_simple_rotations(
-        self, H, W, C, num_rois, pooled_size, angle, gc, dc
-    ):
+    def test_simple_rotations(self, H, W, C, num_rois, pooled_size, angle, gc, dc):
         """
         Test with right-angled rotations that don't need interpolation.
         """
@@ -112,7 +105,7 @@ class RoIAlignRotatedOp(hu.HypothesisTestCase):
             sampling_ratio=0,
         )
 
-        def roialign_rot90(m, k=1, axes=(0,1)):
+        def roialign_rot90(m, k=1, axes=(0, 1)):
             axes = tuple(axes)
             if len(axes) != 2:
                 raise ValueError("len(axes) must be 2.")
@@ -122,10 +115,15 @@ class RoIAlignRotatedOp(hu.HypothesisTestCase):
             if axes[0] == axes[1] or np.absolute(axes[0] - axes[1]) == m.ndim:
                 raise ValueError("Axes must be different.")
 
-            if (axes[0] >= m.ndim or axes[0] < -m.ndim or
-                    axes[1] >= m.ndim or axes[1] < -m.ndim):
+            if (
+                axes[0] >= m.ndim
+                or axes[0] < -m.ndim
+                or axes[1] >= m.ndim
+                or axes[1] < -m.ndim
+            ):
                 raise ValueError(
-                    "Axes={} out of range for array of ndim={}.".format(axes, m.ndim))
+                    "Axes={} out of range for array of ndim={}.".format(axes, m.ndim)
+                )
 
             k %= 4
 
@@ -135,24 +133,28 @@ class RoIAlignRotatedOp(hu.HypothesisTestCase):
                 return roialign_flip(roialign_flip(m, axes[0]), axes[1])
 
             axes_list = np.arange(0, m.ndim)
-            (axes_list[axes[0]], axes_list[axes[1]]) = (axes_list[axes[1]],
-                                                        axes_list[axes[0]])
+            (axes_list[axes[0]], axes_list[axes[1]]) = (
+                axes_list[axes[1]],
+                axes_list[axes[0]],
+            )
 
             if k == 1:
-                return np.transpose(roialign_flip(m,axes[1]), axes_list)
+                return np.transpose(roialign_flip(m, axes[1]), axes_list)
             else:
                 # k == 3
                 return roialign_flip(np.transpose(m, axes_list), axes[1])
 
         def roialign_flip(m, axis):
-            if not hasattr(m, 'ndim'):
+            if not hasattr(m, "ndim"):
                 m = np.asarray(m)
             indexer = [slice(None)] * m.ndim
             try:
                 indexer[axis] = slice(None, None, -1)
             except IndexError as e:
-                raise ValueError("axis=%i is invalid for the %i-dimensional input array"
-                                 % (axis, m.ndim)) from e
+                raise ValueError(
+                    "axis=%i is invalid for the %i-dimensional input array"
+                    % (axis, m.ndim)
+                ) from e
             return m[tuple(indexer)]
 
         def roialign_ref(X, R):
@@ -205,6 +207,7 @@ class RoIAlignRotatedOp(hu.HypothesisTestCase):
             self.assertGradientChecks(gc, op, [X, R], 0, [0])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import unittest
+
     unittest.main()

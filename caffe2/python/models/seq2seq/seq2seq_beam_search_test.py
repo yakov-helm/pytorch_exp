@@ -1,8 +1,3 @@
-
-
-
-
-
 import numpy as np
 import os
 import tempfile
@@ -16,7 +11,6 @@ from caffe2.python.models.seq2seq.translate import (
 
 
 class Seq2SeqBeamSearchTest(test_util.TestCase):
-
     def _build_seq2seq_model(
         self,
         model_params,
@@ -43,7 +37,7 @@ class Seq2SeqBeamSearchTest(test_util.TestCase):
         )
         model_obj.initialize_from_scratch()
 
-        checkpoint_path_prefix = os.path.join(tmp_dir, 'checkpoint')
+        checkpoint_path_prefix = os.path.join(tmp_dir, "checkpoint")
         checkpoint_path = model_obj.save(
             checkpoint_path_prefix=checkpoint_path_prefix,
             current_step=0,
@@ -65,12 +59,14 @@ class Seq2SeqBeamSearchTest(test_util.TestCase):
         assert model_obj is not None
 
         translate_params = dict(
-            ensemble_models=[dict(
-                source_vocab={i: str(i) for i in range(20)},
-                target_vocab={i: str(i) for i in range(20)},
-                model_params=model_params,
-                model_file=checkpoint_path,
-            )],
+            ensemble_models=[
+                dict(
+                    source_vocab={i: str(i) for i in range(20)},
+                    target_vocab={i: str(i) for i in range(20)},
+                    model_params=model_params,
+                    model_file=checkpoint_path,
+                )
+            ],
             decoding_params=dict(
                 beam_size=3,
                 word_reward=0,
@@ -101,34 +97,35 @@ class Seq2SeqBeamSearchTest(test_util.TestCase):
             self.assertEqual(targets, targets_2)
 
             workspace.FeedBlob(
-                'encoder_inputs',
-                np.array(
-                    [list(reversed(encoder_inputs))]
-                ).transpose().astype(dtype=np.int32))
+                "encoder_inputs",
+                np.array([list(reversed(encoder_inputs))])
+                .transpose()
+                .astype(dtype=np.int32),
+            )
             workspace.FeedBlob(
-                'encoder_lengths',
+                "encoder_lengths",
                 np.array([len(encoder_inputs)]).astype(dtype=np.int32),
             )
             decoder_inputs = [seq2seq_util.GO_ID] + targets[:-1]
             workspace.FeedBlob(
-                'decoder_inputs',
+                "decoder_inputs",
                 np.array([decoder_inputs]).transpose().astype(dtype=np.int32),
             )
             workspace.FeedBlob(
-                'decoder_lengths',
+                "decoder_lengths",
                 np.array([len(decoder_inputs)]).astype(dtype=np.int32),
             )
             workspace.FeedBlob(
-                'targets',
+                "targets",
                 np.array([targets]).transpose().astype(dtype=np.int32),
             )
             workspace.FeedBlob(
-                'target_weights',
+                "target_weights",
                 np.array([[1.0] * len(targets)]).astype(dtype=np.float32),
             )
 
             workspace.RunNet(model_obj.forward_net)
-            train_model_score = workspace.FetchBlob('total_loss_scalar')
+            train_model_score = workspace.FetchBlob("total_loss_scalar")
 
             np.testing.assert_almost_equal(
                 beam_model_score,
@@ -138,7 +135,7 @@ class Seq2SeqBeamSearchTest(test_util.TestCase):
 
     def test_attention(self):
         model_params = dict(
-            attention='regular',
+            attention="regular",
             decoder_layer_configs=[
                 dict(
                     num_units=32,
@@ -160,7 +157,7 @@ class Seq2SeqBeamSearchTest(test_util.TestCase):
 
     def test_2layer_attention(self):
         model_params = dict(
-            attention='regular',
+            attention="regular",
             decoder_layer_configs=[
                 dict(
                     num_units=32,
@@ -188,7 +185,7 @@ class Seq2SeqBeamSearchTest(test_util.TestCase):
 
     def test_multi_decoder(self):
         model_params = dict(
-            attention='regular',
+            attention="regular",
             decoder_layer_configs=[
                 dict(
                     num_units=32,

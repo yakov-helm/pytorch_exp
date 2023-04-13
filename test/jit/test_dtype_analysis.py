@@ -275,7 +275,9 @@ class TestDtypeAnalysis(TestDtypeBase):
         ):
             for dtype in (torch.int8, torch.float64):
                 # Gets default version for conv2d
-                sample_input: SampleInput = list(inputs_fn(None, "cpu", dtype, False))[-1]
+                sample_input: SampleInput = list(inputs_fn(None, "cpu", dtype, False))[
+                    -1
+                ]
                 input_args = [sample_input.input, *sample_input.args]
                 self.assert_dtype_equal_custom_args(fn, input_args)
 
@@ -353,7 +355,9 @@ class TestDtypeCustomRules(TestDtypeBase):
         # Run the Dtype Analysis
         graph = traced_fn.graph  # Note this is a cached graph
         input_tensors = [t for t in input_args if isinstance(t, torch.Tensor)]
-        input_tensors += [v for v in sample_input.kwargs.values() if isinstance(v, torch.Tensor)]
+        input_tensors += [
+            v for v in sample_input.kwargs.values() if isinstance(v, torch.Tensor)
+        ]
         self.prop_dtype_on_graph(graph, input_tensors)
         self.assert_output_dtype_equal(expected_res, graph)
 

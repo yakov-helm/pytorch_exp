@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -9,7 +7,7 @@ from caffe2.python import core, dyndep, utils, workspace
 from caffe2.quantization.server import utils as dnnlowp_utils
 from caffe2.quantization.server.dnnlowp_test_utils import (
     check_quantized_results_close,
-    run_conv_or_fc
+    run_conv_or_fc,
 )
 from hypothesis import assume, given, settings
 
@@ -41,7 +39,7 @@ class GroupWiseDNNLowPOpConvAcc16OpTest(hu.HypothesisTestCase):
         share_col_buffer=st.booleans(),
         preserve_activation_sparsity=st.booleans(),
         preserve_weight_sparsity=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(deadline=None)
     def test_groupwise_dnnlowp_conv_acc16_int(
@@ -194,7 +192,7 @@ class GroupWiseDNNLowPOpConvAcc16OpTest(hu.HypothesisTestCase):
         prepack_weight=st.booleans(),
         nbits_in_non_outlier=st.sampled_from((0, 1, 6, 8)),
         share_col_buffer=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_groupwise_dnnlowp_conv_acc16_outlier(
         self,
@@ -242,7 +240,9 @@ class GroupWiseDNNLowPOpConvAcc16OpTest(hu.HypothesisTestCase):
         for g in range(group):
             W[g * output_channels_per_group, 0, 0, 0] = W_min
             W[g * output_channels_per_group + 1, 0, 0, 0] = W_max
-            W[g * output_channels_per_group : (g + 1) * output_channels_per_group,] += g
+            W[
+                g * output_channels_per_group : (g + 1) * output_channels_per_group,
+            ] += g
 
         if order == "NCHW":
             X = utils.NHWC2NCHW(X)

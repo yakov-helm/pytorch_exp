@@ -1,5 +1,3 @@
-
-
 import unittest
 
 from caffe2.proto import caffe2_pb2
@@ -19,7 +17,7 @@ class TestSpecializedSegmentOps(hu.HypothesisTestCase):
         blocksize=st.sampled_from([8, 16, 32, 64, 85, 96, 128, 163]),
         normalize_by_lengths=st.booleans(),
         empty_indices=st.booleans(),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_sparse_lengths_sum_cpu(
         self,
@@ -104,7 +102,7 @@ class TestSpecializedSegmentOps(hu.HypothesisTestCase):
         fp16asint=st.booleans(),
         blocksize=st.sampled_from([8, 16, 32, 64, 85, 96, 128, 163]),
         empty_indices=st.booleans(),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_sparse_lengths_weightedsum_cpu(
         self, batchsize, fptype, fp16asint, blocksize, empty_indices, gc, dc
@@ -169,7 +167,7 @@ class TestSpecializedSegmentOps(hu.HypothesisTestCase):
         blocksize=st.sampled_from([8, 16, 17, 26, 32, 64, 85, 96, 128, 148, 163]),
         normalize_by_lengths=st.booleans(),
         empty_indices=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_sparse_lengths_weightedsum_8BitsRowwiseOp_cpu(
         self, batchsize, blocksize, normalize_by_lengths, empty_indices, gc, dc
@@ -236,7 +234,7 @@ class TestSpecializedSegmentOps(hu.HypothesisTestCase):
         blocksize=st.sampled_from([8, 16, 17, 26, 32, 64, 85, 96, 128, 148, 163]),
         normalize_by_lengths=st.booleans(),
         empty_indices=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_sparse_lengths_sum_8BitsRowwiseOp_cpu(
         self, batchsize, blocksize, normalize_by_lengths, empty_indices, gc, dc
@@ -294,7 +292,7 @@ class TestSpecializedSegmentOps(hu.HypothesisTestCase):
         batchsize=st.integers(1, 20),
         blocksize=st.sampled_from([8, 16, 17, 26, 32, 64, 85, 96, 128, 148, 163]),
         normalize_by_lengths=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(deadline=10000)
     def test_sparse_lengths_sum_8BitsRowwiseOp_cpu_invalid_index(

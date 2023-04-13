@@ -25,7 +25,7 @@ from torch.utils._python_dispatch import TorchDispatchMode
 class LoggingTensor(torch.Tensor):
     elem: torch.Tensor
 
-    __slots__ = ['elem']
+    __slots__ = ["elem"]
 
     context = contextlib.nullcontext
 
@@ -37,11 +37,15 @@ class LoggingTensor(torch.Tensor):
         # memory for the class in question, but it should still
         # advertise the same device as before
         r = torch.Tensor._make_wrapper_subclass(  # type: ignore[attr-defined]
-            cls, elem.size(),
-            strides=elem.stride(), storage_offset=elem.storage_offset(),
+            cls,
+            elem.size(),
+            strides=elem.stride(),
+            storage_offset=elem.storage_offset(),
             # TODO: clone storage aliasing
-            dtype=elem.dtype, layout=elem.layout,
-            device=elem.device, requires_grad=kwargs.get("requires_grad", False)
+            dtype=elem.dtype,
+            layout=elem.layout,
+            device=elem.device,
+            requires_grad=kwargs.get("requires_grad", False),
         )
         # ...the real tensor is held as an element on the tensor.
         r.elem = elem.detach() if r.requires_grad else elem
@@ -59,20 +63,29 @@ class LoggingTensor(torch.Tensor):
             return cls(e) if isinstance(e, torch.Tensor) else e
 
         with cls.context():
-            rs = tree_map(wrap, func(*tree_map(unwrap, args), **tree_map(unwrap, kwargs)))
-        logging.getLogger("LoggingTensor").info(f"{func.__module__}.{func.__name__}", args, kwargs, rs)
+            rs = tree_map(
+                wrap, func(*tree_map(unwrap, args), **tree_map(unwrap, kwargs))
+            )
+        logging.getLogger("LoggingTensor").info(
+            f"{func.__module__}.{func.__name__}", args, kwargs, rs
+        )
         return rs
+
 
 class LoggingTensorMode(TorchDispatchMode):
     def __torch_dispatch__(self, func, types, args=(), kwargs=None):
         if kwargs is None:
             kwargs = {}
         rs = func(*args, **kwargs)
-        logging.getLogger("LoggingTensor").info(f"{func.__module__}.{func.__name__}", args, kwargs, rs)
+        logging.getLogger("LoggingTensor").info(
+            f"{func.__module__}.{func.__name__}", args, kwargs, rs
+        )
         return rs
+
 
 class LoggingTensorReentrant(LoggingTensor):
     context = torch.overrides.enable_reentrant_dispatch
+
 
 # https://stackoverflow.com/questions/36408496/python-logging-handler-to-append-to-list
 class LoggingTensorHandler(logging.Handler):
@@ -88,26 +101,33 @@ class LoggingTensorHandler(logging.Handler):
     # WARNING: not deterministic over multiple threads, this matters for
     # autograd
     def _shortid(self, o: object) -> int:
-        if not hasattr(o, '_shortid'):
+        if not hasattr(o, "_shortid"):
             o._shortid = self.next_shortid  # type: ignore[attr-defined]
             self.next_shortid += 1
         return o._shortid  # type: ignore[attr-defined]
 
     def _fmt(self, a: object) -> str:
         cond_cls = torch.Tensor if self.use_shortid_for_all_tensors else LoggingTensor
-        return f'${self._shortid(a)}' if isinstance(a, cond_cls) else repr(a)
+        return f"${self._shortid(a)}" if isinstance(a, cond_cls) else repr(a)
 
     def emit(self, record):
-        fmt_args = ", ".join(itertools.chain(
-            (self._fmt(a) for a in record.args[0]),
-            (f"{k}={self._fmt(v)}" for k, v in record.args[1].items())
-        ))
-        fmt_rets = ", ".join(self._fmt(a) for a in record.args[2]) \
-            if isinstance(record.args[2], (list, tuple)) else self._fmt(record.args[2])
-        self.log_list.append(f'{fmt_rets} = {record.msg}({fmt_args})')
+        fmt_args = ", ".join(
+            itertools.chain(
+                (self._fmt(a) for a in record.args[0]),
+                (f"{k}={self._fmt(v)}" for k, v in record.args[1].items()),
+            )
+        )
+        fmt_rets = (
+            ", ".join(self._fmt(a) for a in record.args[2])
+            if isinstance(record.args[2], (list, tuple))
+            else self._fmt(record.args[2])
+        )
+        self.log_list.append(f"{fmt_rets} = {record.msg}({fmt_args})")
+
 
 def log_input(name: str, var: object):
     logging.getLogger("LoggingTensor").info("input", (name,), {}, (var,))
+
 
 @contextlib.contextmanager
 def capture_logs(is_mode=False) -> Iterator[List[str]]:
@@ -121,6 +141,7 @@ def capture_logs(is_mode=False) -> Iterator[List[str]]:
         yield log_list
     finally:
         logger.removeHandler(handler)
+
 
 @contextlib.contextmanager
 def capture_logs_with_logging_tensor_mode():

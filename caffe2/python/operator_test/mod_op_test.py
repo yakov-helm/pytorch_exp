@@ -15,7 +15,7 @@ def _data(draw):
             dtype=np.int64,
             elements=st.integers(
                 min_value=np.iinfo(np.int64).min, max_value=np.iinfo(np.int64).max
-            )
+            ),
         )
     )
 
@@ -29,11 +29,9 @@ class TestMod(hu.HypothesisTestCase):
         ),
         inplace=st.booleans(),
         sign_follow_divisor=st.booleans(),
-        **hu.gcs
+        **hu.gcs,
     )
-    def test_mod(
-        self, data, divisor, inplace, sign_follow_divisor, gc, dc
-    ):
+    def test_mod(self, data, divisor, inplace, sign_follow_divisor, gc, dc):
         if divisor == 0:
             # invalid test case
             return None
@@ -46,11 +44,11 @@ class TestMod(hu.HypothesisTestCase):
             return [output]
 
         op = core.CreateOperator(
-            'Mod',
-            ['data'],
-            ['data' if inplace else 'output'],
+            "Mod",
+            ["data"],
+            ["data" if inplace else "output"],
             divisor=divisor,
-            sign_follow_divisor=sign_follow_divisor
+            sign_follow_divisor=sign_follow_divisor,
         )
 
         self.assertReferenceChecks(gc, op, [data], ref)
@@ -58,4 +56,5 @@ class TestMod(hu.HypothesisTestCase):
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

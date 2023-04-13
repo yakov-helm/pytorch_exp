@@ -1,5 +1,6 @@
 from torch._C import _rename_privateuse1_backend
 
+
 def rename_privateuse1_backend(backend_name: str) -> None:
     r"""
     rename_privateuse1_backend(backend_name) -> None
@@ -66,5 +67,5 @@ def rename_privateuse1_backend(backend_name: str) -> None:
         # This will work, assuming that you've implemented the right C++ kernels
         # to implement torch.ones.
         >>> a = torch.ones(2, device="foo")
-        """
+    """
     return _rename_privateuse1_backend(backend_name)

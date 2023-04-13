@@ -17,6 +17,7 @@ workspace.GlobalInit(
     ]
 )
 
+
 class QuantTest(serial.SerializedTestCase):
     @settings(deadline=datetime.timedelta(seconds=10))
     def test_dequantize(self):
@@ -32,7 +33,9 @@ class QuantTest(serial.SerializedTestCase):
         )
         pred_net.op.add().CopyFrom(
             core.CreateOperator(
-                "Int8Dequantize", ["I"], ["Y"],
+                "Int8Dequantize",
+                ["I"],
+                ["Y"],
             )
         )
         print(pred_net)

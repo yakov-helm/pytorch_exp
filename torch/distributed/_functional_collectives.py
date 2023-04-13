@@ -68,12 +68,14 @@ As a wise man said once: Don't cross the streams (https://www.youtube.com/watch?
 data_ptr_to_work = dict()
 work_version = 0
 
+
 def _register_tensor_work(tensor, work):
     # Note: called directly by inductor codegen currently
     global data_ptr_to_work
     global work_version
     data_ptr_to_work[tensor.data_ptr()] = (work_version, work)
     work_version += 1
+
 
 def _wait_and_clear_tensor(data_ptr, version):
     global data_ptr_to_work
@@ -82,6 +84,7 @@ def _wait_and_clear_tensor(data_ptr, version):
     if version_and_work is not None and version_and_work[0] == version:
         version_and_work[1].wait()
         del data_ptr_to_work[data_ptr]
+
 
 def _register_wrapper_tensor(tensor_wrapper, tensor):
     global data_ptr_to_work
@@ -92,7 +95,10 @@ def _register_wrapper_tensor(tensor_wrapper, tensor):
         )
     else:
         # We force the collective to be waited in the case this tensor goes away to reduce the change of deadlocks.
-        weakref.finalize(tensor_wrapper, _wait_and_clear_tensor, tensor.data_ptr(), version)
+        weakref.finalize(
+            tensor_wrapper, _wait_and_clear_tensor, tensor.data_ptr(), version
+        )
+
 
 def _wait_tensor(tensor: torch.Tensor) -> torch.Tensor:
     global data_ptr_to_work
@@ -101,6 +107,7 @@ def _wait_tensor(tensor: torch.Tensor) -> torch.Tensor:
     if version_and_work is not None:
         _wait_and_clear_tensor(data_ptr, version_and_work[0])
     return tensor
+
 
 class AsyncCollectiveTensor(torch.Tensor):
     r"""
@@ -116,7 +123,7 @@ class AsyncCollectiveTensor(torch.Tensor):
     """
     elem: torch.Tensor
 
-    __slots__ = ['elem']
+    __slots__ = ["elem"]
 
     __torch_function__ = torch._C._disabled_torch_function_impl
 
@@ -124,10 +131,14 @@ class AsyncCollectiveTensor(torch.Tensor):
     def __new__(cls, elem: torch.Tensor):
 
         r = torch.Tensor._make_wrapper_subclass(  # type: ignore[attr-defined]
-            cls, elem.size(),
-            strides=elem.stride(), storage_offset=elem.storage_offset(),
-            dtype=elem.dtype, layout=elem.layout,
-            device=elem.device, requires_grad=False
+            cls,
+            elem.size(),
+            strides=elem.stride(),
+            storage_offset=elem.storage_offset(),
+            dtype=elem.dtype,
+            layout=elem.layout,
+            device=elem.device,
+            requires_grad=False,
         )
         r.elem = elem
         return r
@@ -148,12 +159,14 @@ class AsyncCollectiveTensor(torch.Tensor):
 
         return out
 
+
 def _str_to_reduce_op(reduceOp: str) -> dist.ReduceOp:
     reduceOp = reduceOp.upper()
     op = dist.ReduceOp.RedOpType.__members__.get(reduceOp)
     if op is None:
         raise ValueError(f"Invalid reduce operation {reduceOp}")
     return cast(dist.ReduceOp, op)
+
 
 # TODO assert if ranks has duplicated entries
 def _all_reduce(self, reduceOp, tag, ranks, group_size):
@@ -166,6 +179,7 @@ def _all_reduce(self, reduceOp, tag, ranks, group_size):
     _register_tensor_work(inplace_tensor, work)
 
     return inplace_tensor
+
 
 def _all_gather_into_tensor(shard, tag, ranks, group_size):
     # TODO add dim support?
@@ -180,10 +194,13 @@ def _all_gather_into_tensor(shard, tag, ranks, group_size):
         tensor_list = list(torch.chunk(out_tensor, group_size))
         work = dist.all_gather(tensor_list, shard, group=group, async_op=True)
     else:
-        work = dist.all_gather_into_tensor(out_tensor, shard, group=group, async_op=True)
+        work = dist.all_gather_into_tensor(
+            out_tensor, shard, group=group, async_op=True
+        )
     _register_tensor_work(out_tensor, work)
 
     return out_tensor
+
 
 def _reduce_scatter_tensor(
     input: torch.Tensor,
@@ -207,11 +224,19 @@ def _reduce_scatter_tensor(
     return out_tensor
 
 
-RANK_TYPES = Union[List[int], List[List[int]], dist.ProcessGroup, "dist._tensor.DeviceMesh", Tuple["dist._tensor.DeviceMesh", int]]
+RANK_TYPES = Union[
+    List[int],
+    List[List[int]],
+    dist.ProcessGroup,
+    "dist._tensor.DeviceMesh",
+    Tuple["dist._tensor.DeviceMesh", int],
+]
+
 
 def _expand_group(group: RANK_TYPES, tag: str = "") -> Tuple[str, List[int], int]:
     # Cannot import on the top level to avoid circular imports
     import torch.distributed._tensor as dt
+
     rankset: List[int]
     if isinstance(group, list):
         if isinstance(group[0], list):
@@ -233,14 +258,20 @@ def _expand_group(group: RANK_TYPES, tag: str = "") -> Tuple[str, List[int], int
         group_size = len(rankset)
         tag = tag or c10d._get_group_tag(group)
     elif isinstance(group, dt.DeviceMesh):
-        assert group.ndim == 1, "Only 1D mesh is supported, pass in (DeviceMesh, int) together if mesh > 1D"
+        assert (
+            group.ndim == 1
+        ), "Only 1D mesh is supported, pass in (DeviceMesh, int) together if mesh > 1D"
         # TODO: it should run collective in the whole mesh instead of dim 0
         mesh_pg = group.get_dim_groups()[0]
         rankset = dist.get_process_group_ranks(mesh_pg)
         group_size = len(rankset)
         tag = tag or c10d._get_group_tag(mesh_pg)
     elif isinstance(group, tuple):
-        if len(group) == 2 and isinstance(group[0], dt.DeviceMesh) and isinstance(group[1], int):
+        if (
+            len(group) == 2
+            and isinstance(group[0], dt.DeviceMesh)
+            and isinstance(group[1], int)
+        ):
             dmesh = group[0]
             dim = group[1]
             dim_group = dmesh.get_dim_groups()[dim]
@@ -250,9 +281,12 @@ def _expand_group(group: RANK_TYPES, tag: str = "") -> Tuple[str, List[int], int
         else:
             raise ValueError("Invalid tuple for group must be (DeviceMesh, int)")
     else:
-        raise ValueError("Invalid type for group, must be one of List, Processgroup, DeviceMesh or (DeviceMesh, int).")
+        raise ValueError(
+            "Invalid type for group, must be one of List, Processgroup, DeviceMesh or (DeviceMesh, int)."
+        )
 
     return (tag, rankset, group_size)
+
 
 def _are_we_tracing() -> bool:
     mode = get_innermost_proxy_mode()
@@ -260,12 +294,14 @@ def _are_we_tracing() -> bool:
         return False
     return mode.tracer is not None
 
+
 def _maybe_wrap_tensor(self):
     if _are_we_tracing():
         return wait_tensor(self)
     res = AsyncCollectiveTensor(self)
     _register_wrapper_tensor(res, self)
     return res
+
 
 def wait_tensor(tensor):
     """
@@ -298,7 +334,6 @@ def all_reduce(self: torch.Tensor, reduceOp: str, group: RANK_TYPES, tag: str = 
     return _maybe_wrap_tensor(tensor)
 
 
-
 def all_gather_tensor(
     self: torch.Tensor,
     gather_dim: int,
@@ -329,6 +364,7 @@ def all_gather_tensor(
     if gather_dim != 0:
         res = torch.cat(torch.chunk(res, group_size, dim=0), dim=gather_dim)
     return res
+
 
 def reduce_scatter_tensor(
     self: torch.Tensor,
@@ -364,6 +400,7 @@ def reduce_scatter_tensor(
     res = _maybe_wrap_tensor(tensor)
     return res
 
+
 c10_lib = torch.library.Library("c10d_functional", "DEF")
 c10_lib_impl = torch.library.Library("c10d_functional", "IMPL")
 
@@ -371,13 +408,16 @@ c10_lib_impl = torch.library.Library("c10d_functional", "IMPL")
 def _all_reduce_meta(self, *args):
     return torch.empty_like(self)
 
+
 def _wait_tensor_meta(self, *args):
     return torch.empty_like(self)
+
 
 def _all_gather_into_tensor_meta(shard, tag, rankset, group_size):
     out_size = list(shard.size())
     out_size[0] *= group_size
     return shard.new_empty(out_size)
+
 
 def _reduce_scatter_tensor_meta(input, reduce_op, tag, rankset, group_size):
     out_size = list(input.size())
@@ -395,7 +435,7 @@ def _register_ops():
 
     my_module = sys.modules[__name__]
     for op_def in ops_defs:
-        op_name = op_def[0:op_def.index('(')]
+        op_name = op_def[0 : op_def.index("(")]
         backend_impl = getattr(my_module, f"_{op_name}")
         meta_impl = getattr(my_module, f"_{op_name}_meta")
         c10_lib.define(op_def)
@@ -403,8 +443,9 @@ def _register_ops():
         c10_lib_impl.impl(op_name, meta_impl, "Meta")
 
 
-
-if sys.executable != 'torch_deploy':
+if sys.executable != "torch_deploy":
     _register_ops()
 else:
-    warnings.warn("PyTorch Distributed functional collectives do not work with torch::deploy.")
+    warnings.warn(
+        "PyTorch Distributed functional collectives do not work with torch::deploy."
+    )

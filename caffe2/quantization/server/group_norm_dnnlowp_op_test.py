@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -26,7 +24,7 @@ class DNNLowPOpGroupNormTest(hu.HypothesisTestCase):
         in_quantized=st.booleans(),
         out_quantized=st.booleans(),
         weight_quantized=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_dnnlowp_group_norm(
         self,
@@ -75,9 +73,10 @@ class DNNLowPOpGroupNormTest(hu.HypothesisTestCase):
                 net.Proto().op.extend([quantize])
 
             if do_quantize_weight:
-                int8_given_tensor_fill, gamma_q_param = dnnlowp_utils.create_int8_given_tensor_fill(
-                    gamma, "gamma_q"
-                )
+                (
+                    int8_given_tensor_fill,
+                    gamma_q_param,
+                ) = dnnlowp_utils.create_int8_given_tensor_fill(gamma, "gamma_q")
                 net.Proto().op.extend([int8_given_tensor_fill])
 
                 X_min = 0 if X.size == 0 else X.min()

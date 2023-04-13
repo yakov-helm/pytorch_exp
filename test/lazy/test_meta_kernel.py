@@ -8,8 +8,8 @@ import torch._lazy.ts_backend
 
 torch._lazy.ts_backend.init()
 
-class TestMetaKernel(TestCase):
 
+class TestMetaKernel(TestCase):
     def test_addmm_invalid_dtype(self):
         """Tests that the addmm meta kernel returns the correct output type"""
         input = torch.ones(2, 2, dtype=torch.float16).to("lazy")

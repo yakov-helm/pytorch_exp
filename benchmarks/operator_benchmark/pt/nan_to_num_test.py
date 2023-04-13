@@ -8,10 +8,10 @@ import math
 # Configs for PT torch.nan_to_num / nan_to_num_ operators
 
 nan_to_num_ops_list = op_bench.op_list(
-    attr_names=['op_name', 'op_func'],
+    attr_names=["op_name", "op_func"],
     attrs=[
-        ['nan_to_num', torch.nan_to_num],
-        ['nan_to_num_', torch.nan_to_num_],
+        ["nan_to_num", torch.nan_to_num],
+        ["nan_to_num_", torch.nan_to_num_],
     ],
 )
 
@@ -37,10 +37,7 @@ class ReplaceNaNBenchmark(op_bench.TorchBenchmarkBase):
     def init(self, M, N, dtype, replace_inf, op_func):
         input = torch.randn(M, N, dtype=dtype)
         input[0][0] = float("nan")
-        self.inputs = {
-            "input": input,
-            "replace_inf": replace_inf
-        }
+        self.inputs = {"input": input, "replace_inf": replace_inf}
         self.op_func = op_func
         self.set_module_name("nan_to_num")
 

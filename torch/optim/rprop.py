@@ -1,7 +1,13 @@
 import torch
 from torch import Tensor
-from .optimizer import (Optimizer, _use_grad_for_differentiable, _default_to_fused_or_foreach,
-                        _differentiable_doc, _foreach_doc, _maximize_doc)
+from .optimizer import (
+    Optimizer,
+    _use_grad_for_differentiable,
+    _default_to_fused_or_foreach,
+    _differentiable_doc,
+    _foreach_doc,
+    _maximize_doc,
+)
 from typing import List, Optional
 from torch.utils._foreach_utils import _group_tensors_by_device_and_dtype
 
@@ -57,9 +63,7 @@ class Rprop(Optimizer):
             # State initialization
             if len(state) == 0:
                 state["step"] = 0
-                state["prev"] = torch.zeros_like(
-                    p, memory_format=torch.preserve_format
-                )
+                state["prev"] = torch.zeros_like(p, memory_format=torch.preserve_format)
                 if p.dtype.is_complex:
                     # Complex Number should be as if they are two independent real numbers.
                     # Hence the step_size shouldn't be zero for imaginary part.
@@ -69,9 +73,7 @@ class Rprop(Optimizer):
                         .fill_(complex(group["lr"], group["lr"]))
                     )
                 else:
-                    state["step_size"] = (
-                        grad.new().resize_as_(grad).fill_(group["lr"])
-                    )
+                    state["step_size"] = grad.new().resize_as_(grad).fill_(group["lr"])
 
             prevs.append(state["prev"])
             step_sizes.append(state["step_size"])
@@ -168,7 +170,10 @@ Rprop.__doc__ = r"""Implements the resilient backpropagation algorithm.
         {maximize}
         {differentiable}
 
-    """.format(foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc)
+    """.format(
+    foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc
+)
+
 
 def rprop(
     params: List[Tensor],
@@ -192,7 +197,9 @@ def rprop(
     """
 
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
+        _, foreach = _default_to_fused_or_foreach(
+            params, differentiable, use_fused=False
+        )
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")
@@ -281,8 +288,15 @@ def _multi_tensor_rprop(
 
     assert not differentiable, "_foreach ops don't support autograd"
 
-    grouped_tensors = _group_tensors_by_device_and_dtype([params, grads, prevs, step_sizes])
-    for grouped_params, grouped_grads, grouped_prevs, grouped_step_sizes in grouped_tensors.values():
+    grouped_tensors = _group_tensors_by_device_and_dtype(
+        [params, grads, prevs, step_sizes]
+    )
+    for (
+        grouped_params,
+        grouped_grads,
+        grouped_prevs,
+        grouped_step_sizes,
+    ) in grouped_tensors.values():
         # Handle complex params
         def _view_complex_as_real(tensor_list):
             return [
@@ -313,12 +327,16 @@ def _multi_tensor_rprop(
         # for dir>=0 dfdx=dfdx
         grouped_grads = list(grouped_grads)
         for i in range(len(grouped_grads)):
-            grouped_grads[i] = grouped_grads[i].clone(memory_format=torch.preserve_format)
+            grouped_grads[i] = grouped_grads[i].clone(
+                memory_format=torch.preserve_format
+            )
             grouped_grads[i][signs[i].eq(etaminus)] = 0
 
         # update parameters
         grad_signs = [grad.sign() for grad in grouped_grads]
-        torch._foreach_addcmul_(grouped_params, grad_signs, grouped_step_sizes, value=-1)
+        torch._foreach_addcmul_(
+            grouped_params, grad_signs, grouped_step_sizes, value=-1
+        )
 
         for i in range(len(grouped_prevs)):
             grouped_prevs[i].copy_(grouped_grads[i])

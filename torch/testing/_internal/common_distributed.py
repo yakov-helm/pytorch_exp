@@ -312,11 +312,13 @@ def requires_nccl():
         "c10d was not compiled with the NCCL backend",
     )
 
+
 def requires_ucc():
     return skip_but_pass_in_sandcastle_if(
         not c10d.is_ucc_available(),
         "c10d was not compiled with the UCC backend",
     )
+
 
 def requires_mpi():
     return skip_but_pass_in_sandcastle_if(
@@ -373,7 +375,7 @@ if TEST_WITH_TSAN:
     # TSAN runs much slower.
     TIMEOUT_DEFAULT = 500
 else:
-    TIMEOUT_DEFAULT = int(os.getenv('DISTRIBUTED_TESTS_DEFAULT_TIMEOUT', '300'))
+    TIMEOUT_DEFAULT = int(os.getenv("DISTRIBUTED_TESTS_DEFAULT_TIMEOUT", "300"))
 TIMEOUT_OVERRIDE = {"test_ddp_uneven_inputs": 400}
 
 
@@ -607,7 +609,8 @@ class MultiProcessTestCase(TestCase):
 
                 if parent_pipe.closed:
                     logger.info(
-                        "Pipe closed for process %s, stopping event listener thread", rank
+                        "Pipe closed for process %s, stopping event listener thread",
+                        rank,
                     )
                     return
 
@@ -657,14 +660,18 @@ class MultiProcessTestCase(TestCase):
             getattr(self, test_name)()
         except unittest.SkipTest as se:
             logger.info(
-                "Process %s skipping test %s for following reason: %s", self.rank, test_name, str(se)
+                "Process %s skipping test %s for following reason: %s",
+                self.rank,
+                test_name,
+                str(se),
             )
             sys.exit(TEST_SKIPS["generic"].exit_code)
         except Exception as e:
             logger.error(
-                "Caught exception: \n%s exiting "
-                "process %s with exit code: %s",
-                traceback.format_exc(), self.rank, MultiProcessTestCase.TEST_ERROR_EXIT_CODE
+                "Caught exception: \n%s exiting " "process %s with exit code: %s",
+                traceback.format_exc(),
+                self.rank,
+                MultiProcessTestCase.TEST_ERROR_EXIT_CODE,
             )
             # Send error to parent process.
             parent_pipe.send(traceback.format_exc())
@@ -688,7 +695,9 @@ class MultiProcessTestCase(TestCase):
                     pipes.append((i, pipe))
                 except ConnectionError as e:
                     logger.error(
-                        "Encountered error while trying to get traceback for process %s: %s", i, e
+                        "Encountered error while trying to get traceback for process %s: %s",
+                        i,
+                        e,
                     )
 
         # Wait for results.
@@ -698,7 +707,8 @@ class MultiProcessTestCase(TestCase):
                 if pipe.poll(5):
                     if pipe.closed:
                         logger.info(
-                            "Pipe closed for process %s, cannot retrieve traceback", rank
+                            "Pipe closed for process %s, cannot retrieve traceback",
+                            rank,
                         )
                         continue
 
@@ -712,7 +722,9 @@ class MultiProcessTestCase(TestCase):
                     )
             except ConnectionError as e:
                 logger.error(
-                    "Encountered error while trying to get traceback for process %s: %s", rank, e
+                    "Encountered error while trying to get traceback for process %s: %s",
+                    rank,
+                    e,
                 )
 
     def _join_processes(self, fn) -> None:
@@ -827,7 +839,9 @@ class MultiProcessTestCase(TestCase):
                     # is some follow-up needed. Instead just "pass" the test
                     # with an appropriate message.
                     logger.info(
-                        "Skipping %s on sandcastle for the following reason: %s", self.id(), skip.message
+                        "Skipping %s on sandcastle for the following reason: %s",
+                        self.id(),
+                        skip.message,
                     )
                     return
                 else:
@@ -889,7 +903,6 @@ def spawn_threads_and_init_comms(
             spawn_threads_and_init_comms, timeout=timeout, world_size=world_size
         )
 
-
     def _run_test_method_with_multi_threads(world_size, callback):
         world = _install_threaded_pg()
         global_store = c10d.HashStore()
@@ -906,7 +919,9 @@ def spawn_threads_and_init_comms(
             except BaseException as ex:
                 # Exceptions are handled in MultiThreadedTestCase
                 MultiThreadedTestCase.exception_queue.put((rank, sys.exc_info()))
-                ProcessLocalGroup.exception_handle(ex)  # trigger _terminate event and awaken worker threads
+                ProcessLocalGroup.exception_handle(
+                    ex
+                )  # trigger _terminate event and awaken worker threads
             finally:
                 if world_is_valid():
                     c10d.destroy_process_group()
@@ -919,11 +934,12 @@ def spawn_threads_and_init_comms(
 
         return threads
 
-
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         # TODO: get test name from kwargs
-        threads = _run_test_method_with_multi_threads(world_size, lambda: func(self, *args, **kwargs))
+        threads = _run_test_method_with_multi_threads(
+            world_size, lambda: func(self, *args, **kwargs)
+        )
         # join and error handling
         MultiThreadedTestCase._join_threads(threads, func)
 
@@ -944,6 +960,7 @@ class MultiThreadedTestCase(TestCase):
     No global state possible
         How bad of a limitation is this?
     """
+
     exception_queue = queue.Queue()
 
     MAIN_THREAD_RANK = -1
@@ -1005,7 +1022,9 @@ class MultiThreadedTestCase(TestCase):
             raise RuntimeError("Invalid world")
 
         for rank in range(self.world_size):
-            t = threading.Thread(target=self.__class__._run, args=(test_name, rank, self.world_size))
+            t = threading.Thread(
+                target=self.__class__._run, args=(test_name, rank, self.world_size)
+            )
             t.start()
             self.threads.append(t)
 
@@ -1031,7 +1050,10 @@ class MultiThreadedTestCase(TestCase):
         """
 
         c10d.init_process_group(
-            backend="threaded", rank=rank, world_size=world_size, store=self.__class__.global_store
+            backend="threaded",
+            rank=rank,
+            world_size=world_size,
+            store=self.__class__.global_store,
         )
         self.perThreadSetUp()
 
@@ -1039,11 +1061,12 @@ class MultiThreadedTestCase(TestCase):
             getattr(self, test_name)()
         except BaseException as ex:
             self.exception_queue.put((rank, sys.exc_info()))
-            ProcessLocalGroup.exception_handle(ex)  # trigger _terminate event and awaken worker threads
+            ProcessLocalGroup.exception_handle(
+                ex
+            )  # trigger _terminate event and awaken worker threads
         finally:
             c10d.destroy_process_group()
             self.perThreadTearDown()
-
 
     @classmethod
     def _join_threads(cls, threads, fn):
@@ -1087,7 +1110,10 @@ class MultiThreadedTestCase(TestCase):
             exc = exc_info[1]
             if isinstance(exc, unittest.SkipTest):
                 logger.info(
-                    "Thread %s skipping test %s for following reason: %s", rank, fn, str(exc)
+                    "Thread %s skipping test %s for following reason: %s",
+                    rank,
+                    fn,
+                    str(exc),
                 )
                 if skip_code < 0:
                     skip_code = TEST_SKIPS["generic"].exit_code
@@ -1099,12 +1125,8 @@ class MultiThreadedTestCase(TestCase):
                 raise RuntimeError(msg)
             elif isinstance(exc, Exception):
                 msg = "".join(traceback.format_exception(*exc_info))
-                logger.error(
-                    "Caught exception: \n%s exiting thread %s", msg, rank
-                )
-                error_msg += (
-                    "Thread {} exited with exception:\n{}\n".format(rank, msg)
-                )
+                logger.error("Caught exception: \n%s exiting thread %s", msg, rank)
+                error_msg += "Thread {} exited with exception:\n{}\n".format(rank, msg)
             elif isinstance(exc, SystemExit):
                 if type(exc.code) == int and skip_code < 0:
                     skip_code = exc.code
@@ -1119,7 +1141,9 @@ class MultiThreadedTestCase(TestCase):
                     if IS_SANDCASTLE:
                         # "pass" the test with an appropriate message.
                         logger.info(
-                            "Skipping %s on sandcastle for the following reason: %s", fn, skip.message
+                            "Skipping %s on sandcastle for the following reason: %s",
+                            fn,
+                            skip.message,
                         )
                         return
                     else:
@@ -1179,13 +1203,14 @@ class SaveForwardInputsModel(nn.Module):
         self.forward_inputs[self] = x
         return self.c2(self.c1(x))
 
+
 @contextmanager
 def _dynamo_dist_per_rank_init(rank, world_size, init_pg=True):
     # To avoid multiple inheritance from _dynamo.test_case.TestCase and MultiProcessTestCase,
     # Just manually implement the most important part of the dynamo behavior to reset/clear.
     torch.cuda.set_device(rank)
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '6789'
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "6789"
     if init_pg:
         c10d.init_process_group("nccl", rank=rank, world_size=world_size)
     torch._dynamo.reset()
@@ -1241,6 +1266,7 @@ class DynamoDistributedMultiProcTestCase(MultiProcessTestCase):
     Prefer MultiThreadedTestCase for most tests. Perhaps use this one
     sparingly for integration tests.
     """
+
     def setUp(self):
         super().setUp()
         self._spawn_processes()

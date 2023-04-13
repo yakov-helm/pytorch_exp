@@ -28,7 +28,7 @@ from .metadata import (
 
 from .resharding import (
     _shards_get_overlap_region_wrt_saved_tensor,
-    _check_shard_metadata_pair_overlap
+    _check_shard_metadata_pair_overlap,
 )
 
 __all__: List[str] = ["create_read_items_for_chunk_list"]
@@ -36,8 +36,7 @@ __all__: List[str] = ["create_read_items_for_chunk_list"]
 
 def _create_chunk_from_tensor(tensor: torch.Tensor) -> ChunkStorageMetadata:
     return ChunkStorageMetadata(
-        offsets=torch.Size([0] * len(tensor.size())),
-        sizes=tensor.size()
+        offsets=torch.Size([0] * len(tensor.size())), sizes=tensor.size()
     )
 
 
@@ -60,12 +59,14 @@ def _sharded_tensor_metadata(
 
 def _create_write_items_for_dtensor(fqn: str, tensor: DTensor) -> WriteItem:
     device_mesh = tensor.device_mesh
-    assert (
-        device_mesh.ndim == 1
-    ), "Only 1D DeviceMeshes can currently be handled."
+    assert device_mesh.ndim == 1, "Only 1D DeviceMeshes can currently be handled."
 
-    sizes = torch.Size(compute_local_shape(tensor.shape, device_mesh, tensor.placements))
-    offsets = torch.Size(compute_local_offset(tensor.shape, device_mesh, tensor.placements))
+    sizes = torch.Size(
+        compute_local_shape(tensor.shape, device_mesh, tensor.placements)
+    )
+    offsets = torch.Size(
+        compute_local_offset(tensor.shape, device_mesh, tensor.placements)
+    )
 
     return WriteItem(
         index=MetadataIndex(fqn, offsets),
@@ -138,6 +139,7 @@ def _create_read_item_for_tensor(
         lengths=torch.Size(lengths),
     )
 
+
 def create_read_items_for_chunk_list(
     fqn: str,
     checkpoint_md: TensorStorageMetadata,
@@ -163,9 +165,7 @@ def create_read_items_for_chunk_list(
     # this is a naive quadratic algo that can be optimized later
     for idx, shard in enumerate(local_chunks):
         for storage_idx, storage_md in enumerate(checkpoint_md.chunks):
-            if not _check_shard_metadata_pair_overlap(
-                shard, storage_md
-            ):
+            if not _check_shard_metadata_pair_overlap(shard, storage_md):
                 continue
 
             storage_offsets = []
@@ -185,13 +185,9 @@ def create_read_items_for_chunk_list(
 
             read_items.append(
                 _create_read_item_for_tensor(
-                    dest_index=MetadataIndex(
-                        fqn, shard.offsets, idx
-                    ),
+                    dest_index=MetadataIndex(fqn, shard.offsets, idx),
                     dest_offsets=dest_offsets,
-                    storage_index=MetadataIndex(
-                        fqn, storage_md.offsets, storage_idx
-                    ),
+                    storage_index=MetadataIndex(fqn, storage_md.offsets, storage_idx),
                     storage_offsets=storage_offsets,
                     lengths=lengths,
                 )
@@ -206,9 +202,7 @@ def _create_default_metadata_only_plan(state_dict: STATE_DICT_TYPE) -> SavePlan:
             requests.append(_create_write_items_for_dtensor(fqn, obj))
         elif isinstance(obj, ShardedTensor):
             for shard_md in obj.metadata().shards_metadata:
-                requests.append(
-                    _create_write_item_for_shard(fqn, obj, shard_md)
-                )
+                requests.append(_create_write_item_for_shard(fqn, obj, shard_md))
         elif isinstance(obj, torch.Tensor):
             requests.append(_create_write_item_for_tensor(fqn, obj))
         else:
@@ -232,12 +226,14 @@ def _create_write_items(fqn: str, object: Any) -> List[WriteItem]:
 
 def _create_chunk_from_dtensor(tensor: DTensor) -> ChunkStorageMetadata:
     device_mesh = tensor.device_mesh
-    assert (
-        device_mesh.ndim == 1
-    ), "Only 1D DeviceMeshes can currently be handled."
+    assert device_mesh.ndim == 1, "Only 1D DeviceMeshes can currently be handled."
 
-    sizes = torch.Size(compute_local_shape(tensor.shape, device_mesh, tensor.placements))
-    offsets = torch.Size(compute_local_offset(tensor.shape, device_mesh, tensor.placements))
+    sizes = torch.Size(
+        compute_local_shape(tensor.shape, device_mesh, tensor.placements)
+    )
+    offsets = torch.Size(
+        compute_local_offset(tensor.shape, device_mesh, tensor.placements)
+    )
     return ChunkStorageMetadata(
         offsets=offsets,
         sizes=sizes,
@@ -249,7 +245,9 @@ def _create_read_items(fqn: str, md: STORAGE_TYPES, obj: Any) -> List[ReadItem]:
         if isinstance(obj, DTensor):
             local_chunks = [_create_chunk_from_dtensor(obj)]
         elif isinstance(obj, ShardedTensor):
-            local_chunks = [_chunk_for_shard(shard.metadata) for shard in obj.local_shards()]
+            local_chunks = [
+                _chunk_for_shard(shard.metadata) for shard in obj.local_shards()
+            ]
         elif isinstance(obj, torch.Tensor):
             local_chunks = [_create_chunk_from_tensor(obj)]
         else:

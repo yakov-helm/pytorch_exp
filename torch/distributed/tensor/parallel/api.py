@@ -32,6 +32,7 @@ __all__ = [
 # the TP eager execution time.
 DTensor._propagator = _CachingPropagator(DTensor._propagator.op_to_rules)
 
+
 def parallelize_module(  # type: ignore[return]
     module: nn.Module,
     device_mesh: DeviceMesh,

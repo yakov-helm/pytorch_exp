@@ -9,6 +9,7 @@ from functorch.compile import nnc_jit
 import torch
 import torch.nn as nn
 import time
+
 torch._C._jit_override_can_fuse_on_cpu(True)
 
 
@@ -30,7 +31,7 @@ class Foo(nn.Module):
         self.mod = nn.Sequential(*mods)
 
     def forward(self, x):
-        return (self.mod(x)**2).sum()
+        return (self.mod(x) ** 2).sum()
 
 
 batch_size = 16
@@ -54,7 +55,9 @@ def functional_step(x, weights):
     return out, new_weights
 
 
-optim = torch.optim.SGD(jit_mod.parameters(), lr=lr, momentum=0, dampening=0, weight_decay=0)
+optim = torch.optim.SGD(
+    jit_mod.parameters(), lr=lr, momentum=0, dampening=0, weight_decay=0
+)
 
 
 def jit_step(x, weights):

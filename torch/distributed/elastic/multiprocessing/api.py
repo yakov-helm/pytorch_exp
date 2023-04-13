@@ -35,8 +35,18 @@ IS_MACOS = sys.platform == "darwin"
 
 log = logging.getLogger(__name__)
 
-__all__ = ["SignalException", "Std", "to_map", "RunProcsResult", "PContext", "get_std_cm", "MultiprocessContext",
-           "SubprocessHandler", "SubprocessContext"]
+__all__ = [
+    "SignalException",
+    "Std",
+    "to_map",
+    "RunProcsResult",
+    "PContext",
+    "get_std_cm",
+    "MultiprocessContext",
+    "SubprocessHandler",
+    "SubprocessContext",
+]
+
 
 class SignalException(Exception):
     """
@@ -495,8 +505,10 @@ class MultiprocessContext(PContext):
                 " local_rank: %s (pid: %s)"
                 " of fn: %s (start_method: %s)",
                 failed_proc.exitcode,
-                failed_local_rank, e.pid,
-                fn_name, self.start_method,
+                failed_local_rank,
+                e.pid,
+                fn_name,
+                self.start_method,
                 exc_info=True,
             )
 
@@ -523,7 +535,9 @@ class MultiprocessContext(PContext):
             return
         for proc in self._pc.processes:
             if proc.is_alive():
-                log.warning("Closing process %s via signal %s", proc.pid, death_sig.name)
+                log.warning(
+                    "Closing process %s via signal %s", proc.pid, death_sig.name
+                )
                 try:
                     os.kill(proc.pid, death_sig)
                 except ProcessLookupError:
@@ -540,7 +554,9 @@ class MultiprocessContext(PContext):
             if proc.is_alive():
                 log.warning(
                     "Unable to shutdown process %s via %s, forcefully exiting via %s",
-                    proc.pid, death_sig, _get_kill_signal()
+                    proc.pid,
+                    death_sig,
+                    _get_kill_signal(),
                 )
                 try:
                     os.kill(proc.pid, _get_kill_signal())
@@ -677,7 +693,10 @@ class SubprocessContext(PContext):
                     "failed (exitcode: %s)"
                     " local_rank: %s (pid: %s)"
                     " of binary: %s",
-                    first_failure.exitcode, first_failure.local_rank, first_failure.pid, self.entrypoint
+                    first_failure.exitcode,
+                    first_failure.local_rank,
+                    first_failure.pid,
+                    self.entrypoint,
                 )
             else:
                 # Populate return with dummy values. This provides consistency with MultiprocessingHandler
@@ -701,7 +720,9 @@ class SubprocessContext(PContext):
         for handler in self.subprocess_handlers.values():
             if handler.proc.poll() is None:
                 log.warning(
-                    "Sending process %s closing signal %s", handler.proc.pid, death_sig.name
+                    "Sending process %s closing signal %s",
+                    handler.proc.pid,
+                    death_sig.name,
                 )
                 handler.close(death_sig=death_sig)
         end = time.monotonic() + timeout
@@ -719,7 +740,9 @@ class SubprocessContext(PContext):
             if handler.proc.poll() is None:
                 log.warning(
                     "Unable to shutdown process %s via %s, forcefully exiting via %s",
-                    handler.proc.pid, death_sig, _get_kill_signal()
+                    handler.proc.pid,
+                    death_sig,
+                    _get_kill_signal(),
                 )
                 handler.close(death_sig=_get_kill_signal())
                 handler.proc.wait()

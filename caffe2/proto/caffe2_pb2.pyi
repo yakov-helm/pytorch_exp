@@ -13,7 +13,10 @@ import typing_extensions
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
 
 global___DeviceTypeProto = DeviceTypeProto
-class _DeviceTypeProto(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[DeviceTypeProto], type):
+
+class _DeviceTypeProto(
+    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[DeviceTypeProto], type
+):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
     PROTO_CPU = DeviceTypeProto.V(0)
     PROTO_CUDA = DeviceTypeProto.V(1)
@@ -27,8 +30,10 @@ class _DeviceTypeProto(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapp
     PROTO_XLA = DeviceTypeProto.V(9)
     PROTO_MPS = DeviceTypeProto.V(10)
     PROTO_COMPILE_TIME_MAX_DEVICE_TYPES = DeviceTypeProto.V(11)
+
 class DeviceTypeProto(metaclass=_DeviceTypeProto):
-    V = typing.NewType('V', int)
+    V = typing.NewType("V", int)
+
 PROTO_CPU = DeviceTypeProto.V(0)
 PROTO_CUDA = DeviceTypeProto.V(1)
 PROTO_MKLDNN = DeviceTypeProto.V(2)
@@ -44,7 +49,10 @@ PROTO_COMPILE_TIME_MAX_DEVICE_TYPES = DeviceTypeProto.V(11)
 
 class TensorProto(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    class _DataType(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[DataType], type):
+
+    class _DataType(
+        google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[DataType], type
+    ):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
         UNDEFINED = TensorProto.DataType.V(0)
         FLOAT = TensorProto.DataType.V(1)
@@ -61,8 +69,9 @@ class TensorProto(google.protobuf.message.Message):
         DOUBLE = TensorProto.DataType.V(13)
         ZERO_COLLISION_HASH = TensorProto.DataType.V(14)
         REBATCHING_BUFFER = TensorProto.DataType.V(15)
+
     class DataType(metaclass=_DataType):
-        V = typing.NewType('V', int)
+        V = typing.NewType("V", int)
     UNDEFINED = TensorProto.DataType.V(0)
     FLOAT = TensorProto.DataType.V(1)
     INT32 = TensorProto.DataType.V(2)
@@ -79,12 +88,18 @@ class TensorProto(google.protobuf.message.Message):
     ZERO_COLLISION_HASH = TensorProto.DataType.V(14)
     REBATCHING_BUFFER = TensorProto.DataType.V(15)
 
-    class _SerializationFormat(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[SerializationFormat], type):
+    class _SerializationFormat(
+        google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[
+            SerializationFormat
+        ],
+        type,
+    ):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
         FMT_PROTOBUF = TensorProto.SerializationFormat.V(0)
         FMT_BFLOAT16 = TensorProto.SerializationFormat.V(1)
+
     class SerializationFormat(metaclass=_SerializationFormat):
-        V = typing.NewType('V', int)
+        V = typing.NewType("V", int)
     FMT_PROTOBUF = TensorProto.SerializationFormat.V(0)
     FMT_BFLOAT16 = TensorProto.SerializationFormat.V(1)
 
@@ -95,13 +110,20 @@ class TensorProto(google.protobuf.message.Message):
         begin: int = ...
         end: int = ...
 
-        def __init__(self,
+        def __init__(
+            self,
             *,
-            begin : typing.Optional[int] = ...,
-            end : typing.Optional[int] = ...,
-            ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal[u"begin",b"begin",u"end",b"end"]) -> bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal[u"begin",b"begin",u"end",b"end"]) -> None: ...
+            begin: typing.Optional[int] = ...,
+            end: typing.Optional[int] = ...,
+        ) -> None: ...
+        def HasField(
+            self,
+            field_name: typing_extensions.Literal["begin", b"begin", "end", b"end"],
+        ) -> bool: ...
+        def ClearField(
+            self,
+            field_name: typing_extensions.Literal["begin", b"begin", "end", b"end"],
+        ) -> None: ...
 
     DIMS_FIELD_NUMBER: int
     DATA_TYPE_FIELD_NUMBER: int
@@ -119,39 +141,97 @@ class TensorProto(google.protobuf.message.Message):
     dims: google.protobuf.internal.containers.RepeatedScalarFieldContainer[int] = ...
     data_type: global___TensorProto.DataType = ...
     data_format: int = ...
-    float_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[float] = ...
-    int32_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[int] = ...
+    float_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        float
+    ] = ...
+    int32_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        int
+    ] = ...
     byte_data: bytes = ...
-    string_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[bytes] = ...
-    double_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[float] = ...
-    int64_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[int] = ...
+    string_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        bytes
+    ] = ...
+    double_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        float
+    ] = ...
+    int64_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        int
+    ] = ...
     raw_data: bytes = ...
     name: typing.Text = ...
 
     @property
     def device_detail(self) -> global___DeviceOption: ...
-
     @property
     def segment(self) -> global___TensorProto.Segment: ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        dims : typing.Optional[typing.Iterable[int]] = ...,
-        data_type : typing.Optional[global___TensorProto.DataType] = ...,
-        data_format : typing.Optional[int] = ...,
-        float_data : typing.Optional[typing.Iterable[float]] = ...,
-        int32_data : typing.Optional[typing.Iterable[int]] = ...,
-        byte_data : typing.Optional[bytes] = ...,
-        string_data : typing.Optional[typing.Iterable[bytes]] = ...,
-        double_data : typing.Optional[typing.Iterable[float]] = ...,
-        int64_data : typing.Optional[typing.Iterable[int]] = ...,
-        raw_data : typing.Optional[bytes] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        device_detail : typing.Optional[global___DeviceOption] = ...,
-        segment : typing.Optional[global___TensorProto.Segment] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"byte_data",b"byte_data",u"data_format",b"data_format",u"data_type",b"data_type",u"device_detail",b"device_detail",u"name",b"name",u"raw_data",b"raw_data",u"segment",b"segment"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"byte_data",b"byte_data",u"data_format",b"data_format",u"data_type",b"data_type",u"device_detail",b"device_detail",u"dims",b"dims",u"double_data",b"double_data",u"float_data",b"float_data",u"int32_data",b"int32_data",u"int64_data",b"int64_data",u"name",b"name",u"raw_data",b"raw_data",u"segment",b"segment",u"string_data",b"string_data"]) -> None: ...
+        dims: typing.Optional[typing.Iterable[int]] = ...,
+        data_type: typing.Optional[global___TensorProto.DataType] = ...,
+        data_format: typing.Optional[int] = ...,
+        float_data: typing.Optional[typing.Iterable[float]] = ...,
+        int32_data: typing.Optional[typing.Iterable[int]] = ...,
+        byte_data: typing.Optional[bytes] = ...,
+        string_data: typing.Optional[typing.Iterable[bytes]] = ...,
+        double_data: typing.Optional[typing.Iterable[float]] = ...,
+        int64_data: typing.Optional[typing.Iterable[int]] = ...,
+        raw_data: typing.Optional[bytes] = ...,
+        name: typing.Optional[typing.Text] = ...,
+        device_detail: typing.Optional[global___DeviceOption] = ...,
+        segment: typing.Optional[global___TensorProto.Segment] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "byte_data",
+            b"byte_data",
+            "data_format",
+            b"data_format",
+            "data_type",
+            b"data_type",
+            "device_detail",
+            b"device_detail",
+            "name",
+            b"name",
+            "raw_data",
+            b"raw_data",
+            "segment",
+            b"segment",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "byte_data",
+            b"byte_data",
+            "data_format",
+            b"data_format",
+            "data_type",
+            b"data_type",
+            "device_detail",
+            b"device_detail",
+            "dims",
+            b"dims",
+            "double_data",
+            b"double_data",
+            "float_data",
+            b"float_data",
+            "int32_data",
+            b"int32_data",
+            "int64_data",
+            b"int64_data",
+            "name",
+            b"name",
+            "raw_data",
+            b"raw_data",
+            "segment",
+            b"segment",
+            "string_data",
+            b"string_data",
+        ],
+    ) -> None: ...
+
 global___TensorProto = TensorProto
 
 class QTensorProto(google.protobuf.message.Message):
@@ -176,28 +256,82 @@ class QTensorProto(google.protobuf.message.Message):
     data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[int] = ...
     name: typing.Text = ...
     data_type: global___TensorProto.DataType = ...
-    scales: google.protobuf.internal.containers.RepeatedScalarFieldContainer[float] = ...
-    biases: google.protobuf.internal.containers.RepeatedScalarFieldContainer[float] = ...
+    scales: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        float
+    ] = ...
+    biases: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        float
+    ] = ...
     axis: int = ...
     is_multiparam: bool = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        dims : typing.Optional[typing.Iterable[int]] = ...,
-        precision : typing.Optional[int] = ...,
-        scale : typing.Optional[float] = ...,
-        bias : typing.Optional[float] = ...,
-        is_signed : typing.Optional[bool] = ...,
-        data : typing.Optional[typing.Iterable[int]] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        data_type : typing.Optional[global___TensorProto.DataType] = ...,
-        scales : typing.Optional[typing.Iterable[float]] = ...,
-        biases : typing.Optional[typing.Iterable[float]] = ...,
-        axis : typing.Optional[int] = ...,
-        is_multiparam : typing.Optional[bool] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"axis",b"axis",u"bias",b"bias",u"data_type",b"data_type",u"is_multiparam",b"is_multiparam",u"is_signed",b"is_signed",u"name",b"name",u"precision",b"precision",u"scale",b"scale"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"axis",b"axis",u"bias",b"bias",u"biases",b"biases",u"data",b"data",u"data_type",b"data_type",u"dims",b"dims",u"is_multiparam",b"is_multiparam",u"is_signed",b"is_signed",u"name",b"name",u"precision",b"precision",u"scale",b"scale",u"scales",b"scales"]) -> None: ...
+        dims: typing.Optional[typing.Iterable[int]] = ...,
+        precision: typing.Optional[int] = ...,
+        scale: typing.Optional[float] = ...,
+        bias: typing.Optional[float] = ...,
+        is_signed: typing.Optional[bool] = ...,
+        data: typing.Optional[typing.Iterable[int]] = ...,
+        name: typing.Optional[typing.Text] = ...,
+        data_type: typing.Optional[global___TensorProto.DataType] = ...,
+        scales: typing.Optional[typing.Iterable[float]] = ...,
+        biases: typing.Optional[typing.Iterable[float]] = ...,
+        axis: typing.Optional[int] = ...,
+        is_multiparam: typing.Optional[bool] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "axis",
+            b"axis",
+            "bias",
+            b"bias",
+            "data_type",
+            b"data_type",
+            "is_multiparam",
+            b"is_multiparam",
+            "is_signed",
+            b"is_signed",
+            "name",
+            b"name",
+            "precision",
+            b"precision",
+            "scale",
+            b"scale",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "axis",
+            b"axis",
+            "bias",
+            b"bias",
+            "biases",
+            b"biases",
+            "data",
+            b"data",
+            "data_type",
+            b"data_type",
+            "dims",
+            b"dims",
+            "is_multiparam",
+            b"is_multiparam",
+            "is_signed",
+            b"is_signed",
+            "name",
+            b"name",
+            "precision",
+            b"precision",
+            "scale",
+            b"scale",
+            "scales",
+            b"scales",
+        ],
+    ) -> None: ...
+
 global___QTensorProto = QTensorProto
 
 class TensorProtos(google.protobuf.message.Message):
@@ -205,13 +339,20 @@ class TensorProtos(google.protobuf.message.Message):
     PROTOS_FIELD_NUMBER: int
 
     @property
-    def protos(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___TensorProto]: ...
-
-    def __init__(self,
+    def protos(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___TensorProto
+    ]: ...
+    def __init__(
+        self,
         *,
-        protos : typing.Optional[typing.Iterable[global___TensorProto]] = ...,
-        ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"protos",b"protos"]) -> None: ...
+        protos: typing.Optional[typing.Iterable[global___TensorProto]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["protos", b"protos"]
+    ) -> None: ...
+
 global___TensorProtos = TensorProtos
 
 class TensorShape(google.protobuf.message.Message):
@@ -223,20 +364,48 @@ class TensorShape(google.protobuf.message.Message):
     NAME_FIELD_NUMBER: int
     dims: google.protobuf.internal.containers.RepeatedScalarFieldContainer[int] = ...
     data_type: global___TensorProto.DataType = ...
-    unknown_dims: google.protobuf.internal.containers.RepeatedScalarFieldContainer[int] = ...
+    unknown_dims: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        int
+    ] = ...
     unknown_shape: bool = ...
     name: typing.Text = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        dims : typing.Optional[typing.Iterable[int]] = ...,
-        data_type : typing.Optional[global___TensorProto.DataType] = ...,
-        unknown_dims : typing.Optional[typing.Iterable[int]] = ...,
-        unknown_shape : typing.Optional[bool] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"data_type",b"data_type",u"name",b"name",u"unknown_shape",b"unknown_shape"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"data_type",b"data_type",u"dims",b"dims",u"name",b"name",u"unknown_dims",b"unknown_dims",u"unknown_shape",b"unknown_shape"]) -> None: ...
+        dims: typing.Optional[typing.Iterable[int]] = ...,
+        data_type: typing.Optional[global___TensorProto.DataType] = ...,
+        unknown_dims: typing.Optional[typing.Iterable[int]] = ...,
+        unknown_shape: typing.Optional[bool] = ...,
+        name: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "data_type",
+            b"data_type",
+            "name",
+            b"name",
+            "unknown_shape",
+            b"unknown_shape",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "data_type",
+            b"data_type",
+            "dims",
+            b"dims",
+            "name",
+            b"name",
+            "unknown_dims",
+            b"unknown_dims",
+            "unknown_shape",
+            b"unknown_shape",
+        ],
+    ) -> None: ...
+
 global___TensorShape = TensorShape
 
 class TensorShapes(google.protobuf.message.Message):
@@ -244,18 +413,28 @@ class TensorShapes(google.protobuf.message.Message):
     SHAPES_FIELD_NUMBER: int
 
     @property
-    def shapes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___TensorShape]: ...
-
-    def __init__(self,
+    def shapes(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___TensorShape
+    ]: ...
+    def __init__(
+        self,
         *,
-        shapes : typing.Optional[typing.Iterable[global___TensorShape]] = ...,
-        ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"shapes",b"shapes"]) -> None: ...
+        shapes: typing.Optional[typing.Iterable[global___TensorShape]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["shapes", b"shapes"]
+    ) -> None: ...
+
 global___TensorShapes = TensorShapes
 
 class TensorBoundShape(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    class _DimType(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[DimType], type):
+
+    class _DimType(
+        google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[DimType], type
+    ):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
         UNKNOWN = TensorBoundShape.DimType.V(0)
         CONSTANT = TensorBoundShape.DimType.V(1)
@@ -264,8 +443,9 @@ class TensorBoundShape(google.protobuf.message.Message):
         BATCH_OF_FEATURE_MAX_DEFAULT = TensorBoundShape.DimType.V(4)
         FEATURE_MAX = TensorBoundShape.DimType.V(5)
         FEATURE_MAX_DEFAULT = TensorBoundShape.DimType.V(6)
+
     class DimType(metaclass=_DimType):
-        V = typing.NewType('V', int)
+        V = typing.NewType("V", int)
     UNKNOWN = TensorBoundShape.DimType.V(0)
     CONSTANT = TensorBoundShape.DimType.V(1)
     BATCH = TensorBoundShape.DimType.V(2)
@@ -278,22 +458,44 @@ class TensorBoundShape(google.protobuf.message.Message):
     DIM_TYPE_FIELD_NUMBER: int
     NAME_FIELD_NUMBER: int
     SHAPE_IS_FINAL_FIELD_NUMBER: int
-    dim_type: google.protobuf.internal.containers.RepeatedScalarFieldContainer[global___TensorBoundShape.DimType] = ...
+    dim_type: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        global___TensorBoundShape.DimType
+    ] = ...
     name: typing.Text = ...
     shape_is_final: bool = ...
 
     @property
     def shape(self) -> global___TensorShape: ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        shape : typing.Optional[global___TensorShape] = ...,
-        dim_type : typing.Optional[typing.Iterable[global___TensorBoundShape.DimType]] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        shape_is_final : typing.Optional[bool] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"name",b"name",u"shape",b"shape",u"shape_is_final",b"shape_is_final"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"dim_type",b"dim_type",u"name",b"name",u"shape",b"shape",u"shape_is_final",b"shape_is_final"]) -> None: ...
+        shape: typing.Optional[global___TensorShape] = ...,
+        dim_type: typing.Optional[
+            typing.Iterable[global___TensorBoundShape.DimType]
+        ] = ...,
+        name: typing.Optional[typing.Text] = ...,
+        shape_is_final: typing.Optional[bool] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "name", b"name", "shape", b"shape", "shape_is_final", b"shape_is_final"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "dim_type",
+            b"dim_type",
+            "name",
+            b"name",
+            "shape",
+            b"shape",
+            "shape_is_final",
+            b"shape_is_final",
+        ],
+    ) -> None: ...
+
 global___TensorBoundShape = TensorBoundShape
 
 class TensorBoundShapes(google.protobuf.message.Message):
@@ -305,16 +507,36 @@ class TensorBoundShapes(google.protobuf.message.Message):
     max_feature_len: int = ...
 
     @property
-    def shapes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___TensorBoundShape]: ...
-
-    def __init__(self,
+    def shapes(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___TensorBoundShape
+    ]: ...
+    def __init__(
+        self,
         *,
-        shapes : typing.Optional[typing.Iterable[global___TensorBoundShape]] = ...,
-        max_batch_size : typing.Optional[int] = ...,
-        max_feature_len : typing.Optional[int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"max_batch_size",b"max_batch_size",u"max_feature_len",b"max_feature_len"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"max_batch_size",b"max_batch_size",u"max_feature_len",b"max_feature_len",u"shapes",b"shapes"]) -> None: ...
+        shapes: typing.Optional[typing.Iterable[global___TensorBoundShape]] = ...,
+        max_batch_size: typing.Optional[int] = ...,
+        max_feature_len: typing.Optional[int] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "max_batch_size", b"max_batch_size", "max_feature_len", b"max_feature_len"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "max_batch_size",
+            b"max_batch_size",
+            "max_feature_len",
+            b"max_feature_len",
+            "shapes",
+            b"shapes",
+        ],
+    ) -> None: ...
+
 global___TensorBoundShapes = TensorBoundShapes
 
 class AOTConfig(google.protobuf.message.Message):
@@ -330,16 +552,46 @@ class AOTConfig(google.protobuf.message.Message):
     onnxifi_blacklist_ops: typing.Text = ...
     onnxifi_min_ops: int = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        max_batch_size : typing.Optional[int] = ...,
-        max_seq_size : typing.Optional[int] = ...,
-        in_batch_broadcast : typing.Optional[bool] = ...,
-        onnxifi_blacklist_ops : typing.Optional[typing.Text] = ...,
-        onnxifi_min_ops : typing.Optional[int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"in_batch_broadcast",b"in_batch_broadcast",u"max_batch_size",b"max_batch_size",u"max_seq_size",b"max_seq_size",u"onnxifi_blacklist_ops",b"onnxifi_blacklist_ops",u"onnxifi_min_ops",b"onnxifi_min_ops"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"in_batch_broadcast",b"in_batch_broadcast",u"max_batch_size",b"max_batch_size",u"max_seq_size",b"max_seq_size",u"onnxifi_blacklist_ops",b"onnxifi_blacklist_ops",u"onnxifi_min_ops",b"onnxifi_min_ops"]) -> None: ...
+        max_batch_size: typing.Optional[int] = ...,
+        max_seq_size: typing.Optional[int] = ...,
+        in_batch_broadcast: typing.Optional[bool] = ...,
+        onnxifi_blacklist_ops: typing.Optional[typing.Text] = ...,
+        onnxifi_min_ops: typing.Optional[int] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "in_batch_broadcast",
+            b"in_batch_broadcast",
+            "max_batch_size",
+            b"max_batch_size",
+            "max_seq_size",
+            b"max_seq_size",
+            "onnxifi_blacklist_ops",
+            b"onnxifi_blacklist_ops",
+            "onnxifi_min_ops",
+            b"onnxifi_min_ops",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "in_batch_broadcast",
+            b"in_batch_broadcast",
+            "max_batch_size",
+            b"max_batch_size",
+            "max_seq_size",
+            b"max_seq_size",
+            "onnxifi_blacklist_ops",
+            b"onnxifi_blacklist_ops",
+            "onnxifi_min_ops",
+            b"onnxifi_min_ops",
+        ],
+    ) -> None: ...
+
 global___AOTConfig = AOTConfig
 
 class Argument(google.protobuf.message.Message):
@@ -360,42 +612,88 @@ class Argument(google.protobuf.message.Message):
     f: float = ...
     i: int = ...
     s: bytes = ...
-    floats: google.protobuf.internal.containers.RepeatedScalarFieldContainer[float] = ...
+    floats: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        float
+    ] = ...
     ints: google.protobuf.internal.containers.RepeatedScalarFieldContainer[int] = ...
-    strings: google.protobuf.internal.containers.RepeatedScalarFieldContainer[bytes] = ...
+    strings: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        bytes
+    ] = ...
 
     @property
     def t(self) -> global___TensorProto: ...
-
     @property
     def n(self) -> global___NetDef: ...
-
     @property
-    def tensors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___TensorProto]: ...
-
+    def tensors(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___TensorProto
+    ]: ...
     @property
-    def nets(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___NetDef]: ...
-
+    def nets(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___NetDef
+    ]: ...
     @property
-    def qtensors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___QTensorProto]: ...
-
-    def __init__(self,
+    def qtensors(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___QTensorProto
+    ]: ...
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        f : typing.Optional[float] = ...,
-        i : typing.Optional[int] = ...,
-        s : typing.Optional[bytes] = ...,
-        t : typing.Optional[global___TensorProto] = ...,
-        n : typing.Optional[global___NetDef] = ...,
-        floats : typing.Optional[typing.Iterable[float]] = ...,
-        ints : typing.Optional[typing.Iterable[int]] = ...,
-        strings : typing.Optional[typing.Iterable[bytes]] = ...,
-        tensors : typing.Optional[typing.Iterable[global___TensorProto]] = ...,
-        nets : typing.Optional[typing.Iterable[global___NetDef]] = ...,
-        qtensors : typing.Optional[typing.Iterable[global___QTensorProto]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"f",b"f",u"i",b"i",u"n",b"n",u"name",b"name",u"s",b"s",u"t",b"t"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"f",b"f",u"floats",b"floats",u"i",b"i",u"ints",b"ints",u"n",b"n",u"name",b"name",u"nets",b"nets",u"qtensors",b"qtensors",u"s",b"s",u"strings",b"strings",u"t",b"t",u"tensors",b"tensors"]) -> None: ...
+        name: typing.Optional[typing.Text] = ...,
+        f: typing.Optional[float] = ...,
+        i: typing.Optional[int] = ...,
+        s: typing.Optional[bytes] = ...,
+        t: typing.Optional[global___TensorProto] = ...,
+        n: typing.Optional[global___NetDef] = ...,
+        floats: typing.Optional[typing.Iterable[float]] = ...,
+        ints: typing.Optional[typing.Iterable[int]] = ...,
+        strings: typing.Optional[typing.Iterable[bytes]] = ...,
+        tensors: typing.Optional[typing.Iterable[global___TensorProto]] = ...,
+        nets: typing.Optional[typing.Iterable[global___NetDef]] = ...,
+        qtensors: typing.Optional[typing.Iterable[global___QTensorProto]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "f", b"f", "i", b"i", "n", b"n", "name", b"name", "s", b"s", "t", b"t"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "f",
+            b"f",
+            "floats",
+            b"floats",
+            "i",
+            b"i",
+            "ints",
+            b"ints",
+            "n",
+            b"n",
+            "name",
+            b"name",
+            "nets",
+            b"nets",
+            "qtensors",
+            b"qtensors",
+            "s",
+            b"s",
+            "strings",
+            b"strings",
+            "t",
+            b"t",
+            "tensors",
+            b"tensors",
+        ],
+    ) -> None: ...
+
 global___Argument = Argument
 
 class DeviceOption(google.protobuf.message.Message):
@@ -411,19 +709,53 @@ class DeviceOption(google.protobuf.message.Message):
     random_seed: int = ...
     node_name: typing.Text = ...
     numa_node_id: int = ...
-    extra_info: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
+    extra_info: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        device_type : typing.Optional[int] = ...,
-        device_id : typing.Optional[int] = ...,
-        random_seed : typing.Optional[int] = ...,
-        node_name : typing.Optional[typing.Text] = ...,
-        numa_node_id : typing.Optional[int] = ...,
-        extra_info : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"device_id",b"device_id",u"device_type",b"device_type",u"node_name",b"node_name",u"numa_node_id",b"numa_node_id",u"random_seed",b"random_seed"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"device_id",b"device_id",u"device_type",b"device_type",u"extra_info",b"extra_info",u"node_name",b"node_name",u"numa_node_id",b"numa_node_id",u"random_seed",b"random_seed"]) -> None: ...
+        device_type: typing.Optional[int] = ...,
+        device_id: typing.Optional[int] = ...,
+        random_seed: typing.Optional[int] = ...,
+        node_name: typing.Optional[typing.Text] = ...,
+        numa_node_id: typing.Optional[int] = ...,
+        extra_info: typing.Optional[typing.Iterable[typing.Text]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "device_id",
+            b"device_id",
+            "device_type",
+            b"device_type",
+            "node_name",
+            b"node_name",
+            "numa_node_id",
+            b"numa_node_id",
+            "random_seed",
+            b"random_seed",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "device_id",
+            b"device_id",
+            "device_type",
+            b"device_type",
+            "extra_info",
+            b"extra_info",
+            "node_name",
+            b"node_name",
+            "numa_node_id",
+            b"numa_node_id",
+            "random_seed",
+            b"random_seed",
+        ],
+    ) -> None: ...
+
 global___DeviceOption = DeviceOption
 
 class OperatorDef(google.protobuf.message.Message):
@@ -440,40 +772,98 @@ class OperatorDef(google.protobuf.message.Message):
     DEBUG_INFO_FIELD_NUMBER: int
     DOMAIN_FIELD_NUMBER: int
     OP_VERSION_FIELD_NUMBER: int
-    input: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    output: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
+    input: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    output: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
     name: typing.Text = ...
     type: typing.Text = ...
     engine: typing.Text = ...
-    control_input: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
+    control_input: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
     is_gradient_op: bool = ...
     debug_info: typing.Text = ...
     domain: typing.Text = ...
     op_version: int = ...
 
     @property
-    def arg(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Argument]: ...
-
+    def arg(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Argument
+    ]: ...
     @property
     def device_option(self) -> global___DeviceOption: ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        input : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        output : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        type : typing.Optional[typing.Text] = ...,
-        arg : typing.Optional[typing.Iterable[global___Argument]] = ...,
-        device_option : typing.Optional[global___DeviceOption] = ...,
-        engine : typing.Optional[typing.Text] = ...,
-        control_input : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        is_gradient_op : typing.Optional[bool] = ...,
-        debug_info : typing.Optional[typing.Text] = ...,
-        domain : typing.Optional[typing.Text] = ...,
-        op_version : typing.Optional[int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"debug_info",b"debug_info",u"device_option",b"device_option",u"domain",b"domain",u"engine",b"engine",u"is_gradient_op",b"is_gradient_op",u"name",b"name",u"op_version",b"op_version",u"type",b"type"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"arg",b"arg",u"control_input",b"control_input",u"debug_info",b"debug_info",u"device_option",b"device_option",u"domain",b"domain",u"engine",b"engine",u"input",b"input",u"is_gradient_op",b"is_gradient_op",u"name",b"name",u"op_version",b"op_version",u"output",b"output",u"type",b"type"]) -> None: ...
+        input: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        output: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        name: typing.Optional[typing.Text] = ...,
+        type: typing.Optional[typing.Text] = ...,
+        arg: typing.Optional[typing.Iterable[global___Argument]] = ...,
+        device_option: typing.Optional[global___DeviceOption] = ...,
+        engine: typing.Optional[typing.Text] = ...,
+        control_input: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        is_gradient_op: typing.Optional[bool] = ...,
+        debug_info: typing.Optional[typing.Text] = ...,
+        domain: typing.Optional[typing.Text] = ...,
+        op_version: typing.Optional[int] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "debug_info",
+            b"debug_info",
+            "device_option",
+            b"device_option",
+            "domain",
+            b"domain",
+            "engine",
+            b"engine",
+            "is_gradient_op",
+            b"is_gradient_op",
+            "name",
+            b"name",
+            "op_version",
+            b"op_version",
+            "type",
+            b"type",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "arg",
+            b"arg",
+            "control_input",
+            b"control_input",
+            "debug_info",
+            b"debug_info",
+            "device_option",
+            b"device_option",
+            "domain",
+            b"domain",
+            "engine",
+            b"engine",
+            "input",
+            b"input",
+            "is_gradient_op",
+            b"is_gradient_op",
+            "name",
+            b"name",
+            "op_version",
+            b"op_version",
+            "output",
+            b"output",
+            "type",
+            b"type",
+        ],
+    ) -> None: ...
+
 global___OperatorDef = OperatorDef
 
 class MapFieldEntry(google.protobuf.message.Message):
@@ -483,13 +873,19 @@ class MapFieldEntry(google.protobuf.message.Message):
     key: typing.Text = ...
     val: typing.Text = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        key : typing.Optional[typing.Text] = ...,
-        val : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"key",b"key",u"val",b"val"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"key",b"key",u"val",b"val"]) -> None: ...
+        key: typing.Optional[typing.Text] = ...,
+        val: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["key", b"key", "val", b"val"]
+    ) -> bool: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["key", b"key", "val", b"val"]
+    ) -> None: ...
+
 global___MapFieldEntry = MapFieldEntry
 
 class BackendOptions(google.protobuf.message.Message):
@@ -499,15 +895,27 @@ class BackendOptions(google.protobuf.message.Message):
     backend_name: typing.Text = ...
 
     @property
-    def option(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___MapFieldEntry]: ...
-
-    def __init__(self,
+    def option(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___MapFieldEntry
+    ]: ...
+    def __init__(
+        self,
         *,
-        backend_name : typing.Optional[typing.Text] = ...,
-        option : typing.Optional[typing.Iterable[global___MapFieldEntry]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"backend_name",b"backend_name"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"backend_name",b"backend_name",u"option",b"option"]) -> None: ...
+        backend_name: typing.Optional[typing.Text] = ...,
+        option: typing.Optional[typing.Iterable[global___MapFieldEntry]] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["backend_name", b"backend_name"]
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "backend_name", b"backend_name", "option", b"option"
+        ],
+    ) -> None: ...
+
 global___BackendOptions = BackendOptions
 
 class PartitionInfo(google.protobuf.message.Message):
@@ -517,21 +925,47 @@ class PartitionInfo(google.protobuf.message.Message):
     EXTRA_INFO_FIELD_NUMBER: int
     BACKEND_OPTIONS_FIELD_NUMBER: int
     name: typing.Text = ...
-    device_id: google.protobuf.internal.containers.RepeatedScalarFieldContainer[int] = ...
+    device_id: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        int
+    ] = ...
     extra_info: typing.Text = ...
 
     @property
-    def backend_options(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___BackendOptions]: ...
-
-    def __init__(self,
+    def backend_options(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___BackendOptions
+    ]: ...
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        device_id : typing.Optional[typing.Iterable[int]] = ...,
-        extra_info : typing.Optional[typing.Text] = ...,
-        backend_options : typing.Optional[typing.Iterable[global___BackendOptions]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"extra_info",b"extra_info",u"name",b"name"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"backend_options",b"backend_options",u"device_id",b"device_id",u"extra_info",b"extra_info",u"name",b"name"]) -> None: ...
+        name: typing.Optional[typing.Text] = ...,
+        device_id: typing.Optional[typing.Iterable[int]] = ...,
+        extra_info: typing.Optional[typing.Text] = ...,
+        backend_options: typing.Optional[
+            typing.Iterable[global___BackendOptions]
+        ] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "extra_info", b"extra_info", "name", b"name"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "backend_options",
+            b"backend_options",
+            "device_id",
+            b"device_id",
+            "extra_info",
+            b"extra_info",
+            "name",
+            b"name",
+        ],
+    ) -> None: ...
+
 global___PartitionInfo = PartitionInfo
 
 class NetDef(google.protobuf.message.Message):
@@ -548,35 +982,83 @@ class NetDef(google.protobuf.message.Message):
     name: typing.Text = ...
     type: typing.Text = ...
     num_workers: int = ...
-    external_input: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
-    external_output: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
+    external_input: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    external_output: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
 
     @property
-    def op(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___OperatorDef]: ...
-
+    def op(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___OperatorDef
+    ]: ...
     @property
     def device_option(self) -> global___DeviceOption: ...
-
     @property
-    def arg(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Argument]: ...
-
+    def arg(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Argument
+    ]: ...
     @property
-    def partition_info(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PartitionInfo]: ...
-
-    def __init__(self,
+    def partition_info(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___PartitionInfo
+    ]: ...
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        op : typing.Optional[typing.Iterable[global___OperatorDef]] = ...,
-        type : typing.Optional[typing.Text] = ...,
-        num_workers : typing.Optional[int] = ...,
-        device_option : typing.Optional[global___DeviceOption] = ...,
-        arg : typing.Optional[typing.Iterable[global___Argument]] = ...,
-        external_input : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        external_output : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        partition_info : typing.Optional[typing.Iterable[global___PartitionInfo]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"device_option",b"device_option",u"name",b"name",u"num_workers",b"num_workers",u"type",b"type"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"arg",b"arg",u"device_option",b"device_option",u"external_input",b"external_input",u"external_output",b"external_output",u"name",b"name",u"num_workers",b"num_workers",u"op",b"op",u"partition_info",b"partition_info",u"type",b"type"]) -> None: ...
+        name: typing.Optional[typing.Text] = ...,
+        op: typing.Optional[typing.Iterable[global___OperatorDef]] = ...,
+        type: typing.Optional[typing.Text] = ...,
+        num_workers: typing.Optional[int] = ...,
+        device_option: typing.Optional[global___DeviceOption] = ...,
+        arg: typing.Optional[typing.Iterable[global___Argument]] = ...,
+        external_input: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        external_output: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        partition_info: typing.Optional[typing.Iterable[global___PartitionInfo]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "device_option",
+            b"device_option",
+            "name",
+            b"name",
+            "num_workers",
+            b"num_workers",
+            "type",
+            b"type",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "arg",
+            b"arg",
+            "device_option",
+            b"device_option",
+            "external_input",
+            b"external_input",
+            "external_output",
+            b"external_output",
+            "name",
+            b"name",
+            "num_workers",
+            b"num_workers",
+            "op",
+            b"op",
+            "partition_info",
+            b"partition_info",
+            "type",
+            b"type",
+        ],
+    ) -> None: ...
+
 global___NetDef = NetDef
 
 class ExecutionStep(google.protobuf.message.Message):
@@ -595,7 +1077,9 @@ class ExecutionStep(google.protobuf.message.Message):
     CREATE_WORKSPACE_FIELD_NUMBER: int
     NUM_CONCURRENT_INSTANCES_FIELD_NUMBER: int
     name: typing.Text = ...
-    network: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
+    network: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
     num_iter: int = ...
     criteria_network: typing.Text = ...
     report_net: typing.Text = ...
@@ -608,26 +1092,87 @@ class ExecutionStep(google.protobuf.message.Message):
     num_concurrent_instances: int = ...
 
     @property
-    def substep(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ExecutionStep]: ...
-
-    def __init__(self,
+    def substep(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ExecutionStep
+    ]: ...
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        substep : typing.Optional[typing.Iterable[global___ExecutionStep]] = ...,
-        network : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        num_iter : typing.Optional[int] = ...,
-        criteria_network : typing.Optional[typing.Text] = ...,
-        report_net : typing.Optional[typing.Text] = ...,
-        report_interval : typing.Optional[int] = ...,
-        run_every_ms : typing.Optional[int] = ...,
-        concurrent_substeps : typing.Optional[bool] = ...,
-        should_stop_blob : typing.Optional[typing.Text] = ...,
-        only_once : typing.Optional[bool] = ...,
-        create_workspace : typing.Optional[bool] = ...,
-        num_concurrent_instances : typing.Optional[int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"concurrent_substeps",b"concurrent_substeps",u"create_workspace",b"create_workspace",u"criteria_network",b"criteria_network",u"name",b"name",u"num_concurrent_instances",b"num_concurrent_instances",u"num_iter",b"num_iter",u"only_once",b"only_once",u"report_interval",b"report_interval",u"report_net",b"report_net",u"run_every_ms",b"run_every_ms",u"should_stop_blob",b"should_stop_blob"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"concurrent_substeps",b"concurrent_substeps",u"create_workspace",b"create_workspace",u"criteria_network",b"criteria_network",u"name",b"name",u"network",b"network",u"num_concurrent_instances",b"num_concurrent_instances",u"num_iter",b"num_iter",u"only_once",b"only_once",u"report_interval",b"report_interval",u"report_net",b"report_net",u"run_every_ms",b"run_every_ms",u"should_stop_blob",b"should_stop_blob",u"substep",b"substep"]) -> None: ...
+        name: typing.Optional[typing.Text] = ...,
+        substep: typing.Optional[typing.Iterable[global___ExecutionStep]] = ...,
+        network: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        num_iter: typing.Optional[int] = ...,
+        criteria_network: typing.Optional[typing.Text] = ...,
+        report_net: typing.Optional[typing.Text] = ...,
+        report_interval: typing.Optional[int] = ...,
+        run_every_ms: typing.Optional[int] = ...,
+        concurrent_substeps: typing.Optional[bool] = ...,
+        should_stop_blob: typing.Optional[typing.Text] = ...,
+        only_once: typing.Optional[bool] = ...,
+        create_workspace: typing.Optional[bool] = ...,
+        num_concurrent_instances: typing.Optional[int] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "concurrent_substeps",
+            b"concurrent_substeps",
+            "create_workspace",
+            b"create_workspace",
+            "criteria_network",
+            b"criteria_network",
+            "name",
+            b"name",
+            "num_concurrent_instances",
+            b"num_concurrent_instances",
+            "num_iter",
+            b"num_iter",
+            "only_once",
+            b"only_once",
+            "report_interval",
+            b"report_interval",
+            "report_net",
+            b"report_net",
+            "run_every_ms",
+            b"run_every_ms",
+            "should_stop_blob",
+            b"should_stop_blob",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "concurrent_substeps",
+            b"concurrent_substeps",
+            "create_workspace",
+            b"create_workspace",
+            "criteria_network",
+            b"criteria_network",
+            "name",
+            b"name",
+            "network",
+            b"network",
+            "num_concurrent_instances",
+            b"num_concurrent_instances",
+            "num_iter",
+            b"num_iter",
+            "only_once",
+            b"only_once",
+            "report_interval",
+            b"report_interval",
+            "report_net",
+            b"report_net",
+            "run_every_ms",
+            b"run_every_ms",
+            "should_stop_blob",
+            b"should_stop_blob",
+            "substep",
+            b"substep",
+        ],
+    ) -> None: ...
+
 global___ExecutionStep = ExecutionStep
 
 class PlanDef(google.protobuf.message.Message):
@@ -638,19 +1183,34 @@ class PlanDef(google.protobuf.message.Message):
     name: typing.Text = ...
 
     @property
-    def network(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___NetDef]: ...
-
+    def network(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___NetDef
+    ]: ...
     @property
-    def execution_step(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ExecutionStep]: ...
-
-    def __init__(self,
+    def execution_step(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ExecutionStep
+    ]: ...
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        network : typing.Optional[typing.Iterable[global___NetDef]] = ...,
-        execution_step : typing.Optional[typing.Iterable[global___ExecutionStep]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"name",b"name"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"execution_step",b"execution_step",u"name",b"name",u"network",b"network"]) -> None: ...
+        name: typing.Optional[typing.Text] = ...,
+        network: typing.Optional[typing.Iterable[global___NetDef]] = ...,
+        execution_step: typing.Optional[typing.Iterable[global___ExecutionStep]] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["name", b"name"]
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "execution_step", b"execution_step", "name", b"name", "network", b"network"
+        ],
+    ) -> None: ...
+
 global___PlanDef = PlanDef
 
 class BlobProto(google.protobuf.message.Message):
@@ -670,22 +1230,58 @@ class BlobProto(google.protobuf.message.Message):
 
     @property
     def tensor(self) -> global___TensorProto: ...
-
     @property
     def qtensor(self) -> global___QTensorProto: ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        type : typing.Optional[typing.Text] = ...,
-        tensor : typing.Optional[global___TensorProto] = ...,
-        content : typing.Optional[bytes] = ...,
-        qtensor : typing.Optional[global___QTensorProto] = ...,
-        content_num_chunks : typing.Optional[int] = ...,
-        content_chunk_id : typing.Optional[int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"content",b"content",u"content_chunk_id",b"content_chunk_id",u"content_num_chunks",b"content_num_chunks",u"name",b"name",u"qtensor",b"qtensor",u"tensor",b"tensor",u"type",b"type"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"content",b"content",u"content_chunk_id",b"content_chunk_id",u"content_num_chunks",b"content_num_chunks",u"name",b"name",u"qtensor",b"qtensor",u"tensor",b"tensor",u"type",b"type"]) -> None: ...
+        name: typing.Optional[typing.Text] = ...,
+        type: typing.Optional[typing.Text] = ...,
+        tensor: typing.Optional[global___TensorProto] = ...,
+        content: typing.Optional[bytes] = ...,
+        qtensor: typing.Optional[global___QTensorProto] = ...,
+        content_num_chunks: typing.Optional[int] = ...,
+        content_chunk_id: typing.Optional[int] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "content",
+            b"content",
+            "content_chunk_id",
+            b"content_chunk_id",
+            "content_num_chunks",
+            b"content_num_chunks",
+            "name",
+            b"name",
+            "qtensor",
+            b"qtensor",
+            "tensor",
+            b"tensor",
+            "type",
+            b"type",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "content",
+            b"content",
+            "content_chunk_id",
+            b"content_chunk_id",
+            "content_num_chunks",
+            b"content_num_chunks",
+            "name",
+            b"name",
+            "qtensor",
+            b"qtensor",
+            "tensor",
+            b"tensor",
+            "type",
+            b"type",
+        ],
+    ) -> None: ...
+
 global___BlobProto = BlobProto
 
 class DBReaderProto(google.protobuf.message.Message):
@@ -699,26 +1295,42 @@ class DBReaderProto(google.protobuf.message.Message):
     db_type: typing.Text = ...
     key: typing.Text = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        source : typing.Optional[typing.Text] = ...,
-        db_type : typing.Optional[typing.Text] = ...,
-        key : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"db_type",b"db_type",u"key",b"key",u"name",b"name",u"source",b"source"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"db_type",b"db_type",u"key",b"key",u"name",b"name",u"source",b"source"]) -> None: ...
+        name: typing.Optional[typing.Text] = ...,
+        source: typing.Optional[typing.Text] = ...,
+        db_type: typing.Optional[typing.Text] = ...,
+        key: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db_type", b"db_type", "key", b"key", "name", b"name", "source", b"source"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db_type", b"db_type", "key", b"key", "name", b"name", "source", b"source"
+        ],
+    ) -> None: ...
+
 global___DBReaderProto = DBReaderProto
 
 class BlobSerializationOptions(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    class _FloatFormat(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[FloatFormat], type):
+
+    class _FloatFormat(
+        google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[FloatFormat], type
+    ):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
         FLOAT_DEFAULT = BlobSerializationOptions.FloatFormat.V(0)
         FLOAT_PROTOBUF = BlobSerializationOptions.FloatFormat.V(1)
         FLOAT_BFLOAT16 = BlobSerializationOptions.FloatFormat.V(2)
+
     class FloatFormat(metaclass=_FloatFormat):
-        V = typing.NewType('V', int)
+        V = typing.NewType("V", int)
     FLOAT_DEFAULT = BlobSerializationOptions.FloatFormat.V(0)
     FLOAT_PROTOBUF = BlobSerializationOptions.FloatFormat.V(1)
     FLOAT_BFLOAT16 = BlobSerializationOptions.FloatFormat.V(2)
@@ -730,14 +1342,38 @@ class BlobSerializationOptions(google.protobuf.message.Message):
     chunk_size: int = ...
     float_format: global___BlobSerializationOptions.FloatFormat = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        blob_name_regex : typing.Optional[typing.Text] = ...,
-        chunk_size : typing.Optional[int] = ...,
-        float_format : typing.Optional[global___BlobSerializationOptions.FloatFormat] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"blob_name_regex",b"blob_name_regex",u"chunk_size",b"chunk_size",u"float_format",b"float_format"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"blob_name_regex",b"blob_name_regex",u"chunk_size",b"chunk_size",u"float_format",b"float_format"]) -> None: ...
+        blob_name_regex: typing.Optional[typing.Text] = ...,
+        chunk_size: typing.Optional[int] = ...,
+        float_format: typing.Optional[
+            global___BlobSerializationOptions.FloatFormat
+        ] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "blob_name_regex",
+            b"blob_name_regex",
+            "chunk_size",
+            b"chunk_size",
+            "float_format",
+            b"float_format",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "blob_name_regex",
+            b"blob_name_regex",
+            "chunk_size",
+            b"chunk_size",
+            "float_format",
+            b"float_format",
+        ],
+    ) -> None: ...
+
 global___BlobSerializationOptions = BlobSerializationOptions
 
 class SerializationOptions(google.protobuf.message.Message):
@@ -745,13 +1381,22 @@ class SerializationOptions(google.protobuf.message.Message):
     OPTIONS_FIELD_NUMBER: int
 
     @property
-    def options(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___BlobSerializationOptions]: ...
-
-    def __init__(self,
+    def options(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___BlobSerializationOptions
+    ]: ...
+    def __init__(
+        self,
         *,
-        options : typing.Optional[typing.Iterable[global___BlobSerializationOptions]] = ...,
-        ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"options",b"options"]) -> None: ...
+        options: typing.Optional[
+            typing.Iterable[global___BlobSerializationOptions]
+        ] = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["options", b"options"]
+    ) -> None: ...
+
 global___SerializationOptions = SerializationOptions
 
 DeviceType = int

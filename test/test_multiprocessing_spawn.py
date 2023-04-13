@@ -8,7 +8,12 @@ import sys
 import time
 import unittest
 
-from torch.testing._internal.common_utils import (TestCase, run_tests, IS_WINDOWS, NO_MULTIPROCESSING_SPAWN)
+from torch.testing._internal.common_utils import (
+    TestCase,
+    run_tests,
+    IS_WINDOWS,
+    NO_MULTIPROCESSING_SPAWN,
+)
 import torch.multiprocessing as mp
 
 
@@ -87,6 +92,7 @@ def _test_nested(i, pids_queue, nested_child_sleep, start_method):
     # Kill self. This should take down the child processes as well.
     os.kill(os.getpid(), signal.SIGTERM)
 
+
 class _TestMultiProcessing:
     start_method = None
 
@@ -94,7 +100,9 @@ class _TestMultiProcessing:
         mp.start_processes(_test_success_func, nprocs=2, start_method=self.start_method)
 
     def test_success_non_blocking(self):
-        mp_context = mp.start_processes(_test_success_func, nprocs=2, join=False, start_method=self.start_method)
+        mp_context = mp.start_processes(
+            _test_success_func, nprocs=2, join=False, start_method=self.start_method
+        )
 
         # After all processes (nproc=2) have joined it must return True
         mp_context.join(timeout=None)
@@ -104,7 +112,12 @@ class _TestMultiProcessing:
     def test_first_argument_index(self):
         context = mp.get_context(self.start_method)
         queue = context.SimpleQueue()
-        mp.start_processes(_test_success_single_arg_func, args=(queue,), nprocs=2, start_method=self.start_method)
+        mp.start_processes(
+            _test_success_single_arg_func,
+            args=(queue,),
+            nprocs=2,
+            start_method=self.start_method,
+        )
         self.assertEqual([0, 1], sorted([queue.get(), queue.get()]))
 
     def test_exception_single(self):
@@ -114,14 +127,21 @@ class _TestMultiProcessing:
                 Exception,
                 "\nValueError: legitimate exception from process %d$" % i,
             ):
-                mp.start_processes(_test_exception_single_func, args=(i,), nprocs=nprocs, start_method=self.start_method)
+                mp.start_processes(
+                    _test_exception_single_func,
+                    args=(i,),
+                    nprocs=nprocs,
+                    start_method=self.start_method,
+                )
 
     def test_exception_all(self):
         with self.assertRaisesRegex(
             Exception,
             "\nValueError: legitimate exception from process (0|1)$",
         ):
-            mp.start_processes(_test_exception_all_func, nprocs=2, start_method=self.start_method)
+            mp.start_processes(
+                _test_exception_all_func, nprocs=2, start_method=self.start_method
+            )
 
     def test_terminate_signal(self):
         # SIGABRT is aliased with SIGIOT
@@ -136,7 +156,9 @@ class _TestMultiProcessing:
             message = "process 0 terminated with exit code 22"
 
         with self.assertRaisesRegex(Exception, message):
-            mp.start_processes(_test_terminate_signal_func, nprocs=2, start_method=self.start_method)
+            mp.start_processes(
+                _test_terminate_signal_func, nprocs=2, start_method=self.start_method
+            )
 
     def test_terminate_exit(self):
         exitcode = 123
@@ -144,7 +166,12 @@ class _TestMultiProcessing:
             Exception,
             "process 0 terminated with exit code %d" % exitcode,
         ):
-            mp.start_processes(_test_terminate_exit_func, args=(exitcode,), nprocs=2, start_method=self.start_method)
+            mp.start_processes(
+                _test_terminate_exit_func,
+                args=(exitcode,),
+                nprocs=2,
+                start_method=self.start_method,
+            )
 
     def test_success_first_then_exception(self):
         exitcode = 123
@@ -152,7 +179,12 @@ class _TestMultiProcessing:
             Exception,
             "ValueError: legitimate exception",
         ):
-            mp.start_processes(_test_success_first_then_exception_func, args=(exitcode,), nprocs=2, start_method=self.start_method)
+            mp.start_processes(
+                _test_success_first_then_exception_func,
+                args=(exitcode,),
+                nprocs=2,
+                start_method=self.start_method,
+            )
 
     @unittest.skipIf(
         sys.platform != "linux",
@@ -189,11 +221,13 @@ class _TestMultiProcessing:
             self.assertLess(time.time() - start, nested_child_sleep / 2)
             time.sleep(0.1)
 
+
 @unittest.skipIf(
     NO_MULTIPROCESSING_SPAWN,
-    "Disabled for environments that don't support the spawn start method")
+    "Disabled for environments that don't support the spawn start method",
+)
 class SpawnTest(TestCase, _TestMultiProcessing):
-    start_method = 'spawn'
+    start_method = "spawn"
 
     def test_exception_raises(self):
         with self.assertRaises(mp.ProcessRaisedException):
@@ -217,7 +251,7 @@ class SpawnTest(TestCase, _TestMultiProcessing):
     "Fork is only available on Unix",
 )
 class ForkTest(TestCase, _TestMultiProcessing):
-    start_method = 'fork'
+    start_method = "fork"
 
 
 class ErrorTest(TestCase):
@@ -229,5 +263,5 @@ class ErrorTest(TestCase):
             pickle.loads(pickle.dumps(error))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

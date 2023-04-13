@@ -261,7 +261,9 @@ def split_module(
                 target_attr = m
                 for atom in target_atoms:
                     if not hasattr(target_attr, atom):
-                        raise AttributeError(f"Operator target {node.target} not found!")
+                        raise AttributeError(
+                            f"Operator target {node.target} not found!"
+                        )
                     target_attr = getattr(target_attr, atom)
                 # target = target_atoms[-1]
                 target = "_".join(target_atoms)

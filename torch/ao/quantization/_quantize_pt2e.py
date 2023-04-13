@@ -13,6 +13,7 @@ from torch.ao.quantization._pt2e.quantizer import Quantizer
 
 from typing import Tuple, Any, Dict
 
+
 def prepare_pt2e(
     model: GraphModule,
     qconfig_mapping: QConfigMapping,
@@ -39,13 +40,14 @@ def prepare_pt2e(
         False,  # is_qat
         node_name_to_scope,
         example_inputs,
-        backend_config=backend_config
+        backend_config=backend_config,
     )
 
     # TODO: remove hack when we have better support for pattern matching
     # move around the observer for addmm
     _rearrange_weight_observer_for_decomposed_linear(model)
     return model
+
 
 # TODO: update this to prepare_pt2e after we have a usable quantizer
 # implemented
@@ -79,7 +81,6 @@ def prepare_pt2e_quantizer(
     _rearrange_weight_observer_for_decomposed_linear(model)
     return model
 
-def convert_pt2e(
-    model: GraphModule
-):
+
+def convert_pt2e(model: GraphModule):
     return _convert_to_reference_decomposed_fx(model)

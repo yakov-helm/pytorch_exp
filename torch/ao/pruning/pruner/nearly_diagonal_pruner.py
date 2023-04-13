@@ -2,6 +2,7 @@ import torch
 
 from . import base_pruner
 
+
 class NearlyDiagonalPruner(base_pruner.BasePruner):
     r"""Nearly Diagonal Pruner
 
@@ -26,12 +27,12 @@ class NearlyDiagonalPruner(base_pruner.BasePruner):
         nearliness: The degree of nearliness (default = 1)
 
     """
+
     def __init__(self, nearliness: int = 1):
-        defaults = {'nearliness': nearliness}
+        defaults = {"nearliness": nearliness}
         super().__init__(defaults=defaults)
 
-    def update_mask(self, module, tensor_name, nearliness,
-                    **kwargs):
+    def update_mask(self, module, tensor_name, nearliness, **kwargs):
         mask = getattr(module.parametrizations, tensor_name)[0].mask
         mask.data = torch.zeros_like(mask)
         if nearliness <= 0:
@@ -45,7 +46,9 @@ class NearlyDiagonalPruner(base_pruner.BasePruner):
         dist_to_diagonal = nearliness // 2
         # check
         if dist_to_diagonal >= min(height, width):
-            raise ValueError("nearliness cannot be larger than the dimensions of tensor.")
+            raise ValueError(
+                "nearliness cannot be larger than the dimensions of tensor."
+            )
 
         for row in range(0, height):
             # Bounds of entries that needs to be set to 1

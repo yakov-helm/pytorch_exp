@@ -1,8 +1,3 @@
-
-
-
-
-
 import caffe2.python.models.resnet as resnet
 
 
@@ -17,10 +12,14 @@ def gen_forward_pass_builder_fun(self, model, dataset, is_train):
         )
         model.Accuracy([softmax, "label"], "accuracy")
 
-        my_loss_scale = 1. / self.opts['distributed']['num_xpus'] / \
-            self.opts['distributed']['num_shards']
+        my_loss_scale = (
+            1.0
+            / self.opts["distributed"]["num_xpus"]
+            / self.opts["distributed"]["num_shards"]
+        )
 
         loss = model.Scale(loss, scale=my_loss_scale)
 
         return [loss]
+
     return create_resnet50_model_ops

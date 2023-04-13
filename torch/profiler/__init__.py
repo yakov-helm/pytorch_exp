@@ -39,8 +39,10 @@ __all__ = [
 
 from . import itt
 
+
 def _optimizer_post_hook(optimizer, args, kwargs):
     KinetoStepTracker.increment_step("Optimizer")
+
 
 if os.environ.get("KINETO_USE_DAEMON", None):
     _ = register_optimizer_step_post_hook(_optimizer_post_hook)

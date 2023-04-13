@@ -214,6 +214,7 @@ class AbstractProcessGroupWrapperTest(MultiProcessTestCase):
 
 # ASAN is not safe since we are spawning processes.
 if not TEST_WITH_DEV_DBG_ASAN:
+
     @requires_gloo()
     @requires_nccl()
     class ProcessGroupNCCLWrapperTest(AbstractProcessGroupWrapperTest):
@@ -241,7 +242,10 @@ if not TEST_WITH_DEV_DBG_ASAN:
                 pg = c10d.new_group(backend="nccl", timeout=timedelta(seconds=timeout))
             else:
                 _pg = c10d.ProcessGroupNCCL(
-                    store, self.rank, self.world_size, timeout=timedelta(seconds=timeout)
+                    store,
+                    self.rank,
+                    self.world_size,
+                    timeout=timedelta(seconds=timeout),
                 )
                 pg = c10d._create_process_group_wrapper(
                     _pg,

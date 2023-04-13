@@ -1,8 +1,3 @@
-
-
-
-
-
 from hypothesis import given, settings
 import hypothesis.strategies as st
 import unittest
@@ -22,64 +17,62 @@ def NeedAll(op, g_output):
     """A sanity check to make sure that all the gradient are given."""
     for name, g in zip(op.output, g_output):
         if g is None:
-            raise RuntimeError(
-                'Need gradient for "%s" but it is not provided.' % name)
+            raise RuntimeError('Need gradient for "%s" but it is not provided.' % name)
     return g_output
 
 
 def GIS(op):
     """A test util function to generate the gradient name for input."""
-    return [s + '_grad' for s in op.input]
+    return [s + "_grad" for s in op.input]
 
 
 def CopyDeviceOption(op, src_op):
-    if src_op.HasField('device_option'):
+    if src_op.HasField("device_option"):
         op.device_option.CopyFrom(src_op.device_option)
     return op
 
 
 # First gradient: (in -> out) leading to (out_grad -> in_grad)
-@GradientRegistry.RegisterGradient('Direct')
+@GradientRegistry.RegisterGradient("Direct")
 def AddDirectGradient(op, g_output):
     return (
         CopyDeviceOption(
-            CreateOperator('DirectGradient', NeedAll(op, g_output), GIS(op)),
-            op),
-        GIS(op)
+            CreateOperator("DirectGradient", NeedAll(op, g_output), GIS(op)), op
+        ),
+        GIS(op),
     )
 
 
 # Second gradient: (in -> out) leading to (out, out_grad -> in_grad)
-@GradientRegistry.RegisterGradient('UseOutput')
+@GradientRegistry.RegisterGradient("UseOutput")
 def AddUseOutputGradient(op, g_output):
     return (
         CopyDeviceOption(
             CreateOperator(
-                'UseOutputGradient',
-                list(op.output) + NeedAll(op, g_output), GIS(op)),
-            op),
-        GIS(op)
+                "UseOutputGradient", list(op.output) + NeedAll(op, g_output), GIS(op)
+            ),
+            op,
+        ),
+        GIS(op),
     )
 
 
-@GradientRegistry.RegisterGradient('UseInput')
+@GradientRegistry.RegisterGradient("UseInput")
 def AddUseInputGradient(op, g_output):
     return (
         CopyDeviceOption(
             CreateOperator(
-                'UseInputGradient',
-                list(op.input) + NeedAll(op, g_output), GIS(op)),
-            op),
-        GIS(op)
+                "UseInputGradient", list(op.input) + NeedAll(op, g_output), GIS(op)
+            ),
+            op,
+        ),
+        GIS(op),
     )
 
 
-@GradientRegistry.RegisterGradient('Nogradient')
+@GradientRegistry.RegisterGradient("Nogradient")
 def AddNogradient(op, g_output):
-    return (
-        [],
-        [None for s in op.input]
-    )
+    return ([], [None for s in op.input])
 
 
 class TestGradientCalculation(test_util.TestCase):
@@ -94,92 +87,88 @@ class TestGradientCalculation(test_util.TestCase):
                 del op.device_option.extra_info[:]
         self.assertEqual(operatorDefList1, operatorDefList2)
 
-    @given(device_option=st.sampled_from([
-        None,
-        core.DeviceOption(workspace.GpuDeviceType, 1)]))
+    @given(
+        device_option=st.sampled_from(
+            [None, core.DeviceOption(workspace.GpuDeviceType, 1)]
+        )
+    )
     @settings(deadline=10000)
     def testDirect(self, device_option):
         operators = [
-            CreateOperator('Direct', 'in', 'hidden'),
-            CreateOperator('Direct', 'hidden', 'out'),
+            CreateOperator("Direct", "in", "hidden"),
+            CreateOperator("Direct", "hidden", "out"),
         ]
         if device_option:
             for op in operators:
                 op.device_option.CopyFrom(device_option)
         desired_grad_operators = [
-            CreateOperator('DirectGradient', 'out_grad', 'hidden_grad'),
-            CreateOperator('DirectGradient', 'hidden_grad', 'in_grad'),
+            CreateOperator("DirectGradient", "out_grad", "hidden_grad"),
+            CreateOperator("DirectGradient", "hidden_grad", "in_grad"),
         ]
         if device_option:
             for op in desired_grad_operators:
                 op.device_option.CopyFrom(device_option)
-        gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'out': 'out_grad'})
+        gradients, _ = GradientRegistry.GetBackwardPass(operators, {"out": "out_grad"})
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testDirectImplicitGradientSource(self):
         operators = [
-            CreateOperator('Direct', 'in', 'hidden'),
-            CreateOperator('Direct', 'hidden', 'out'),
+            CreateOperator("Direct", "in", "hidden"),
+            CreateOperator("Direct", "hidden", "out"),
         ]
         desired_grad_operators = [
-            CreateOperator(
-                "ConstantFill", 'out', "out_autogen_grad", value=1.0),
-            CreateOperator(
-                'DirectGradient', 'out_autogen_grad', 'hidden_grad'),
-            CreateOperator('DirectGradient', 'hidden_grad', 'in_grad'),
+            CreateOperator("ConstantFill", "out", "out_autogen_grad", value=1.0),
+            CreateOperator("DirectGradient", "out_autogen_grad", "hidden_grad"),
+            CreateOperator("DirectGradient", "hidden_grad", "in_grad"),
         ]
         for op in desired_grad_operators:
             op.debug_info = ""
-        gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, ['out'])
+        gradients, _ = GradientRegistry.GetBackwardPass(operators, ["out"])
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testDoesNotGenerateUnnecessaryGradients(self):
         operators = [
-            CreateOperator('Direct', 'in', 'hidden'),
-            CreateOperator('Direct', 'hidden', 'out'),
+            CreateOperator("Direct", "in", "hidden"),
+            CreateOperator("Direct", "hidden", "out"),
         ]
         desired_grad_operators = [
-            CreateOperator('DirectGradient', 'hidden_grad', 'in_grad'),
+            CreateOperator("DirectGradient", "hidden_grad", "in_grad"),
         ]
         for op in desired_grad_operators:
             op.debug_info = ""
         gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'hidden': 'hidden_grad'})
+            operators, {"hidden": "hidden_grad"}
+        )
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testDirectButNoOutputGradientGiven(self):
         operators = [
-            CreateOperator('Direct', 'in', 'hidden'),
-            CreateOperator('Direct', 'hidden', 'out'),
+            CreateOperator("Direct", "in", "hidden"),
+            CreateOperator("Direct", "hidden", "out"),
         ]
-        gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {})
+        gradients, _ = GradientRegistry.GetBackwardPass(operators, {})
         self.assertOperatorListEqual(gradients, [])
 
     def testDirectInPlace(self):
         operators = [
-            CreateOperator('Direct', 'in', 'in'),
-            CreateOperator('Direct', 'in', 'out'),
+            CreateOperator("Direct", "in", "in"),
+            CreateOperator("Direct", "in", "out"),
         ]
         desired_grad_operators = [
-            CreateOperator('DirectGradient', 'out_grad', 'in_grad'),
-            CreateOperator('DirectGradient', 'in_grad', 'in_grad'),
+            CreateOperator("DirectGradient", "out_grad", "in_grad"),
+            CreateOperator("DirectGradient", "in_grad", "in_grad"),
         ]
-        gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'out': 'out_grad'})
+        gradients, _ = GradientRegistry.GetBackwardPass(operators, {"out": "out_grad"})
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testVersionMismatch(self):
         operators = [
-            CreateOperator('Direct', 'x', 'x'),
-            CreateOperator('Direct', 'y', 'x'),
-            CreateOperator('Direct', 'x', 'y'),
+            CreateOperator("Direct", "x", "x"),
+            CreateOperator("Direct", "y", "x"),
+            CreateOperator("Direct", "x", "y"),
         ]
         try:
-            gradients, _ = GradientRegistry.GetBackwardPass(
-                operators, {'y': 'y_grad'})
+            gradients, _ = GradientRegistry.GetBackwardPass(operators, {"y": "y_grad"})
             self.assertFalse(True, "Should raise exception of incorrect version")
         except RuntimeError as e:
             print(e)
@@ -188,79 +177,65 @@ class TestGradientCalculation(test_util.TestCase):
 
     def testUseOutput(self):
         operators = [
-            CreateOperator('UseOutput', 'in', 'hidden'),
-            CreateOperator('UseOutput', 'hidden', 'out'),
-            CreateOperator('Direct', 'out', 'sink'),
+            CreateOperator("UseOutput", "in", "hidden"),
+            CreateOperator("UseOutput", "hidden", "out"),
+            CreateOperator("Direct", "out", "sink"),
         ]
         desired_grad_operators = [
-            CreateOperator('DirectGradient', 'sink_grad', 'out_grad'),
-            CreateOperator(
-                'UseOutputGradient',
-                ['out', 'out_grad'], 'hidden_grad'
-            ),
-            CreateOperator(
-                'UseOutputGradient',
-                ['hidden', 'hidden_grad'], 'in_grad'
-            ),
+            CreateOperator("DirectGradient", "sink_grad", "out_grad"),
+            CreateOperator("UseOutputGradient", ["out", "out_grad"], "hidden_grad"),
+            CreateOperator("UseOutputGradient", ["hidden", "hidden_grad"], "in_grad"),
         ]
         gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'sink': 'sink_grad'})
+            operators, {"sink": "sink_grad"}
+        )
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testUseOutputInPlace(self):
         operators = [
-            CreateOperator('UseOutput', 'in', 'in'),
-            CreateOperator('UseOutput', 'in', 'out'),
-            CreateOperator('Direct', 'out', 'sink'),
+            CreateOperator("UseOutput", "in", "in"),
+            CreateOperator("UseOutput", "in", "out"),
+            CreateOperator("Direct", "out", "sink"),
         ]
         desired_grad_operators = [
-            CreateOperator('DirectGradient', 'sink_grad', 'out_grad'),
-            CreateOperator(
-                'UseOutputGradient',
-                ['out', 'out_grad'], 'in_grad'
-            ),
-            CreateOperator(
-                'UseOutputGradient',
-                ['in', 'in_grad'], 'in_grad'
-            ),
+            CreateOperator("DirectGradient", "sink_grad", "out_grad"),
+            CreateOperator("UseOutputGradient", ["out", "out_grad"], "in_grad"),
+            CreateOperator("UseOutputGradient", ["in", "in_grad"], "in_grad"),
         ]
         gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'sink': 'sink_grad'})
+            operators, {"sink": "sink_grad"}
+        )
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testUseOutputButOutputHasBeenChanged(self):
         operators = [
-            CreateOperator('UseOutput', 'in', 'hidden'),
+            CreateOperator("UseOutput", "in", "hidden"),
             # Note here: we overwrite hidden, but hidden will be needed by the
             # gradient calculation of the first operator, so the gradient
             # registry should return an error.
-            CreateOperator('Direct', 'hidden', 'hidden'),
-            CreateOperator('UseOutput', 'hidden', 'out'),
-            CreateOperator('Direct', 'out', 'sink'),
+            CreateOperator("Direct", "hidden", "hidden"),
+            CreateOperator("UseOutput", "hidden", "out"),
+            CreateOperator("Direct", "out", "sink"),
         ]
         with self.assertRaises(RuntimeError):
             gradients, _ = GradientRegistry.GetBackwardPass(
-                operators, {'sink': 'sink_grad'})
+                operators, {"sink": "sink_grad"}
+            )
 
     def testUseInput(self):
         operators = [
-            CreateOperator('Direct', 'in', 'hidden'),
-            CreateOperator('UseInput', 'hidden', 'out'),
-            CreateOperator('Direct', 'out', 'sink'),
+            CreateOperator("Direct", "in", "hidden"),
+            CreateOperator("UseInput", "hidden", "out"),
+            CreateOperator("Direct", "out", "sink"),
         ]
         desired_grad_operators = [
-            CreateOperator('DirectGradient', 'sink_grad', 'out_grad'),
-            CreateOperator(
-                'UseInputGradient',
-                ['hidden', 'out_grad'], 'hidden_grad'
-            ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden_grad', 'in_grad'
-            ),
+            CreateOperator("DirectGradient", "sink_grad", "out_grad"),
+            CreateOperator("UseInputGradient", ["hidden", "out_grad"], "hidden_grad"),
+            CreateOperator("DirectGradient", "hidden_grad", "in_grad"),
         ]
         gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'sink': 'sink_grad'})
+            operators, {"sink": "sink_grad"}
+        )
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testUseInputButInputHasBeenChanged(self):
@@ -273,16 +248,19 @@ class TestGradientCalculation(test_util.TestCase):
         calculation of op#0, the gradient registry should raise an error.
         """
         operators = [
-            CreateOperator('UseInput', 'in', 'out'),
-            CreateOperator('Direct', 'in', 'in'),
+            CreateOperator("UseInput", "in", "out"),
+            CreateOperator("Direct", "in", "in"),
         ]
         with self.assertRaises(RuntimeError):
             gradients, _ = GradientRegistry.GetBackwardPass(
-                operators, {'out': 'out_grad'})
+                operators, {"out": "out_grad"}
+            )
 
-    @given(device_option=st.sampled_from([
-        None,
-        core.DeviceOption(workspace.GpuDeviceType, 1)]))
+    @given(
+        device_option=st.sampled_from(
+            [None, core.DeviceOption(workspace.GpuDeviceType, 1)]
+        )
+    )
     @settings(deadline=10000)
     def testMultiUseInput(self, device_option):
         """Test gradient for the following case:
@@ -292,36 +270,25 @@ class TestGradientCalculation(test_util.TestCase):
         hidden1, hidden2 -> out
         """
         operators = [
-            CreateOperator('Direct', 'in', 'hidden1'),
-            CreateOperator('Direct', 'in', 'hidden2'),
-            CreateOperator('Direct', ['hidden1', 'hidden2'], 'out'),
+            CreateOperator("Direct", "in", "hidden1"),
+            CreateOperator("Direct", "in", "hidden2"),
+            CreateOperator("Direct", ["hidden1", "hidden2"], "out"),
         ]
         if device_option:
             for op in operators:
                 op.device_option.CopyFrom(device_option)
         desired_grad_operators = [
             CreateOperator(
-                'DirectGradient',
-                'out_grad', ['hidden1_grad', 'hidden2_grad']
+                "DirectGradient", "out_grad", ["hidden1_grad", "hidden2_grad"]
             ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden2_grad', 'in_grad'
-            ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden1_grad', '_in_grad_autosplit_0'
-            ),
-            CreateOperator(
-                'Sum',
-                ['in_grad', '_in_grad_autosplit_0'], 'in_grad'
-            ),
+            CreateOperator("DirectGradient", "hidden2_grad", "in_grad"),
+            CreateOperator("DirectGradient", "hidden1_grad", "_in_grad_autosplit_0"),
+            CreateOperator("Sum", ["in_grad", "_in_grad_autosplit_0"], "in_grad"),
         ]
         if device_option:
             for op in desired_grad_operators:
                 op.device_option.CopyFrom(device_option)
-        gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {"out": "out_grad"})
+        gradients, _ = GradientRegistry.GetBackwardPass(operators, {"out": "out_grad"})
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testMultiUseInputButWithNoGradient(self):
@@ -332,22 +299,17 @@ class TestGradientCalculation(test_util.TestCase):
         hidden1, hidden2 -> out
         """
         operators = [
-            CreateOperator('Direct', 'in', 'hidden1'),
-            CreateOperator('Nogradient', 'in', 'hidden2'),
-            CreateOperator('Direct', ['hidden1', 'hidden2'], 'out'),
+            CreateOperator("Direct", "in", "hidden1"),
+            CreateOperator("Nogradient", "in", "hidden2"),
+            CreateOperator("Direct", ["hidden1", "hidden2"], "out"),
         ]
         desired_grad_operators = [
             CreateOperator(
-                'DirectGradient',
-                'out_grad', ['hidden1_grad', 'hidden2_grad']
+                "DirectGradient", "out_grad", ["hidden1_grad", "hidden2_grad"]
             ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden1_grad', 'in_grad'
-            ),
+            CreateOperator("DirectGradient", "hidden1_grad", "in_grad"),
         ]
-        gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'out': 'out_grad'})
+        gradients, _ = GradientRegistry.GetBackwardPass(operators, {"out": "out_grad"})
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testMultiUseInputAndMultipleVersions(self):
@@ -358,35 +320,21 @@ class TestGradientCalculation(test_util.TestCase):
         hidden1, hidden2 -> out
         """
         operators = [
-            CreateOperator('Direct', 'in', 'in'),
-            CreateOperator('Direct', 'in', 'hidden1'),
-            CreateOperator('Direct', 'in', 'hidden2'),
-            CreateOperator('Direct', ['hidden1', 'hidden2'], 'out'),
+            CreateOperator("Direct", "in", "in"),
+            CreateOperator("Direct", "in", "hidden1"),
+            CreateOperator("Direct", "in", "hidden2"),
+            CreateOperator("Direct", ["hidden1", "hidden2"], "out"),
         ]
         desired_grad_operators = [
             CreateOperator(
-                'DirectGradient',
-                'out_grad', ['hidden1_grad', 'hidden2_grad']
+                "DirectGradient", "out_grad", ["hidden1_grad", "hidden2_grad"]
             ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden2_grad', 'in_grad'
-            ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden1_grad', '_in_grad_autosplit_0'
-            ),
-            CreateOperator(
-                'Sum',
-                ['in_grad', '_in_grad_autosplit_0'], 'in_grad'
-            ),
-            CreateOperator(
-                'DirectGradient',
-                'in_grad', 'in_grad'
-            ),
+            CreateOperator("DirectGradient", "hidden2_grad", "in_grad"),
+            CreateOperator("DirectGradient", "hidden1_grad", "_in_grad_autosplit_0"),
+            CreateOperator("Sum", ["in_grad", "_in_grad_autosplit_0"], "in_grad"),
+            CreateOperator("DirectGradient", "in_grad", "in_grad"),
         ]
-        gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'out': 'out_grad'})
+        gradients, _ = GradientRegistry.GetBackwardPass(operators, {"out": "out_grad"})
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testMultiUseInputAutoGenSumDevice(self):
@@ -396,48 +344,55 @@ class TestGradientCalculation(test_util.TestCase):
             extra_info=[
                 parallel_tag,
                 "{}:1".format(IR.ONLY_KEEP_IS_AUTO_GEN_SUM_OPS_TAG),
-            ]
+            ],
         )
         split_op_device_option_no_clear_auto_gen_sum = core.DeviceOption(
-            caffe2_pb2.CPU,
-            extra_info=[parallel_tag]
+            caffe2_pb2.CPU, extra_info=[parallel_tag]
         )
         operators_clear_auto_gen_sum = [
             CreateOperator(
-                'Direct', 'in', 'hidden1',
-                device_option=split_op_device_option_clear_auto_gen_sum
+                "Direct",
+                "in",
+                "hidden1",
+                device_option=split_op_device_option_clear_auto_gen_sum,
             ),
             CreateOperator(
-                'Direct', 'in', 'hidden2',
-                device_option=split_op_device_option_clear_auto_gen_sum
+                "Direct",
+                "in",
+                "hidden2",
+                device_option=split_op_device_option_clear_auto_gen_sum,
             ),
-            CreateOperator('Direct', ['hidden1', 'hidden2'], 'out'),
+            CreateOperator("Direct", ["hidden1", "hidden2"], "out"),
         ]
         gradients_clear_auto_gen_sum, _ = GradientRegistry.GetBackwardPass(
-            operators_clear_auto_gen_sum, {'out': 'out_grad'})
+            operators_clear_auto_gen_sum, {"out": "out_grad"}
+        )
         self.assertEqual(gradients_clear_auto_gen_sum[-1].type, "Sum")
         self.assertNotIn(
-            parallel_tag,
-            gradients_clear_auto_gen_sum[-1].device_option.extra_info
+            parallel_tag, gradients_clear_auto_gen_sum[-1].device_option.extra_info
         )
 
         operators_no_clear_auto_gen_sum = [
             CreateOperator(
-                'Direct', 'in', 'hidden1',
-                device_option=split_op_device_option_no_clear_auto_gen_sum
+                "Direct",
+                "in",
+                "hidden1",
+                device_option=split_op_device_option_no_clear_auto_gen_sum,
             ),
             CreateOperator(
-                'Direct', 'in', 'hidden2',
-                device_option=split_op_device_option_no_clear_auto_gen_sum
+                "Direct",
+                "in",
+                "hidden2",
+                device_option=split_op_device_option_no_clear_auto_gen_sum,
             ),
-            CreateOperator('Direct', ['hidden1', 'hidden2'], 'out'),
+            CreateOperator("Direct", ["hidden1", "hidden2"], "out"),
         ]
         gradients_no_clear_auto_gen_sum, _ = GradientRegistry.GetBackwardPass(
-            operators_no_clear_auto_gen_sum, {'out': 'out_grad'})
+            operators_no_clear_auto_gen_sum, {"out": "out_grad"}
+        )
         self.assertEqual(gradients_clear_auto_gen_sum[-1].type, "Sum")
         self.assertIn(
-            parallel_tag,
-            gradients_no_clear_auto_gen_sum[-1].device_option.extra_info
+            parallel_tag, gradients_no_clear_auto_gen_sum[-1].device_option.extra_info
         )
 
     def testMultiUseInputAndMultipleVersionsBig(self):
@@ -450,62 +405,38 @@ class TestGradientCalculation(test_util.TestCase):
         hidden3, hidden4, hidden5 -> out
         """
         operators = [
-            CreateOperator('Direct', 'in', 'in'),
-            CreateOperator('Direct', 'in', 'hidden1'),
-            CreateOperator('Direct', 'in', 'hidden2'),
-            CreateOperator('Direct', ['hidden1', 'hidden2'], 'in'),
-            CreateOperator('Direct', 'in', 'hidden3'),
-            CreateOperator('Direct', 'in', 'hidden4'),
-            CreateOperator('Direct', 'in', 'hidden5'),
-            CreateOperator('Direct', ['hidden3', 'hidden4', 'hidden5'], 'out'),
+            CreateOperator("Direct", "in", "in"),
+            CreateOperator("Direct", "in", "hidden1"),
+            CreateOperator("Direct", "in", "hidden2"),
+            CreateOperator("Direct", ["hidden1", "hidden2"], "in"),
+            CreateOperator("Direct", "in", "hidden3"),
+            CreateOperator("Direct", "in", "hidden4"),
+            CreateOperator("Direct", "in", "hidden5"),
+            CreateOperator("Direct", ["hidden3", "hidden4", "hidden5"], "out"),
         ]
         desired_grad_operators = [
             CreateOperator(
-                'DirectGradient',
-                'out_grad', ['hidden3_grad', 'hidden4_grad', 'hidden5_grad']
+                "DirectGradient",
+                "out_grad",
+                ["hidden3_grad", "hidden4_grad", "hidden5_grad"],
+            ),
+            CreateOperator("DirectGradient", "hidden5_grad", "in_grad"),
+            CreateOperator("DirectGradient", "hidden4_grad", "_in_grad_autosplit_0"),
+            CreateOperator("DirectGradient", "hidden3_grad", "_in_grad_autosplit_1"),
+            CreateOperator(
+                "Sum",
+                ["in_grad", "_in_grad_autosplit_0", "_in_grad_autosplit_1"],
+                "in_grad",
             ),
             CreateOperator(
-                'DirectGradient',
-                'hidden5_grad', 'in_grad'
+                "DirectGradient", "in_grad", ["hidden1_grad", "hidden2_grad"]
             ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden4_grad', '_in_grad_autosplit_0'
-            ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden3_grad', '_in_grad_autosplit_1'
-            ),
-            CreateOperator(
-                'Sum',
-                ['in_grad', '_in_grad_autosplit_0',
-                 '_in_grad_autosplit_1'],
-                'in_grad'
-            ),
-            CreateOperator(
-                'DirectGradient',
-                'in_grad', ['hidden1_grad', 'hidden2_grad']
-            ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden2_grad', 'in_grad'
-            ),
-            CreateOperator(
-                'DirectGradient',
-                'hidden1_grad', '_in_grad_autosplit_0'
-            ),
-            CreateOperator(
-                'Sum',
-                ['in_grad', '_in_grad_autosplit_0'],
-                'in_grad'
-            ),
-            CreateOperator(
-                'DirectGradient',
-                'in_grad', 'in_grad'
-            ),
+            CreateOperator("DirectGradient", "hidden2_grad", "in_grad"),
+            CreateOperator("DirectGradient", "hidden1_grad", "_in_grad_autosplit_0"),
+            CreateOperator("Sum", ["in_grad", "_in_grad_autosplit_0"], "in_grad"),
+            CreateOperator("DirectGradient", "in_grad", "in_grad"),
         ]
-        gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'out': 'out_grad'})
+        gradients, _ = GradientRegistry.GetBackwardPass(operators, {"out": "out_grad"})
         for s in gradients:
             print(str(s))
         self.assertOperatorListEqual(gradients, desired_grad_operators)
@@ -514,105 +445,117 @@ class TestGradientCalculation(test_util.TestCase):
         """Since Sum is used in accumulating gradients, we will test if
         it is OK to also explicitly use it in the graph."""
         operators = [
-            CreateOperator('FC', ['in', 'w', 'b'], 'fc'),
-            CreateOperator('Sum', 'fc', 'agg'),
-            CreateOperator('AveragedLoss', 'agg', 'loss'),
+            CreateOperator("FC", ["in", "w", "b"], "fc"),
+            CreateOperator("Sum", "fc", "agg"),
+            CreateOperator("AveragedLoss", "agg", "loss"),
         ]
         # This should run correctly.
         gradient_ops, _ = GradientRegistry.GetBackwardPass(
-            operators, {'loss': 'loss_grad'})
+            operators, {"loss": "loss_grad"}
+        )
         for s in gradient_ops:
             print(str(s))
 
     def testGradientCalculationWithPrint(self):
         """Test a common use case where we have Print in the forward pass."""
         operators = [
-            CreateOperator('FC', ['in', 'w', 'b'], 'fc'),
-            CreateOperator('Print', 'fc', []),
-            CreateOperator('AveragedLoss', 'fc', 'loss'),
+            CreateOperator("FC", ["in", "w", "b"], "fc"),
+            CreateOperator("Print", "fc", []),
+            CreateOperator("AveragedLoss", "fc", "loss"),
         ]
         desired_grad_operators = [
-            CreateOperator('AveragedLossGradient',
-                           ['fc', 'loss_grad'], 'fc_grad'),
-            CreateOperator('FCGradient', ['in', 'w', 'fc_grad'],
-                           ['w_grad', 'b_grad', 'in_grad']),
+            CreateOperator("AveragedLossGradient", ["fc", "loss_grad"], "fc_grad"),
+            CreateOperator(
+                "FCGradient", ["in", "w", "fc_grad"], ["w_grad", "b_grad", "in_grad"]
+            ),
         ]
         for g in desired_grad_operators:
             g.is_gradient_op = 1
         # This should run correctly.
         gradient_ops, _ = GradientRegistry.GetBackwardPass(
-            operators, {'loss': 'loss_grad'})
+            operators, {"loss": "loss_grad"}
+        )
         for s in gradient_ops:
             print(str(s))
         self.assertOperatorListEqual(gradient_ops, desired_grad_operators)
 
     def testStopGradient(self):
         operators = [
-            CreateOperator('Direct', 'in', 'hidden'),
-            CreateOperator('StopGradient', 'hidden', 'hidden2'),
-            CreateOperator('Direct', 'hidden2', 'out'),
+            CreateOperator("Direct", "in", "hidden"),
+            CreateOperator("StopGradient", "hidden", "hidden2"),
+            CreateOperator("Direct", "hidden2", "out"),
         ]
         desired_grad_operators = [
-            CreateOperator('DirectGradient', 'out_grad', 'hidden2_grad'),
+            CreateOperator("DirectGradient", "out_grad", "hidden2_grad"),
         ]
-        gradients, _ = GradientRegistry.GetBackwardPass(
-            operators, {'out': 'out_grad'})
+        gradients, _ = GradientRegistry.GetBackwardPass(operators, {"out": "out_grad"})
         self.assertOperatorListEqual(gradients, desired_grad_operators)
 
     def testStopGradientOrphan(self):
         operators = [
-            CreateOperator('Direct', 'in', 'hidden'),
-            CreateOperator('StopGradient', 'hidden', 'auto_blobx'),
-            CreateOperator('Direct', 'hidden', 'out'),
+            CreateOperator("Direct", "in", "hidden"),
+            CreateOperator("StopGradient", "hidden", "auto_blobx"),
+            CreateOperator("Direct", "hidden", "out"),
         ]
         with self.assertRaises(ValueError):
             # This should complain about incorrect use of StopGradient
             gradients, _ = GradientRegistry.GetBackwardPass(
-                operators, {'out': 'out_grad'})
+                operators, {"out": "out_grad"}
+            )
 
     def testStopGradientInplace(self):
         operators = [
-            CreateOperator('Direct', 'in', 'hidden'),
-            CreateOperator('StopGradient', 'hidden', 'hidden'),
-            CreateOperator('Direct', 'hidden', 'out'),
+            CreateOperator("Direct", "in", "hidden"),
+            CreateOperator("StopGradient", "hidden", "hidden"),
+            CreateOperator("Direct", "hidden", "out"),
         ]
         desired_grad_operators = [
-            CreateOperator('DirectGradient', 'out_grad', 'hidden_grad'),
+            CreateOperator("DirectGradient", "out_grad", "hidden_grad"),
         ]
         gradients, grad_map = GradientRegistry.GetBackwardPass(
-            operators, {'out': 'out_grad'})
+            operators, {"out": "out_grad"}
+        )
         self.assertOperatorListEqual(gradients, desired_grad_operators)
-        self.assertEqual(grad_map, {'out': 'out_grad'})
+        self.assertEqual(grad_map, {"out": "out_grad"})
 
     def testStopGradientWithMultiUseOperators(self):
         operators = [
-            CreateOperator('Direct', 'in', 'hidden'),
-            CreateOperator('Direct', 'hidden', 'hidden2'),
-            CreateOperator('StopGradient', 'hidden', 'hidden3'),
-            CreateOperator('Direct', ['hidden2', 'hidden3'], 'out'),
+            CreateOperator("Direct", "in", "hidden"),
+            CreateOperator("Direct", "hidden", "hidden2"),
+            CreateOperator("StopGradient", "hidden", "hidden3"),
+            CreateOperator("Direct", ["hidden2", "hidden3"], "out"),
         ]
         desired_grad_operators = [
-            CreateOperator('DirectGradient', 'out_grad',
-                           ['hidden2_grad', 'hidden3_grad']),
-            CreateOperator('DirectGradient', 'hidden2_grad', 'hidden_grad'),
-            CreateOperator('DirectGradient', 'hidden_grad', 'in_grad'),
+            CreateOperator(
+                "DirectGradient", "out_grad", ["hidden2_grad", "hidden3_grad"]
+            ),
+            CreateOperator("DirectGradient", "hidden2_grad", "hidden_grad"),
+            CreateOperator("DirectGradient", "hidden_grad", "in_grad"),
         ]
         gradients, grad_map = GradientRegistry.GetBackwardPass(
-            operators, {'out': 'out_grad'})
+            operators, {"out": "out_grad"}
+        )
         self.assertOperatorListEqual(gradients, desired_grad_operators)
         self.assertEqual(
-            grad_map, {'out': 'out_grad', 'hidden2': 'hidden2_grad',
-                       'hidden3': 'hidden3_grad', 'hidden': 'hidden_grad',
-                       'in': 'in_grad'})
+            grad_map,
+            {
+                "out": "out_grad",
+                "hidden2": "hidden2_grad",
+                "hidden3": "hidden3_grad",
+                "hidden": "hidden_grad",
+                "in": "in_grad",
+            },
+        )
 
     def test_zero_gradient(self):
         net = core.Net("zero_grad_test")
 
-        hidden_prev, cell, gates, seq_lengths, timestep =\
-            net.AddExternalInput("h", "c", "g", "s", "t")
+        hidden_prev, cell, gates, seq_lengths, timestep = net.AddExternalInput(
+            "h", "c", "g", "s", "t"
+        )
         hidden, cell = net.LSTMUnit(
-            [hidden_prev, cell, gates, seq_lengths, timestep],
-            ["hidden_t", "cell_t"])
+            [hidden_prev, cell, gates, seq_lengths, timestep], ["hidden_t", "cell_t"]
+        )
         with self.assertRaises(Exception):
             net.AddGradientOperators([hidden])
         net.ZeroGradient(cell, [])
@@ -638,8 +581,7 @@ class TestGradientCalculation(test_util.TestCase):
 
 
 # Skip if sparse operators are not available
-@unittest.skipIf(not core.IsOperator('SparseFunHash'),
-                 'Sparse operators not available')
+@unittest.skipIf(not core.IsOperator("SparseFunHash"), "Sparse operators not available")
 class TestSparseGradientsAccumulation(test_util.TestCase):
     def testSparseAccumulationWithValues(self):
         # The gradient for "Gather" only computes values. indices are directly
@@ -779,7 +721,7 @@ class TestGradientsAccumulationWithPassThroughGradients(test_util.TestCase):
         net.SoftmaxWithLoss(["x5", "labels"], ["softmax", "loss"])
         input_to_grad = net.AddGradientOperators(["loss"])
         for op in net.Proto().op:
-            self.assertFalse(op.type == 'Sum')
+            self.assertFalse(op.type == "Sum")
 
         self.assertTrue("x4" in input_to_grad)
         self.assertTrue("x1" in input_to_grad)
@@ -939,8 +881,7 @@ class TestGradientsAccumulationWithPassThroughGradients(test_util.TestCase):
 
     def testAccumulationRuns(self):
         net = core.Net("test_net")
-        input, one, two, three = net.AddExternalInput(
-            "input", "one", "two", "three")
+        input, one, two, three = net.AddExternalInput("input", "one", "two", "three")
 
         m1 = net.Mul([input, two], "mul_1")
         m2 = net.Mul([input, three], "mul_2")
@@ -968,24 +909,24 @@ class TestGradientsAccumulationWithPassThroughGradients(test_util.TestCase):
             self.assertTrue("schema" in str(e))
 
     def testDeviceOptionsPropagation(self):
-        '''
+        """
         Test verifies that aggregation operators in a backward path will be in
         the same device as the parameter.
-        '''
-        device_0 = 'node:0'
+        """
+        device_0 = "node:0"
 
         # init_net.
         init_net = core.Net("init_net")
         with core.DeviceScope(0, node_name=device_0):
-            w = init_net.UniformFill([], 'w', shape=[10000, 64])
+            w = init_net.UniformFill([], "w", shape=[10000, 64])
             ids = init_net.GivenTensorFill(
                 [],
-                'ids',
+                "ids",
                 values=np.random.random_integers(low=0, high=10000, size=10),
             )
             ids_2 = init_net.GivenTensorFill(
                 [],
-                'ids_2',
+                "ids_2",
                 values=np.random.random_integers(low=0, high=10000, size=10),
             )
 
@@ -1002,9 +943,9 @@ class TestGradientsAccumulationWithPassThroughGradients(test_util.TestCase):
         train_net.AddGradientOperators([loss])
         # All concat operators should be on device_0
         for op in train_net.Proto().op:
-            if op.type == 'Concat':
+            if op.type == "Concat":
                 self.assertEqual(op.device_option.node_name, device_0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

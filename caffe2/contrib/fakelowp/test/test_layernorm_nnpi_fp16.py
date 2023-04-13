@@ -10,22 +10,27 @@ from hypothesis import strategies as st
 import caffe2.python.serialized_test.serialized_test_util as serial
 import datetime
 
-core.GlobalInit(["caffe2",
-                 "--glow_global_fp16=1",
-                 "--glow_global_fused_scale_offset_fp16=1",
-                 "--glow_global_force_sls_fp16_accum=1"])
+core.GlobalInit(
+    [
+        "caffe2",
+        "--glow_global_fp16=1",
+        "--glow_global_fused_scale_offset_fp16=1",
+        "--glow_global_force_sls_fp16_accum=1",
+    ]
+)
 
 GLOW_LOWERED_BATCHNORM = False
 
 
 # Test the lowered LayerNorm op
 class LayerNorm(serial.SerializedTestCase):
-
-    @given(seed=st.integers(0, 65535),
-           batch_size=st.integers(min_value=1, max_value=50),
-           size=st.integers(min_value=2, max_value=128),
-           epsilon=st.floats(min_value=1e-4, max_value=1e-3),
-           elementwise_affine=st.booleans())
+    @given(
+        seed=st.integers(0, 65535),
+        batch_size=st.integers(min_value=1, max_value=50),
+        size=st.integers(min_value=2, max_value=128),
+        epsilon=st.floats(min_value=1e-4, max_value=1e-3),
+        elementwise_affine=st.booleans(),
+    )
     @settings(deadline=datetime.timedelta(seconds=10))
     def test_layernorm(self, seed, batch_size, size, epsilon, elementwise_affine):
         np.random.seed(seed)
@@ -49,7 +54,7 @@ class LayerNorm(serial.SerializedTestCase):
                 ["Y", "mean", "rstd"],
                 axis=axis,
                 epsilon=epsilon,
-                elementwise_affine=elementwise_affine
+                elementwise_affine=elementwise_affine,
             )
         )
 
@@ -64,20 +69,17 @@ class LayerNorm(serial.SerializedTestCase):
                 ["Y", "mean", "rstd"],
                 axis=axis,
                 epsilon=epsilon,
-                elementwise_affine=elementwise_affine
+                elementwise_affine=elementwise_affine,
             )
         )
 
         shape_hits = {"X": X.shape, "gamma": gamma.shape, "beta": beta.shape}
         pred_net_onnxified = onnxifi_caffe2_net(
-            pred_net,
-            shape_hits,
-            debug=True,
-            adjust_batch=True,
-            use_onnx=False
+            pred_net, shape_hits, debug=True, adjust_batch=True, use_onnx=False
         )
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op)
+            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
 
         workspace.FeedBlob("X", X)
@@ -113,9 +115,9 @@ class LayerNorm(serial.SerializedTestCase):
                     "Y_glow": Y_glow,
                     "Y_c2": Y_c2,
                     "diff_Y": diff_Y,
-                }
+                },
             )
-            assert(0)
+            assert 0
 
     def _get_scale_zp(self, tensor):
         tensor_max = np.max(tensor)
@@ -135,14 +137,18 @@ class LayerNorm(serial.SerializedTestCase):
         Y = (X - mean_exp) / std_exp
         return Y
 
-    @given(seed=st.integers(0, 65535),
-           batch_size=st.integers(min_value=1, max_value=50),
-           size=st.integers(min_value=2, max_value=128),
-           epsilon=st.floats(min_value=1e-4, max_value=1e-3),
-           elementwise_affine=st.booleans())
+    @given(
+        seed=st.integers(0, 65535),
+        batch_size=st.integers(min_value=1, max_value=50),
+        size=st.integers(min_value=2, max_value=128),
+        epsilon=st.floats(min_value=1e-4, max_value=1e-3),
+        elementwise_affine=st.booleans(),
+    )
     @settings(deadline=datetime.timedelta(seconds=10))
     # re-enable when T74553975 gets fixed
-    def test_fused_ln_quantize(self, seed, batch_size, size, epsilon, elementwise_affine):
+    def test_fused_ln_quantize(
+        self, seed, batch_size, size, epsilon, elementwise_affine
+    ):
         np.random.seed(seed)
 
         # Reset the workspace
@@ -168,7 +174,7 @@ class LayerNorm(serial.SerializedTestCase):
                 ["Y", "mean", "rstd"],
                 axis=axis,
                 epsilon=epsilon,
-                elementwise_affine=elementwise_affine
+                elementwise_affine=elementwise_affine,
             )
         )
         pred_net.op.add().CopyFrom(
@@ -190,19 +196,17 @@ class LayerNorm(serial.SerializedTestCase):
                 axis=axis,
                 epsilon=epsilon,
                 elementwise_affine=elementwise_affine,
-                Y_scale=scale, Y_zero_point=zp
+                Y_scale=scale,
+                Y_zero_point=zp,
             )
         )
         shape_hits = {"X": X.shape, "gamma": gamma.shape, "beta": beta.shape}
         pred_net_onnxified = onnxifi_caffe2_net(
-            pred_net,
-            shape_hits,
-            debug=True,
-            adjust_batch=True,
-            use_onnx=False
+            pred_net, shape_hits, debug=True, adjust_batch=True, use_onnx=False
         )
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op)
+            1 if o.type == "Onnxifi" else 0 for o in pred_net_onnxified.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
 
         workspace.FeedBlob("X", X)
@@ -218,9 +222,14 @@ class LayerNorm(serial.SerializedTestCase):
         workspace.RunNet(pred_net_onnxified.name)
         Y_glow = workspace.FetchInt8Blob("Y_q")
 
-        if not np.allclose(Y_glow.data, Y_c2.data) or \
-           Y_glow.scale != Y_c2.scale or Y_glow.zero_point != Y_c2.zero_point:
-            diff_Y = np.abs(Y_glow.data.astype(np.float32) - Y_c2.data.astype(np.float32))
+        if (
+            not np.allclose(Y_glow.data, Y_c2.data)
+            or Y_glow.scale != Y_c2.scale
+            or Y_glow.zero_point != Y_c2.zero_point
+        ):
+            diff_Y = np.abs(
+                Y_glow.data.astype(np.float32) - Y_c2.data.astype(np.float32)
+            )
             print_test_debug_info(
                 "layernorm",
                 {
@@ -235,6 +244,6 @@ class LayerNorm(serial.SerializedTestCase):
                     "Y_glow": Y_glow,
                     "Y_c2": Y_c2,
                     "diff_Y": diff_Y,
-                }
+                },
             )
-            assert(0)
+            assert 0

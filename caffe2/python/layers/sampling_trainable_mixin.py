@@ -2,14 +2,10 @@
 # Module caffe2.python.layers.sampling_trainable_mixin
 
 
-
-
-
 import abc
 
 
 class SamplingTrainableMixin(metaclass=abc.ABCMeta):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._train_param_blobs = None

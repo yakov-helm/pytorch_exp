@@ -1,5 +1,3 @@
-
-
 import collections
 from itertools import product
 
@@ -26,7 +24,7 @@ class DNNLowPBatchMatMulOpTest(hu.HypothesisTestCase):
         n=st.integers(4, 32),
         k=st.integers(4, 32),
         batch_size=st.integers(0, 4),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(deadline=10000)
     def test_dnnlowp_batch_matmul_int(self, m, n, k, batch_size, gc, dc):
@@ -51,7 +49,19 @@ class DNNLowPBatchMatMulOpTest(hu.HypothesisTestCase):
 
         for i in range(batch_size):
             avoid_vpmaddubsw_overflow_fc(
-                m, k, n, A[i,], A_min, A_max, B[i,], B_min, B_max
+                m,
+                k,
+                n,
+                A[
+                    i,
+                ],
+                A_min,
+                A_max,
+                B[
+                    i,
+                ],
+                B_min,
+                B_max,
             )
 
         for trans_a, trans_b in product([0, 1], [0, 1]):
@@ -122,7 +132,7 @@ class DNNLowPBatchMatMulOpTest(hu.HypothesisTestCase):
         A_quantized=st.booleans(),
         B_quantized=st.booleans(),
         out_quantized=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(deadline=2000)
     def test_dnnlowp_batch_matmul_int_constant_B(
@@ -206,7 +216,10 @@ class DNNLowPBatchMatMulOpTest(hu.HypothesisTestCase):
                     net.Proto().op.extend([quantize_A])
 
                 if do_quantize_B:
-                    int8_given_tensor_fill, B_q_param = dnnlowp_utils.create_int8_given_tensor_fill(
+                    (
+                        int8_given_tensor_fill,
+                        B_q_param,
+                    ) = dnnlowp_utils.create_int8_given_tensor_fill(
                         B if trans_b else B.swapaxes(-1, -2), "B_q"
                     )
                     net.Proto().op.extend([int8_given_tensor_fill])

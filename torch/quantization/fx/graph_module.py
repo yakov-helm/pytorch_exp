@@ -13,5 +13,5 @@ from torch.ao.quantization.fx.graph_module import (
     _is_observed_module,
     ObservedStandaloneGraphModule,
     _is_observed_standalone_module,
-    QuantizedGraphModule
+    QuantizedGraphModule,
 )

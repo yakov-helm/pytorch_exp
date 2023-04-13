@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core
 from hypothesis import given, settings
 
@@ -29,10 +24,11 @@ class TestExpandOp(serial.SerializedTestCase):
     def _run_expand_op_test(self, X, shape, gc, dc):
         shape = np.array(shape)
         op = core.CreateOperator(
-            'Expand',
+            "Expand",
             ["X", "shape"],
             ["Y"],
         )
+
         def ref(X, shape):
             return (X * np.ones(abs(shape)),)
 
@@ -40,25 +36,25 @@ class TestExpandOp(serial.SerializedTestCase):
         self.assertDeviceChecks(dc, op, [X, shape], [0])
         self.assertGradientChecks(gc, op, [X, shape], 0, [0])
 
-    @serial.given(X=hu.tensor(max_dim=5, dtype=np.float32),
-           **hu.gcs)
+    @serial.given(X=hu.tensor(max_dim=5, dtype=np.float32), **hu.gcs)
     def test_expand_rand_shape(self, X, gc, dc):
         shape = self._rand_shape(X.shape, 5)
         self._run_expand_op_test(X, shape, gc, dc)
 
-    @given(X=st.sampled_from([np.ones([1, 3, 1]),
-                             np.ones([3, 1, 3]),
-                             np.ones([1, 3])]),
-           **hu.gcs)
+    @given(
+        X=st.sampled_from([np.ones([1, 3, 1]), np.ones([3, 1, 3]), np.ones([1, 3])]),
+        **hu.gcs,
+    )
     def test_expand_nonrand_shape1(self, X, gc, dc):
         self._run_expand_op_test(X, [3, 1, 3], gc, dc)
         self._run_expand_op_test(X, [3, -1, 3], gc, dc)
 
-
-    @given(X=st.sampled_from([np.ones([4, 4, 2, 1]),
-                             np.ones([1, 4, 1, 2]),
-                             np.ones([4, 1, 2])]),
-           **hu.gcs)
+    @given(
+        X=st.sampled_from(
+            [np.ones([4, 4, 2, 1]), np.ones([1, 4, 1, 2]), np.ones([4, 1, 2])]
+        ),
+        **hu.gcs,
+    )
     @settings(deadline=10000)
     def test_expand_nonrand_shape2(self, X, gc, dc):
         self._run_expand_op_test(X, [4, 1, 2, 2], gc, dc)

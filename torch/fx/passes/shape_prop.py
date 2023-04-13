@@ -6,7 +6,8 @@ from torch.fx.node import Node, map_aggregate
 from typing import Any, Tuple, NamedTuple, Optional, Dict
 from torch.fx._compatibility import compatibility
 
-__all__ = ['TensorMetadata', 'ShapeProp']
+__all__ = ["TensorMetadata", "ShapeProp"]
+
 
 @compatibility(is_backward_compatible=True)
 class TensorMetadata(NamedTuple):
@@ -14,17 +15,18 @@ class TensorMetadata(NamedTuple):
     # about a tensor within a PyTorch program.
 
     # General Tensor metadata
-    shape : torch.Size
-    dtype : torch.dtype
-    requires_grad : bool
-    stride : Tuple[int, ...]
-    memory_format : Optional[torch.memory_format]
+    shape: torch.Size
+    dtype: torch.dtype
+    requires_grad: bool
+    stride: Tuple[int, ...]
+    memory_format: Optional[torch.memory_format]
 
     # Quantization metadata
-    is_quantized : bool
+    is_quantized: bool
     qparams: Dict[str, Any]
 
-def _extract_tensor_metadata(result : torch.Tensor) -> TensorMetadata:
+
+def _extract_tensor_metadata(result: torch.Tensor) -> TensorMetadata:
     """
     Extract a TensorMetadata NamedTuple describing `result`.
     """
@@ -54,7 +56,11 @@ def _extract_tensor_metadata(result : torch.Tensor) -> TensorMetadata:
         if qscheme in {torch.per_tensor_affine, torch.per_tensor_symmetric}:
             qparams["scale"] = result.q_scale()  # type: ignore[assignment]
             qparams["zero_point"] = result.q_zero_point()  # type: ignore[assignment]
-        elif qscheme in {torch.per_channel_affine, torch.per_channel_affine_float_qparams, torch.per_channel_symmetric}:
+        elif qscheme in {
+            torch.per_channel_affine,
+            torch.per_channel_affine_float_qparams,
+            torch.per_channel_symmetric,
+        }:
             # In this branch, scale and zero_point are expected to be tensors,
             # we store the values as immutable_list in TensorMetadata for
             # easier serialization downstream
@@ -63,7 +69,9 @@ def _extract_tensor_metadata(result : torch.Tensor) -> TensorMetadata:
             qparams["axis"] = result.q_per_channel_axis()  # type: ignore[assignment]
 
     return TensorMetadata(
-        shape, dtype, requires_grad, stride, memory_format, is_quantized, qparams)
+        shape, dtype, requires_grad, stride, memory_format, is_quantized, qparams
+    )
+
 
 @compatibility(is_backward_compatible=True)
 class ShapeProp(torch.fx.Interpreter):
@@ -112,10 +120,12 @@ class ShapeProp(torch.fx.Interpreter):
          fake_mode (FakeTensorMode): A fake mode for copying the gm
 
     """
+
     def __init__(self, gm, fake_mode=None):
         super().__init__(gm)
         if fake_mode is not None:
             from torch._dynamo.utils import deepcopy_to_fake_tensor
+
             # Note:
             # We need fake execution cause the inputs are fake, however, we cannot fakify the module
             # - because we need to write to the tensor_meta of the real module. So we fakify to
@@ -133,7 +143,7 @@ class ShapeProp(torch.fx.Interpreter):
 
         self.real_module = self.module
 
-    def run_node(self, n : Node) -> Any:
+    def run_node(self, n: Node) -> Any:
         try:
             if self.fake_module is not None:
                 # Hacky swap. Alternatively, we could do this with overriding
@@ -150,8 +160,7 @@ class ShapeProp(torch.fx.Interpreter):
         except Exception as e:
             traceback.print_exc()
             raise RuntimeError(
-                f"ShapeProp error for: node={n.format_node()} with "
-                f"meta={n.meta}"
+                f"ShapeProp error for: node={n.format_node()} with " f"meta={n.meta}"
             ) from e
 
         found_tensor = False
@@ -166,9 +175,9 @@ class ShapeProp(torch.fx.Interpreter):
 
         meta = map_aggregate(result, extract_tensor_meta)
         if found_tensor:
-            n.meta['tensor_meta'] = meta
+            n.meta["tensor_meta"] = meta
 
-        n.meta['type'] = type(result)
+        n.meta["type"] = type(result)
         return result
 
     def propagate(self, *args):

@@ -30,6 +30,7 @@ def _del_nested_attr(obj: nn.Module, names: List[str]) -> None:
     else:
         _del_nested_attr(getattr(obj, names[0]), names[1:])
 
+
 def _set_nested_attr(obj: nn.Module, names: List[str], value: Tensor) -> None:
     """
     Set the attribute specified by the given list of names to value.
@@ -40,6 +41,7 @@ def _set_nested_attr(obj: nn.Module, names: List[str], value: Tensor) -> None:
         setattr(obj, names[0], value)
     else:
         _set_nested_attr(getattr(obj, names[0]), names[1:], value)
+
 
 def extract_weights(mod: nn.Module) -> Tuple[Tuple[Tensor, ...], List[str]]:
     """
@@ -61,6 +63,7 @@ def extract_weights(mod: nn.Module) -> Tuple[Tuple[Tensor, ...], List[str]]:
     params = tuple(p.detach().requires_grad_() for p in orig_params)
     return params, names
 
+
 def load_weights(mod: nn.Module, names: List[str], params: Tuple[Tensor, ...]) -> None:
     """
     Reload a set of weights so that `mod` can be used again to perform a forward pass.
@@ -69,6 +72,7 @@ def load_weights(mod: nn.Module, names: List[str], params: Tuple[Tensor, ...]) -
     """
     for name, p in zip(names, params):
         _set_nested_attr(mod, name.split("."), p)
+
 
 # Utilities to read/write markdown table-like content.
 def to_markdown_table(res: TimingResultType, header: Tuple[str, ...] = None) -> str:
@@ -89,6 +93,7 @@ def to_markdown_table(res: TimingResultType, header: Tuple[str, ...] = None) -> 
 
     return out
 
+
 def from_markdown_table(data: str) -> TimingResultType:
     out = data.strip().split("\n")
     out = out[2:]  # Ignore the header lines
@@ -102,9 +107,11 @@ def from_markdown_table(data: str) -> TimingResultType:
 
     return res
 
+
 def check_for_functorch():
     try:
         import functorch  # noqa: F401
+
         return True
     except ImportError:
         return False

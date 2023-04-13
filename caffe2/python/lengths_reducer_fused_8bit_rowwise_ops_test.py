@@ -1,5 +1,3 @@
-
-
 import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 import numpy as np
@@ -36,7 +34,7 @@ class TestLengthsReducerOpsFused8BitRowwise(hu.HypothesisTestCase):
         num_rows=st.integers(1, 20),
         blocksize=st.sampled_from([8, 16, 32, 64, 85, 96, 128, 163]),
         weighted=st.booleans(),
-        seed=st.integers(0, 2 ** 32 - 1),
+        seed=st.integers(0, 2**32 - 1),
         empty_indices=st.booleans(),
         fp16=st.booleans(),
     )
@@ -125,7 +123,7 @@ class TestLengthsReducerOpsFused8BitRowwise(hu.HypothesisTestCase):
     @given(
         num_rows=st.integers(1, 20),
         blocksize=st.sampled_from([8, 16, 32, 64, 85, 96, 128, 163]),
-        seed=st.integers(0, 2 ** 32 - 1),
+        seed=st.integers(0, 2**32 - 1),
         empty_indices=st.booleans(),
         fp16=st.booleans(),
     )

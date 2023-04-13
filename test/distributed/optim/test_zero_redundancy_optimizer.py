@@ -725,7 +725,8 @@ class TestZeroRedundancyOptimizerDistributed(TestZeroRedundancyOptimizer):
             common_distributed.logger.info(
                 "Skipping `test_nondefault_process_group()` since world size "
                 "of %s is less than %s",
-                self.world_size, MIN_WORLD_SIZE
+                self.world_size,
+                MIN_WORLD_SIZE,
             )
             return
         BACKEND = dist.Backend.GLOO

@@ -1,8 +1,3 @@
-
-
-
-
-
 import hypothesis.strategies as st
 import numpy as np
 
@@ -14,15 +9,18 @@ import caffe2.python.serialized_test.serialized_test_util as serial
 
 class TestArgOps(serial.SerializedTestCase):
     @given(
-        X=hu.tensor(dtype=np.float32), axis=st.integers(-1, 5),
-        keepdims=st.booleans(), **hu.gcs)
+        X=hu.tensor(dtype=np.float32),
+        axis=st.integers(-1, 5),
+        keepdims=st.booleans(),
+        **hu.gcs,
+    )
     @settings(deadline=None)
     def test_argmax(self, X, axis, keepdims, gc, dc):
         if axis >= len(X.shape):
             axis %= len(X.shape)
         op = core.CreateOperator(
-            "ArgMax", ["X"], ["Indices"], axis=axis, keepdims=keepdims,
-            device_option=gc)
+            "ArgMax", ["X"], ["Indices"], axis=axis, keepdims=keepdims, device_option=gc
+        )
 
         def argmax_ref(X):
             indices = np.argmax(X, axis=axis)
@@ -36,15 +34,18 @@ class TestArgOps(serial.SerializedTestCase):
         self.assertDeviceChecks(dc, op, [X], [0])
 
     @given(
-        X=hu.tensor(dtype=np.float32), axis=st.integers(-1, 5),
-        keepdims=st.booleans(), **hu.gcs)
+        X=hu.tensor(dtype=np.float32),
+        axis=st.integers(-1, 5),
+        keepdims=st.booleans(),
+        **hu.gcs,
+    )
     @settings(deadline=None)
     def test_argmin(self, X, axis, keepdims, gc, dc):
         if axis >= len(X.shape):
             axis %= len(X.shape)
         op = core.CreateOperator(
-            "ArgMin", ["X"], ["Indices"], axis=axis, keepdims=keepdims,
-            device_option=gc)
+            "ArgMin", ["X"], ["Indices"], axis=axis, keepdims=keepdims, device_option=gc
+        )
 
         def argmin_ref(X):
             indices = np.argmin(X, axis=axis)
@@ -60,4 +61,5 @@ class TestArgOps(serial.SerializedTestCase):
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

@@ -8,8 +8,14 @@ import unittest
 
 import torch
 from torch.testing import make_tensor
-from torch.testing._internal.common_utils import (parametrize, run_tests, TestCase, TEST_SCIPY,
-                                                  set_default_dtype, skipCUDAMemoryLeakCheckIf)
+from torch.testing._internal.common_utils import (
+    parametrize,
+    run_tests,
+    TestCase,
+    TEST_SCIPY,
+    set_default_dtype,
+    skipCUDAMemoryLeakCheckIf,
+)
 from torch.testing._internal.common_device_type import (
     instantiate_device_type_tests,
     onlyCUDA,
@@ -23,7 +29,11 @@ from torch.testing._internal.common_device_type import (
     ops,
 )
 
-from torch.testing._internal.logging_tensor import LoggingTensor, capture_logs, log_input
+from torch.testing._internal.logging_tensor import (
+    LoggingTensor,
+    capture_logs,
+    log_input,
+)
 import torch._prims as prims
 from torch._prims.executor import make_traced
 import torch._refs as refs
@@ -36,6 +46,7 @@ if TEST_SCIPY:
 NVPRIM_ATEN_FALLBACK_WARNING = "fallback to aten executor"
 GET_ISOLATED_GRAPHMODULE_ERROR = "get_isolated_graphmodule failed on decomposition"
 
+
 class TestPrims(TestCase):
     @onlyCUDA
     @dtypes(torch.float32)
@@ -46,7 +57,7 @@ class TestPrims(TestCase):
         traced = make_traced(_wrapper)
         make_arg = partial(make_tensor, device=device, dtype=dtype)
 
-        for executor in ('aten', 'strictly_nvfuser'):
+        for executor in ("aten", "strictly_nvfuser"):
             fn = partial(traced, executor=executor)
             # Same shape
             shape = (5, 5)
@@ -111,7 +122,7 @@ class TestPrims(TestCase):
         traced = make_traced(_wrapper)
         make_arg = partial(make_tensor, device=device, dtype=dtype)
 
-        for executor in ('aten', 'strictly_nvfuser'):
+        for executor in ("aten", "strictly_nvfuser"):
             fn = partial(traced, executor=executor)
             shape = (5, 5)
             a = make_arg(shape)
@@ -180,17 +191,16 @@ class TestPrims(TestCase):
         except ImportError:
             from nvfuser._C import FusionDefinition as fd
 
-
         prim_nvfuser_ops = set(torch._prims.__all__).intersection(dir(fd.ops))
         ops_without_nvfuser_impl = {
             name
             for name in prim_nvfuser_ops
             if getattr(torch.ops.nvprims, name, None) is None
         }
-        assert (
-            len(ops_without_nvfuser_impl) == 0
-        ), (f"The following prims do not have 'impl_nvfuser' defined: {ops_without_nvfuser_impl} ",
-            "while there exists nvfuser implementations for them.")
+        assert len(ops_without_nvfuser_impl) == 0, (
+            f"The following prims do not have 'impl_nvfuser' defined: {ops_without_nvfuser_impl} ",
+            "while there exists nvfuser implementations for them.",
+        )
 
     def test_skip_ops_nvfuser_prims_mode(self, device):
         # This test verifies that the NvfuserPrimsMode skips the specified
@@ -203,7 +213,9 @@ class TestPrims(TestCase):
         def func(a):
             return torch.ops.prims.sin.default(a)
 
-        skip_ops = {"prims.sin.default", }
+        skip_ops = {
+            "prims.sin.default",
+        }
         with NvfuserPrimsMode(skip_ops=skip_ops):
             gm = make_fx(func)(a)
 
@@ -228,7 +240,9 @@ class TestPrims(TestCase):
         def func(a):
             return torch.sin(a)
 
-        skip_ops = {"torch.sin", }
+        skip_ops = {
+            "torch.sin",
+        }
         with TorchRefsNvfuserCapabilityMode(skip_ops=skip_ops):
             gm = make_fx(func)(a)
 
@@ -315,7 +329,9 @@ class TestPrims(TestCase):
 
         gm = make_fx(func)(a, a, a)
 
-        with self.assertRaisesRegex(AssertionError, "Graph must contain at least one call_function node"):
+        with self.assertRaisesRegex(
+            AssertionError, "Graph must contain at least one call_function node"
+        ):
             execute(gm, a, a, a, executor="strictly_nvfuser")
 
         # Should pass with partitioned executor
@@ -341,7 +357,9 @@ class TestPrims(TestCase):
             gm = make_fx(func)(a, dtype)
             execute(gm, a, dtype, executor="nvfuser")
 
-        call_function_nodes = list(filter(lambda n: n.op == "call_function", gm.graph.nodes))
+        call_function_nodes = list(
+            filter(lambda n: n.op == "call_function", gm.graph.nodes)
+        )
         includes_aten_to_copy = any(
             torch.ops.aten._to_copy.default == node.target
             for node in call_function_nodes
@@ -390,12 +408,18 @@ class TestPrims(TestCase):
         with warnings.catch_warnings(record=True) as caught:
             execute(gm, executor="strictly_nvfuser")
         # fusion execute with no cuda input is handled by nvprim aten fallback
-        self.assertTrue(any(NVPRIM_ATEN_FALLBACK_WARNING in str(w.message) for w in caught))
+        self.assertTrue(
+            any(NVPRIM_ATEN_FALLBACK_WARNING in str(w.message) for w in caught)
+        )
 
-        with self.assertRaisesRegex(AssertionError, "There must be at least one argument"):
+        with self.assertRaisesRegex(
+            AssertionError, "There must be at least one argument"
+        ):
             make_nvfuser_fusion(gm)
 
-        with self.assertRaisesRegex(AssertionError, "Number of placeholder nodes in the graph must match"):
+        with self.assertRaisesRegex(
+            AssertionError, "Number of placeholder nodes in the graph must match"
+        ):
             execute(gm, a, executor="strictly_nvfuser")
 
         # Should pass with partitioned executor
@@ -446,7 +470,9 @@ class TestPrims(TestCase):
         expected = execute(gm, a.mT, executor="aten")
         for use_python_cache in [True, False]:
             params = {"use_python_fusion_cache": use_python_cache}
-            actual = execute(gm, a.mT, executor="strictly_nvfuser", executor_parameters=params)
+            actual = execute(
+                gm, a.mT, executor="strictly_nvfuser", executor_parameters=params
+            )
             self.assertEqual(expected, actual)
 
     def test_nvfuser_capability_context(self, device):
@@ -468,7 +494,9 @@ class TestPrims(TestCase):
             gm = make_fx(func)(a)
 
         # Check that the torch.digamma is not replaced with torch.ops.prims.digamma
-        call_function_nodes = list(filter(lambda n: n.op == "call_function", gm.graph.nodes))
+        call_function_nodes = list(
+            filter(lambda n: n.op == "call_function", gm.graph.nodes)
+        )
         includes_aten_digamma = any(
             torch.ops.aten.digamma.default == node.target
             for node in call_function_nodes
@@ -487,7 +515,9 @@ class TestPrims(TestCase):
         with TorchRefsNvfuserCapabilityMode():
             gm = make_fx(func)(a)
 
-        call_function_nodes = list(filter(lambda n: n.op == "call_function", gm.graph.nodes))
+        call_function_nodes = list(
+            filter(lambda n: n.op == "call_function", gm.graph.nodes)
+        )
         includes_aten_sigmoid = any(
             torch.ops.aten.sigmoid.default == node.target
             for node in call_function_nodes
@@ -497,13 +527,11 @@ class TestPrims(TestCase):
             for node in call_function_nodes
         )
         includes_nvprims_exp = any(
-            torch.ops.nvprims.exp.default == node.target
-            for node in call_function_nodes
+            torch.ops.nvprims.exp.default == node.target for node in call_function_nodes
         )
         self.assertFalse(includes_aten_sigmoid)
         self.assertFalse(includes_prims_digamma)
         self.assertTrue(includes_nvprims_exp)
-
 
     def test_aten_overload_to_prims(self, device):
         # This test is to ensure that the torch.ops.aten calls are replaced with refs
@@ -519,12 +547,13 @@ class TestPrims(TestCase):
             gm = make_fx(func)(a)
 
         # Check that all call_function nodes are prims
-        call_function_nodes = list(filter(lambda n: n.op == "call_function", gm.graph.nodes))
+        call_function_nodes = list(
+            filter(lambda n: n.op == "call_function", gm.graph.nodes)
+        )
         all_prims_namespace = all(
             node.target.name().startswith("prims") for node in call_function_nodes
         )
         self.assertTrue(all_prims_namespace)
-
 
     @onlyCUDA
     def test_nvfuser_executor_parameters(self, device):
@@ -556,7 +585,6 @@ class TestPrims(TestCase):
             params = {"allow_single_op_fusion": allow_single_op_fusion}
             actual = execute(gm, a, executor="nvfuser", executor_parameters=params)
             self.assertEqual(expected, actual)
-
 
     @onlyCUDA
     def test_nvfuser_executor_partitioned(self, device):
@@ -761,7 +789,9 @@ class TestPrims(TestCase):
         # This test verifies that the backward pass of batch norm is correctly decomposed into nvprims
         from torch.fx.experimental.proxy_tensor import make_fx
         from torch._prims.context import TorchRefsNvfuserCapabilityMode
-        from torch.testing._internal.common_methods_invocations import sample_inputs_batch_norm
+        from torch.testing._internal.common_methods_invocations import (
+            sample_inputs_batch_norm,
+        )
 
         samples_iter = sample_inputs_batch_norm(None, device, dtype, requires_grad=True)
         sample = next(samples_iter)
@@ -779,13 +809,23 @@ class TestPrims(TestCase):
 
         args = sample.args
         kwargs = sample.kwargs
-        all_args = [grad, sample.input, args[2], args[0], args[1], kwargs['eps'], kwargs['training']]
+        all_args = [
+            grad,
+            sample.input,
+            args[2],
+            args[0],
+            args[1],
+            kwargs["eps"],
+            kwargs["training"],
+        ]
 
         for func in (func1, func2):
             with TorchRefsNvfuserCapabilityMode():
                 gm = make_fx(func)(*all_args)
 
-            call_function_nodes = list(filter(lambda n: n.op == "call_function", gm.graph.nodes))
+            call_function_nodes = list(
+                filter(lambda n: n.op == "call_function", gm.graph.nodes)
+            )
             includes_batch_norm_backward = any(
                 torch.ops.aten.native_batch_norm_backward.default == node.target
                 for node in call_function_nodes
@@ -843,7 +883,6 @@ class TestPrims(TestCase):
         self.assertFalse(any_aten_fill)
         self.assertEqual(gm(a), func(a))
 
-
     @onlyCUDA
     @dtypes(torch.float32)
     @parametrize("correction", [0, 1])
@@ -854,7 +893,7 @@ class TestPrims(TestCase):
         traced = make_traced(_wrapper)
         make_arg = partial(make_tensor, device=device, dtype=dtype)
 
-        for executor in ('aten', 'strictly_nvfuser'):
+        for executor in ("aten", "strictly_nvfuser"):
             fn = partial(traced, executor=executor)
             shape = (5, 5)
             a = make_arg(shape)
@@ -872,7 +911,6 @@ class TestPrims(TestCase):
         from torch.fx.experimental.proxy_tensor import make_fx
         from torch._prims.context import TorchRefsNvfuserCapabilityMode
 
-
         def _wrapper(a):
             return torch.var_mean(a, [0, 1], correction=correction, keepdim=keepdim)
 
@@ -881,7 +919,9 @@ class TestPrims(TestCase):
         with TorchRefsNvfuserCapabilityMode():
             gm = make_fx(_wrapper)(make_arg((5, 5)))
 
-        call_function_nodes = list(filter(lambda n: n.op == "call_function", gm.graph.nodes))
+        call_function_nodes = list(
+            filter(lambda n: n.op == "call_function", gm.graph.nodes)
+        )
         includes_nvprims_var_mean = any(
             torch.ops.nvprims.var_mean.main == node.target
             for node in call_function_nodes
@@ -923,7 +963,9 @@ class TestPrims(TestCase):
             with TorchRefsNvfuserCapabilityMode():
                 gm = make_fx(func)(a)
 
-            call_function_nodes = list(filter(lambda n: n.op == "call_function", gm.graph.nodes))
+            call_function_nodes = list(
+                filter(lambda n: n.op == "call_function", gm.graph.nodes)
+            )
             includes_nvprims_view = any(
                 torch.ops.nvprims.view.default == node.target
                 for node in call_function_nodes
@@ -980,22 +1022,27 @@ class TestPrims(TestCase):
         with warnings.catch_warnings(record=True) as caught:
             actual = execute(gm, a, b, c, executor="nvfuser")
         # cpu scalar tensor is handled by nvfuser codegen, so it shouldn't fallback
-        self.assertFalse(any(NVPRIM_ATEN_FALLBACK_WARNING in str(w.message) for w in caught))
+        self.assertFalse(
+            any(NVPRIM_ATEN_FALLBACK_WARNING in str(w.message) for w in caught)
+        )
 
         expected = execute(gm, a, b, c, executor="aten")
         self.assertEqual(expected, actual)
 
-        call_function_nodes = list(filter(lambda n: n.op == "call_function", gm.graph.nodes))
+        call_function_nodes = list(
+            filter(lambda n: n.op == "call_function", gm.graph.nodes)
+        )
         includes_aten_add = any(
-            torch.ops.aten.add.default == node.target
-            for node in call_function_nodes
+            torch.ops.aten.add.default == node.target for node in call_function_nodes
         )
         self.assertFalse(includes_aten_add)
 
         with warnings.catch_warnings(record=True) as caught:
             nvprim_aten_fallback = execute(gm, a.cpu(), b.cpu(), c, executor="nvfuser")
         # cpu tensor is handled by nvprim aten fallback, assert that it's indeed in warning
-        self.assertTrue(any(NVPRIM_ATEN_FALLBACK_WARNING in str(w.message) for w in caught))
+        self.assertTrue(
+            any(NVPRIM_ATEN_FALLBACK_WARNING in str(w.message) for w in caught)
+        )
 
         self.assertEqual(expected, nvprim_aten_fallback)
 
@@ -1042,7 +1089,7 @@ class TestPrims(TestCase):
             (5, 4, 3, 2),
             (8, 8, 7, 2),
             (9, 1, 3, 1),
-            (4, 5, 8, 7)
+            (4, 5, 8, 7),
         )
 
         channels_last_3d_shapes = (
@@ -1065,8 +1112,12 @@ class TestPrims(TestCase):
         for shapes, memory_format in pairs:
             for shape in shapes:
                 # tests empty
-                expected = torch.empty(shape, device=device, dtype=dtype, memory_format=memory_format)
-                actual = refs.empty(shape, device=device, dtype=dtype, memory_format=memory_format)
+                expected = torch.empty(
+                    shape, device=device, dtype=dtype, memory_format=memory_format
+                )
+                actual = refs.empty(
+                    shape, device=device, dtype=dtype, memory_format=memory_format
+                )
                 self.assertEqual(expected.stride(), actual.stride())
 
                 # tests clone
@@ -1076,7 +1127,9 @@ class TestPrims(TestCase):
                 self.assertEqual(expected.stride(), actual.stride())
 
                 # tests contiguous
-                a = torch.testing.make_tensor(shape, device=device, dtype=dtype, noncontiguous=True)
+                a = torch.testing.make_tensor(
+                    shape, device=device, dtype=dtype, noncontiguous=True
+                )
                 expected = a.contiguous(memory_format=memory_format)
                 actual = refs.contiguous(a, memory_format=memory_format)
                 self.assertEqual(expected.stride(), actual.stride())
@@ -1097,16 +1150,19 @@ class TestPrims(TestCase):
 
 class TestPrimsBasic(TestCase):
     def test_torch_ops(self):
-        r = make_tensor((2,), device='cpu', dtype=torch.float)
+        r = make_tensor((2,), device="cpu", dtype=torch.float)
         self.assertEqual(torch.ops.prims.sin(r), torch.sin(r))
 
         r = LoggingTensor(r)
         with capture_logs() as logs:
             log_input("input", r)
             prims.sin(r)
-        self.assertExpectedInline('\n'.join(logs), """\
+        self.assertExpectedInline(
+            "\n".join(logs),
+            """\
 $0 = input('input')
-$1 = torch._ops.prims.sin.default($0)""")
+$1 = torch._ops.prims.sin.default($0)""",
+        )
 
     def test_mul_complex(self):
         prims.mul(torch.randn(2), 1 + 1j)
@@ -1120,10 +1176,10 @@ class TestRefs(TestCase):
     def test_constant_pad_nd_memory_format(self, device, dtype):
         # Test memory format is preserved in unambiguous cases
         for mf, ndim in (
-                (torch.channels_last, 4),
-                (torch.contiguous_format, 4),
-                (torch.channels_last_3d, 5),
-                (torch.contiguous_format, 5),
+            (torch.channels_last, 4),
+            (torch.contiguous_format, 4),
+            (torch.channels_last_3d, 5),
+            (torch.contiguous_format, 5),
         ):
             a = torch.zeros([2] * ndim).to(memory_format=mf)
             res = refs.constant_pad_nd(a, pad=[1] * (2 * ndim))
@@ -1161,13 +1217,19 @@ class TestDecomp(TestCase):
         x = torch.rand(5, device=device).to(dtype)
         y = torch.rand(5, device=device).to(dtype)
 
-        from torch._prims.context import TorchRefsNvfuserCapabilityMode, _is_func_unsupported_nvfuser
+        from torch._prims.context import (
+            TorchRefsNvfuserCapabilityMode,
+            _is_func_unsupported_nvfuser,
+        )
         from torch.fx.experimental.proxy_tensor import make_fx
+
         op = torch.ops.aten.leaky_relu_backward.default
         op_decomp = torch._decomp.decomposition_table.get(op)
 
         def fn0(*arg):
-            return _is_func_unsupported_nvfuser(TorchRefsNvfuserCapabilityMode(), op, op_decomp, arg, {})
+            return _is_func_unsupported_nvfuser(
+                TorchRefsNvfuserCapabilityMode(), op, op_decomp, arg, {}
+            )
 
         def fn1(x):
             x = x * 2
@@ -1188,7 +1250,9 @@ class TestDecomp(TestCase):
             with torch.autocast("cuda"):
                 gm = make_fx(fn1)(x)
             gm = make_fx(gm)(x)
-            call_function_nodes = list(filter(lambda n: n.op == "call_function", gm.graph.nodes))
+            call_function_nodes = list(
+                filter(lambda n: n.op == "call_function", gm.graph.nodes)
+            )
             includes_aten_to_copy = any(
                 torch.ops.aten._to_copy.default == node.target
                 for node in call_function_nodes
@@ -1217,7 +1281,9 @@ class TestDecomp(TestCase):
             with TorchRefsNvfuserCapabilityMode():
                 gm = make_fx(gm)(x, mask, y)
         # masked_fill decomposition fails inside `get_isolated_graphmodule`
-        self.assertFalse(any(GET_ISOLATED_GRAPHMODULE_ERROR in str(w.message) for w in caught))
+        self.assertFalse(
+            any(GET_ISOLATED_GRAPHMODULE_ERROR in str(w.message) for w in caught)
+        )
 
     @ops([op for op in op_db if op.supports_varargs], dtypes=OpDTypes.any_one)
     def test_decomposition_method_vararg(self, device, dtype, op):
@@ -1237,8 +1303,11 @@ class TestDecomp(TestCase):
         from torch._prims.context import TorchRefsMode
 
         # filter out empty tuple as that cannot be the varargs
-        sample_inputs = (si for si in op.sample_inputs(device, dtype, requires_grad=False)
-                         if (si.args[-1] if si.args else si.input))
+        sample_inputs = (
+            si
+            for si in op.sample_inputs(device, dtype, requires_grad=False)
+            if (si.args[-1] if si.args else si.input)
+        )
 
         # just run one test, we assume there is a suitable one in the tests
         sample_input = next(sample_inputs)

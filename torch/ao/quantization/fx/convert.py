@@ -18,10 +18,7 @@ from ..utils import (
     _parent_name,
     get_swapped_custom_module_class,
 )
-from ..qconfig import (
-    QConfigAny,
-    qconfig_equals
-)
+from ..qconfig import QConfigAny, qconfig_equals
 from ..qconfig_mapping import QConfigMapping
 from .qconfig_mapping_utils import (
     _generate_node_name_to_qconfig,
@@ -70,6 +67,7 @@ from .custom_config import (
     PrepareCustomConfig,
 )
 from .lower_to_fbgemm import lower_to_fbgemm
+
 # importing the lib so that the quantized_decomposed ops are registered
 from ._decomposed import quantized_decomposed_lib  # noqa: F401
 import operator
@@ -86,14 +84,16 @@ _QSCHEME_TO_CHOOSE_QPARAMS_OP = {
     torch.per_tensor_symmetric: torch.ops.quantized_decomposed.choose_qparams_symmetric.tensor,
 }
 
+
 def _replace_observer_with_quantize_dequantize_node_decomposed(
-        model: torch.nn.Module,
-        graph: Graph,
-        node: Node,
-        modules: Dict[str, torch.nn.Module],
-        node_name_to_scope: Dict[str, Tuple[str, type]],
-        node_name_to_qconfig: Dict[str, QConfigAny]) -> None:
-    """ Replace activation_post_process module call node with quantize and
+    model: torch.nn.Module,
+    graph: Graph,
+    node: Node,
+    modules: Dict[str, torch.nn.Module],
+    node_name_to_scope: Dict[str, Tuple[str, type]],
+    node_name_to_qconfig: Dict[str, QConfigAny],
+) -> None:
+    """Replace activation_post_process module call node with quantize and
     dequantize node working with decomposed Tensor
 
     Before:
@@ -106,13 +106,18 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
     """
     assert modules is not None
     assert isinstance(node.target, str)
-    module_path, prefix = _get_module_path_and_prefix(node, node_name_to_scope, node_name_to_qconfig)
+    module_path, prefix = _get_module_path_and_prefix(
+        node, node_name_to_scope, node_name_to_qconfig
+    )
     activation_post_process = modules[node.target]
     # skip replacing observers to quant/dequant nodes if the qconfigs of all
     # consumers and producers of this observer are None
-    skip_replacement = all([
-        _has_none_qconfig(n, node_name_to_qconfig) for n in
-        list(node.args) + list(node.users.keys())])
+    skip_replacement = all(
+        [
+            _has_none_qconfig(n, node_name_to_qconfig)
+            for n in list(node.args) + list(node.users.keys())
+        ]
+    )
     if skip_replacement or not _is_conversion_supported(activation_post_process):
         # didn't find corresponding quantize op and info for the activation_post_process
         # so we just remove the observer
@@ -131,8 +136,7 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
     if hasattr(activation_post_process, "is_dynamic"):
         is_dynamic = activation_post_process.is_dynamic  # type: ignore[assignment]
 
-    if dtype in [torch.quint8, torch.qint8, torch.qint32] and \
-            (not is_dynamic):
+    if dtype in [torch.quint8, torch.qint8, torch.qint32] and (not is_dynamic):
         # TODO: probably should cleanup this condition check, it's hard
         # to reason about this if and the following elif
 
@@ -140,7 +144,7 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
 
         # 1. extract information for inserting q/dq node from activation_post_process
         node_type = "call_function"
-        quantize_op : Optional[Callable] = None
+        quantize_op: Optional[Callable] = None
         scale, zero_point = activation_post_process.calculate_qparams()  # type: ignore[attr-defined, operator]
         if is_per_channel(activation_post_process.qscheme):  # type: ignore[attr-defined]
             ch_axis = int(activation_post_process.ch_axis)  # type: ignore[attr-defined, arg-type]
@@ -155,7 +159,7 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
                 "_axis_": ch_axis,
                 "_quant_min_": quant_min,
                 "_quant_max_": quant_max,
-                "_dtype_": dtype_
+                "_dtype_": dtype_,
             }
         else:
             quantize_op = torch.ops.quantized_decomposed.quantize_per_tensor
@@ -170,7 +174,7 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
                 "_zero_point_": zero_point,
                 "_quant_min_": quant_min,
                 "_quant_max_": quant_max,
-                "_dtype_": dtype_
+                "_dtype_": dtype_,
             }
 
         # 2. replace activation_post_process node with quantize and dequantize
@@ -180,24 +184,23 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
             for key, value_or_node in qparams.items():
                 # TODO: we can add the information of whether a value needs to
                 # be registered as an attribute in qparams dict itself
-                if key in ['_scale_', '_zero_point_']:
+                if key in ["_scale_", "_zero_point_"]:
                     # For scale and zero_point values we register them as buffers in the root module.
                     # TODO: maybe need more complex attr name here
                     qparam_node = create_getattr_from_value(
-                        model, graph, module_path + prefix + key, value_or_node)
+                        model, graph, module_path + prefix + key, value_or_node
+                    )
                     quantize_op_inputs.append(qparam_node)
                 else:
                     # for qparams that are not scale/zero_point (like axis, dtype) we store them as literals in the graph.
                     quantize_op_inputs.append(value_or_node)
 
-            quantized_node = graph.create_node(node_type, quantize_op, tuple(quantize_op_inputs), {})
+            quantized_node = graph.create_node(
+                node_type, quantize_op, tuple(quantize_op_inputs), {}
+            )
             # use the same qparams from quantize op
             dq_inputs = [quantized_node] + quantize_op_inputs[1:]
-            dequantized_node = graph.call_function(
-                dequantize_op,
-                tuple(dq_inputs),
-                {}
-            )
+            dequantized_node = graph.call_function(dequantize_op, tuple(dq_inputs), {})
             node.replace_all_uses_with(dequantized_node)
             graph.erase_node(node)
     elif is_dynamic:
@@ -212,9 +215,10 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
         # and that can be done after we remove reduce_range flag
         # 1. extract qparams from activation_post_process module
         dtype_ = to_underlying_dtype(dtype)
-        assert dtype_ in [torch.uint8, torch.int8], \
-            "only uint8 and int8 are supported in reference flow for " \
+        assert dtype_ in [torch.uint8, torch.int8], (
+            "only uint8 and int8 are supported in reference flow for "
             "dynamic quantization right now"
+        )
         quant_min = activation_post_process.quant_min  # type: ignore[attr-defined]
         quant_max = activation_post_process.quant_max  # type: ignore[attr-defined]
         qscheme = getattr(activation_post_process, "qscheme", torch.per_tensor_affine)  # type: ignore[attr-defined]
@@ -226,7 +230,7 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
             "_quant_min_": quant_min,
             "_quant_max_": quant_max,
             "_eps_": eps,
-            "_dtype_": dtype_
+            "_dtype_": dtype_,
         }
 
         choose_qparams_op = _QSCHEME_TO_CHOOSE_QPARAMS_OP[qscheme]
@@ -239,23 +243,14 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
                 # as literals
                 choose_qparams_op_inputs.append(value)
             choose_qparams_node = graph.create_node(
-                "call_function",
-                choose_qparams_op,
-                tuple(choose_qparams_op_inputs),
-                {}
+                "call_function", choose_qparams_op, tuple(choose_qparams_op_inputs), {}
             )
             # choose_qparms returns (scale, zero_point)
             scale_node = graph.create_node(
-                "call_function",
-                operator.getitem,
-                (choose_qparams_node, 0),
-                {}
+                "call_function", operator.getitem, (choose_qparams_node, 0), {}
             )
             zero_point_node = graph.create_node(
-                "call_function",
-                operator.getitem,
-                (choose_qparams_node, 1),
-                {}
+                "call_function", operator.getitem, (choose_qparams_node, 1), {}
             )
             quant_min = qparams["_quant_min_"]
             quant_max = qparams["_quant_max_"]
@@ -265,7 +260,7 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
                 "_zero_point_": zero_point_node,
                 "_quant_min_": quant_min,
                 "_quant_max_": quant_max,
-                "_dtype_": dtype
+                "_dtype_": dtype,
             }
 
         # 3. replace activation_post_process node to quantize and dequantize node
@@ -275,7 +270,7 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
             for key, value_or_node in qparams.items():
                 # TODO: we can add the information of whether a value needs to
                 # be registered as an attribute in qparams dict itself
-                if key in ['_scale_', '_zero_point_']:
+                if key in ["_scale_", "_zero_point_"]:
                     # in this case we have a node in the graph since it's dynamically
                     # computed from the input, with choose_qparams op
                     qparam_node = value_or_node
@@ -285,18 +280,16 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
                     # store them as literals in the graph.
                     quantize_op_inputs.append(value_or_node)
 
-            quantized_node = graph.create_node(node_type, quantize_op, tuple(quantize_op_inputs), {})
+            quantized_node = graph.create_node(
+                node_type, quantize_op, tuple(quantize_op_inputs), {}
+            )
             # use the same qparams from quantize op
             dq_inputs = [quantized_node] + quantize_op_inputs[1:]
             # need to use the tensor variant of this op, since scale and zero_point
             # from choose_qparam are Tensors, instead of float/int, this is to
             # prevent these nodes being traced away by downstream systems
             dequantize_op = torch.ops.quantized_decomposed.dequantize_per_tensor.tensor
-            dequantized_node = graph.call_function(
-                dequantize_op,
-                tuple(dq_inputs),
-                {}
-            )
+            dequantized_node = graph.call_function(dequantize_op, tuple(dq_inputs), {})
             node.replace_all_uses_with(dequantized_node)
             graph.erase_node(node)
     elif dtype == torch.float16:
@@ -305,14 +298,16 @@ def _replace_observer_with_quantize_dequantize_node_decomposed(
     # should not reach since we have checks in the beginning to make sure the
     # activation_post_process is supported
 
+
 def _replace_observer_with_quantize_dequantize_node(
-        model: torch.nn.Module,
-        graph: Graph,
-        node: Node,
-        modules: Dict[str, torch.nn.Module],
-        node_name_to_scope: Dict[str, Tuple[str, type]],
-        node_name_to_qconfig: Dict[str, QConfigAny]) -> None:
-    """ Replace activation_post_process module call node with quantize and
+    model: torch.nn.Module,
+    graph: Graph,
+    node: Node,
+    modules: Dict[str, torch.nn.Module],
+    node_name_to_scope: Dict[str, Tuple[str, type]],
+    node_name_to_qconfig: Dict[str, QConfigAny],
+) -> None:
+    """Replace activation_post_process module call node with quantize and
     dequantize node
 
     Before:
@@ -322,13 +317,18 @@ def _replace_observer_with_quantize_dequantize_node(
     """
     assert modules is not None
     assert isinstance(node.target, str)
-    module_path, prefix = _get_module_path_and_prefix(node, node_name_to_scope, node_name_to_qconfig)
+    module_path, prefix = _get_module_path_and_prefix(
+        node, node_name_to_scope, node_name_to_qconfig
+    )
     activation_post_process = modules[node.target]
     # skip replacing observers to quant/dequant nodes if the qconfigs of all
     # consumers and producers of this observer are None
-    skip_replacement = all([
-        _has_none_qconfig(n, node_name_to_qconfig) for n in
-        list(node.args) + list(node.users.keys())])
+    skip_replacement = all(
+        [
+            _has_none_qconfig(n, node_name_to_qconfig)
+            for n in list(node.args) + list(node.users.keys())
+        ]
+    )
     if skip_replacement or not _is_conversion_supported(activation_post_process):
         # didn't find corresponding quantize op and info for the activation_post_process
         # so we just remove the observer
@@ -344,8 +344,7 @@ def _replace_observer_with_quantize_dequantize_node(
     if hasattr(activation_post_process, "is_dynamic"):
         is_dynamic = activation_post_process.is_dynamic  # type: ignore[attr-defined, assignment]
 
-    if dtype in [torch.quint8, torch.qint8, torch.qint32] and \
-            (not is_dynamic):
+    if dtype in [torch.quint8, torch.qint8, torch.qint32] and (not is_dynamic):
         # TODO: probably should cleanup this condition check, it's hard
         # to reason about this if and the following elif
 
@@ -354,11 +353,16 @@ def _replace_observer_with_quantize_dequantize_node(
         # 1. extract the information from activation_post_process module for generating
         # the quantize and dequantize operator
         node_type = "call_function"
-        quantize_op : Optional[Callable] = None
+        quantize_op: Optional[Callable] = None
         scale, zero_point = activation_post_process.calculate_qparams()  # type: ignore[attr-defined, operator]
         if is_per_channel(activation_post_process.qscheme):  # type: ignore[attr-defined]
             ch_axis = int(activation_post_process.ch_axis)  # type: ignore[attr-defined, arg-type]
-            qparams = {"_scale_": scale, "_zero_point_": zero_point, "_axis_": ch_axis, "_dtype_": dtype}
+            qparams = {
+                "_scale_": scale,
+                "_zero_point_": zero_point,
+                "_axis_": ch_axis,
+                "_dtype_": dtype,
+            }
             quantize_op = torch.quantize_per_channel
         else:
             scale = float(scale)
@@ -373,17 +377,20 @@ def _replace_observer_with_quantize_dequantize_node(
             for key, value_or_node in qparams.items():
                 # TODO: we can add the information of whether a value needs to
                 # be registered as an attribute in qparams dict itself
-                if key in ['_scale_', '_zero_point_']:
+                if key in ["_scale_", "_zero_point_"]:
                     # For scale and zero_point values we register them as buffers in the root module.
                     # TODO: maybe need more complex attr name here
                     qparam_node = create_getattr_from_value(
-                        model, graph, module_path + prefix + key, value_or_node)
+                        model, graph, module_path + prefix + key, value_or_node
+                    )
                     quantize_op_inputs.append(qparam_node)
                 else:
                     # for qparams that are not scale/zero_point (like axis, dtype) we store them as literals in the graph.
                     quantize_op_inputs.append(value_or_node)
 
-            quantized_node = graph.create_node(node_type, quantize_op, tuple(quantize_op_inputs), {})
+            quantized_node = graph.create_node(
+                node_type, quantize_op, tuple(quantize_op_inputs), {}
+            )
             dequantized_node = graph.call_method("dequantize", args=(quantized_node,))
             node.replace_all_uses_with(dequantized_node)
             graph.erase_node(node)
@@ -404,7 +411,9 @@ def _replace_observer_with_quantize_dequantize_node(
             for key, value in qparams.items():
                 quantize_op_inputs.append(value)
 
-            quantized_node = graph.create_node(node_type, quantize_op, tuple(quantize_op_inputs), {})
+            quantized_node = graph.create_node(
+                node_type, quantize_op, tuple(quantize_op_inputs), {}
+            )
             dequantized_node = graph.call_method("dequantize", args=(quantized_node,))
             node.replace_all_uses_with(dequantized_node)
             graph.erase_node(node)
@@ -420,13 +429,16 @@ def _replace_observer_with_quantize_dequantize_node(
                 # be registered as an attribute in qparams dict itself
                 quantize_op_inputs.append(value)
 
-            quantized_node = graph.create_node(node_type, quantize_op, tuple(quantize_op_inputs), {})
+            quantized_node = graph.create_node(
+                node_type, quantize_op, tuple(quantize_op_inputs), {}
+            )
             dequantized_node = graph.call_method("dequantize", args=(quantized_node,))
             node.replace_all_uses_with(dequantized_node)
             graph.erase_node(node)
 
     # should not reach since we have checks in the beginning to make sure the
     # activation_post_process is supported
+
 
 # this is a temporary hack for custom module, we may want to implement
 # this properly after the custom module class design is finalized
@@ -435,11 +447,13 @@ def _replace_observer_with_quantize_dequantize_node(
 # after custom modules in general, and replace these with "quantize" and "dequantize" nodes respectively.
 def _replace_observer_or_dequant_stub_with_dequantize_node(node: Node, graph: Graph):
     call_custom_module_node = node.args[0]
-    assert isinstance(call_custom_module_node, Node), \
-        f"Expecting the for call custom module node to be a Node, but got {call_custom_module_node}"
+    assert isinstance(
+        call_custom_module_node, Node
+    ), f"Expecting the for call custom module node to be a Node, but got {call_custom_module_node}"
     node.replace_all_uses_with(call_custom_module_node)
     graph.erase_node(node)
     _insert_dequantize_node(call_custom_module_node, graph)
+
 
 def _is_conversion_supported(activation_post_process: torch.nn.Module) -> bool:
     dtype = activation_post_process.dtype  # type: ignore[attr-defined]
@@ -449,19 +463,27 @@ def _is_conversion_supported(activation_post_process: torch.nn.Module) -> bool:
         is_dynamic = activation_post_process.is_dynamic  # type: ignore[attr-defined, assignment]
 
     return (
-        (dtype in [torch.quint8, torch.qint8, torch.qint32] and (not is_dynamic)) or  # type: ignore[return-value]
-        is_dynamic or
-        dtype == torch.float16
+        (dtype in [torch.quint8, torch.qint8, torch.qint32] and (not is_dynamic))
+        or is_dynamic  # type: ignore[return-value]
+        or dtype == torch.float16
     )
 
-def _has_none_qconfig(node: Argument, node_name_to_qconfig: Dict[str, QConfigAny]) -> bool:
-    """ Check if a node has a qconfig of None, i.e. user requested to not quantize
+
+def _has_none_qconfig(
+    node: Argument, node_name_to_qconfig: Dict[str, QConfigAny]
+) -> bool:
+    """Check if a node has a qconfig of None, i.e. user requested to not quantize
     the node
     """
-    return isinstance(node, Node) and node.name in node_name_to_qconfig and node_name_to_qconfig[node.name] is None
+    return (
+        isinstance(node, Node)
+        and node.name in node_name_to_qconfig
+        and node_name_to_qconfig[node.name] is None
+    )
+
 
 def _run_weight_observers(observed: GraphModule, backend_config: BackendConfig) -> None:
-    """ Extract the subgraph that produces the weight for dynamic quant
+    """Extract the subgraph that produces the weight for dynamic quant
     or weight only quant node and run the subgraph to observe the weight.
     Note that the observers of dynamic quant or weight only quant ops are
     run during the convert step.
@@ -475,19 +497,18 @@ def _run_weight_observers(observed: GraphModule, backend_config: BackendConfig) 
                 weight_observer_nodes = collect_producer_nodes(node_arg)
                 if weight_observer_nodes is None:
                     continue
-                weight_observer_module = \
-                    graph_module_from_producer_nodes(
-                        observed, weight_observer_nodes)
+                weight_observer_module = graph_module_from_producer_nodes(
+                    observed, weight_observer_nodes
+                )
                 # run the weight observer
                 weight_observer_module()
 
+
 def _maybe_recursive_remove_dequantize(arg: Any, node: Node, graph: Graph):
-    """ If the arg is a dequantize Node, or a list/tuple/dict of dequantize Node,
+    """If the arg is a dequantize Node, or a list/tuple/dict of dequantize Node,
     we'll recursively remove the dequantize Node
     """
-    if isinstance(arg, Node) and \
-       arg.op == "call_method" and \
-       arg.target == "dequantize":
+    if isinstance(arg, Node) and arg.op == "call_method" and arg.target == "dequantize":
         quantize_node = arg.args[0]
         # we only replace the specific use since dequantize could be used by other nodes
         # as well
@@ -499,13 +520,17 @@ def _maybe_recursive_remove_dequantize(arg: Any, node: Node, graph: Graph):
         for arg_element in arg.values():
             _maybe_recursive_remove_dequantize(arg_element, node, graph)
     else:
-        warnings.warn(f"Unsupported node type in recursive remove dequantize: {type(arg)}")
+        warnings.warn(
+            f"Unsupported node type in recursive remove dequantize: {type(arg)}"
+        )
+
 
 def _get_module_path_and_prefix(
-        obs_node: Node,
-        node_name_to_scope: Dict[str, Tuple[str, type]],
-        node_name_to_qconfig: Dict[str, QConfigAny]):
-    """ Given and observer node, get the `Scope` or the fully qualified name for
+    obs_node: Node,
+    node_name_to_scope: Dict[str, Tuple[str, type]],
+    node_name_to_qconfig: Dict[str, QConfigAny],
+):
+    """Given and observer node, get the `Scope` or the fully qualified name for
     the submodule containing the observed node, also return a prefix of "_input"
     when the observed node is an input of a F.linear op, and not the output of another
     quantized op.
@@ -517,10 +542,14 @@ def _get_module_path_and_prefix(
     # operator (they can be the same)
     # this flag identifies if the observer is inserted only because the observed node is
     # the input of the next operator
-    assert isinstance(observed_node, Node), \
-        f"Expecting observed node to be a Node, but got {observed_node}"
-    is_input_observer_only = node_name_to_qconfig[observed_node.name] is None \
-        if observed_node.name in node_name_to_qconfig else None
+    assert isinstance(
+        observed_node, Node
+    ), f"Expecting observed node to be a Node, but got {observed_node}"
+    is_input_observer_only = (
+        node_name_to_qconfig[observed_node.name] is None
+        if observed_node.name in node_name_to_qconfig
+        else None
+    )
     if is_input_observer_only:
         # if the quantize function is at the input of op, then we find the first user of the observer_node
         # to get the path. If a linear call_function is in the user list, we return the first instance
@@ -540,7 +569,10 @@ def _get_module_path_and_prefix(
         first_linear_use_or_first_use = observed_node
         prefix = ""
 
-    if first_linear_use_or_first_use and first_linear_use_or_first_use.name in node_name_to_scope:
+    if (
+        first_linear_use_or_first_use
+        and first_linear_use_or_first_use.name in node_name_to_scope
+    ):
         module_path, _ = node_name_to_scope[first_linear_use_or_first_use.name]
     else:
         # TODO: it's not used, so actually we can skip quantization
@@ -549,39 +581,39 @@ def _get_module_path_and_prefix(
         module_path = ""
     return module_path, prefix
 
-def _insert_dequantize_node(
-        node: Node,
-        graph: Graph):
-    """ Inserts dequantize node for `node` in `graph`
-    """
+
+def _insert_dequantize_node(node: Node, graph: Graph):
+    """Inserts dequantize node for `node` in `graph`"""
     with graph.inserting_after(node):
         dequantize_node = graph.call_method("dequantize", (node,))
         for user_node in dict(node.users):
             if user_node is not dequantize_node:
                 user_node.replace_input_with(node, dequantize_node)
 
+
 def _maybe_get_observer_for_node(
-        node: Node,
-        modules: Dict[str, torch.nn.Module]
+    node: Node, modules: Dict[str, torch.nn.Module]
 ) -> Optional[torch.nn.Module]:
     """
     If the node is observed, return the observer
     instance. Otherwise, return None.
     """
     for maybe_obs_node, _ in node.users.items():
-        if maybe_obs_node.op == 'call_module':
+        if maybe_obs_node.op == "call_module":
             maybe_obs = modules[str(maybe_obs_node.target)]
             if _is_activation_post_process(maybe_obs):
                 return maybe_obs
     return None
 
+
 def convert_standalone_module(
-        node: Node,
-        modules: Dict[str, torch.nn.Module],
-        model: torch.fx.GraphModule,
-        is_reference: bool,
-        backend_config: Optional[BackendConfig]):
-    """ Converts a observed standalone module to a quantized standalone module by calling
+    node: Node,
+    modules: Dict[str, torch.nn.Module],
+    model: torch.fx.GraphModule,
+    is_reference: bool,
+    backend_config: Optional[BackendConfig],
+):
+    """Converts a observed standalone module to a quantized standalone module by calling
     the fx convert api, currently using the same `is_reference` flag as parent, but we may
     changing this behavior in the future (e.g. separating quantization and lowering for
     standalone module as well)
@@ -601,10 +633,10 @@ def convert_standalone_module(
         convert_fn = torch.ao.quantization.quantize_fx.convert_fx  # type: ignore[attr-defined]
     # We know that observed standalone module is a GraphModule since
     # it's produced by us
-    observed_standalone_module : GraphModule = modules[str(node.target)]  # type: ignore[assignment]
-    sm_input_quantized_idxs = \
-        observed_standalone_module \
-        .meta["_observed_graph_module_attrs"].standalone_module_input_quantized_idxs
+    observed_standalone_module: GraphModule = modules[str(node.target)]  # type: ignore[assignment]
+    sm_input_quantized_idxs = observed_standalone_module.meta[
+        "_observed_graph_module_attrs"
+    ].standalone_module_input_quantized_idxs
     # remove the dequantize nodes for inputs
     args = list(node.args)
     for idx in range(len(args)):
@@ -616,9 +648,9 @@ def convert_standalone_module(
                 if len(arg.users) == 0:  # type: ignore[union-attr]
                     model.graph.erase_node(arg)
     # add dequantize node for output
-    sm_output_quantized_idxs = \
-        observed_standalone_module \
-        .meta["_observed_graph_module_attrs"].standalone_module_output_quantized_idxs
+    sm_output_quantized_idxs = observed_standalone_module.meta[
+        "_observed_graph_module_attrs"
+    ].standalone_module_output_quantized_idxs
     if len(sm_output_quantized_idxs) > 0:
         assert sm_output_quantized_idxs[0] == 0, "Currently only quantized"
         "output idxs = [0] is supported"
@@ -630,21 +662,23 @@ def convert_standalone_module(
     # TODO: allow convert_custom_config to override backend_config
     # for standalone module
     quantized_standalone_module = convert_fn(
-        observed_standalone_module,
-        backend_config=backend_config)
+        observed_standalone_module, backend_config=backend_config
+    )
     parent_name, name = _parent_name(node.target)
     # update the modules dict
     setattr(modules[parent_name], name, quantized_standalone_module)
     modules[str(node.target)] = quantized_standalone_module
 
+
 def convert_weighted_module(
-        node: Node,
-        modules: Dict[str, torch.nn.Module],
-        observed_node_names: Set[str],
-        node_name_to_qconfig: Dict[str, QConfigAny],
-        backend_config: BackendConfig,
-        is_decomposed: bool = False):
-    """ Convert a weighted module to reference quantized module in the model
+    node: Node,
+    modules: Dict[str, torch.nn.Module],
+    observed_node_names: Set[str],
+    node_name_to_qconfig: Dict[str, QConfigAny],
+    backend_config: BackendConfig,
+    is_decomposed: bool = False,
+):
+    """Convert a weighted module to reference quantized module in the model
     If the QConfig of a QAT module is not set, the module will still be converted to
     a float module.
 
@@ -659,9 +693,7 @@ def convert_weighted_module(
     weight_post_process = None
     qat_module_classes = get_qat_module_classes(backend_config)
 
-    if isinstance(
-            original_module,
-            qat_module_classes):
+    if isinstance(original_module, qat_module_classes):
         # Converting qat module to a float module, we need to attach
         # weight fake_quant to the module, weight fake_quant is assumed to be run during
         # QAT so we don't need to run it again here
@@ -673,7 +705,11 @@ def convert_weighted_module(
 
     is_observed = node.name in observed_node_names
     # If a qconfig is not defined for this node, then skip converting to a reference module
-    if qconfig is None or _has_none_qconfig(node, node_name_to_qconfig) or not is_observed:
+    if (
+        qconfig is None
+        or _has_none_qconfig(node, node_name_to_qconfig)
+        or not is_observed
+    ):
         return
 
     # skip converting to reference quantized module if the qconfig is not supported
@@ -707,10 +743,12 @@ def convert_weighted_module(
         weight_post_process_hh(float_module.weight_hh)
         weight_qparams_ih = get_qparam_dict(weight_post_process_ih)
         weight_qparams_hh = get_qparam_dict(weight_post_process_hh)
-        wq_or_wq_dict.update({
-            "weight_ih": weight_qparams_ih,
-            "weight_hh": weight_qparams_hh,
-        })
+        wq_or_wq_dict.update(
+            {
+                "weight_ih": weight_qparams_ih,
+                "weight_hh": weight_qparams_hh,
+            }
+        )
     elif isinstance(float_module, (torch.nn.LSTM, torch.nn.GRU)):
         # format for wq_or_wq_dict (flattened attributes):
         # {"weight_ih_l0_scale": ..., "weight_ih_l0_qscheme": ..., ...}
@@ -736,8 +774,12 @@ def convert_weighted_module(
     # We use the same reference module for all modes of quantization: static, dynamic, weight_only
     # root_module_to_quantized_reference_module: module mapping from root (floating point) module class
     # to quantized reference module class, e.g. nn.Conv2d to nn.quantized._reference.Conv2d
-    root_module_to_quantized_reference_module = get_root_module_to_quantized_reference_module(backend_config)
-    ref_qmodule_cls = root_module_to_quantized_reference_module.get(type_before_parametrizations(float_module), None)
+    root_module_to_quantized_reference_module = (
+        get_root_module_to_quantized_reference_module(backend_config)
+    )
+    ref_qmodule_cls = root_module_to_quantized_reference_module.get(
+        type_before_parametrizations(float_module), None
+    )
     assert (
         ref_qmodule_cls is not None
     ), f"No reference quantized module class configured for {type_before_parametrizations(float_module)}"
@@ -748,7 +790,10 @@ def convert_weighted_module(
         parent_name, name = _parent_name(node.target)
         setattr(modules[parent_name], name, ref_qmodule)
 
-def _remove_previous_dequantize_in_custom_module(node: Node, prev_node: Node, graph: Graph):
+
+def _remove_previous_dequantize_in_custom_module(
+    node: Node, prev_node: Node, graph: Graph
+):
     """
     Given a custom module `node`, if the previous node is a dequantize, reroute the custom as follows:
 
@@ -757,21 +802,24 @@ def _remove_previous_dequantize_in_custom_module(node: Node, prev_node: Node, gr
                  \\ - dequantize
     """
     # expecting the input node for a custom module node to be a Node
-    assert isinstance(prev_node, Node), \
-        f"Expecting the argument for custom module node to be a Node, but got {prev_node}"
+    assert isinstance(
+        prev_node, Node
+    ), f"Expecting the argument for custom module node to be a Node, but got {prev_node}"
     if prev_node.op == "call_method" and prev_node.target == "dequantize":
         node.replace_input_with(prev_node, prev_node.args[0])
         # Remove the dequantize node if it doesn't have other users
         if len(prev_node.users) == 0:
             graph.erase_node(prev_node)
 
+
 def convert_custom_module(
-        node: Node,
-        graph: Graph,
-        modules: Dict[str, torch.nn.Module],
-        custom_module_class_mapping: Dict[QuantType, Dict[Type, Type]],
-        statically_quantized_custom_module_nodes: Set[Node]):
-    """ Converts an observed custom module to a quantized custom module based on
+    node: Node,
+    graph: Graph,
+    modules: Dict[str, torch.nn.Module],
+    custom_module_class_mapping: Dict[QuantType, Dict[Type, Type]],
+    statically_quantized_custom_module_nodes: Set[Node],
+):
+    """Converts an observed custom module to a quantized custom module based on
     `custom_module_class_mapping`
     For static quantization, we'll also remove the previous `dequantize` node and
     attach the observer node for output to the module, the observer for the node
@@ -804,9 +852,9 @@ def convert_custom_module(
             # The inputs are tuples in the form (input, (hidden0, hidden1))
             # Ensure all three input nodes are quantized
             assert (
-                len(node.args) == 2 and
-                isinstance(node.args[1], tuple) and
-                len(node.args[1]) == 2
+                len(node.args) == 2
+                and isinstance(node.args[1], tuple)
+                and len(node.args[1]) == 2
             )
             (inputs, (hidden0, hidden1)) = node.args  # type: ignore[misc]
             assert isinstance(inputs, Node)
@@ -842,20 +890,25 @@ def convert_custom_module(
 
     # swap the observed custom module to quantized custom module
     quantized_custom_module_class = get_swapped_custom_module_class(
-        observed_custom_module, custom_module_class_mapping, qconfig)
-    quantized_custom_module = \
-        quantized_custom_module_class.from_observed(observed_custom_module)
+        observed_custom_module, custom_module_class_mapping, qconfig
+    )
+    quantized_custom_module = quantized_custom_module_class.from_observed(
+        observed_custom_module
+    )
     parent_name, name = _parent_name(node.target)
     setattr(modules[parent_name], name, quantized_custom_module)
 
+
 def convert(
-        model: GraphModule, is_reference: bool = False,
-        convert_custom_config: Union[ConvertCustomConfig, Dict[str, Any], None] = None,
-        is_standalone_module: bool = False,
-        _remove_qconfig_flag: bool = True,
-        qconfig_mapping: Union[QConfigMapping, Dict[str, Any], None] = None,
-        backend_config: Union[BackendConfig, Dict[str, Any], None] = None,
-        is_decomposed: bool = False) -> torch.nn.Module:
+    model: GraphModule,
+    is_reference: bool = False,
+    convert_custom_config: Union[ConvertCustomConfig, Dict[str, Any], None] = None,
+    is_standalone_module: bool = False,
+    _remove_qconfig_flag: bool = True,
+    qconfig_mapping: Union[QConfigMapping, Dict[str, Any], None] = None,
+    backend_config: Union[BackendConfig, Dict[str, Any], None] = None,
+    is_decomposed: bool = False,
+) -> torch.nn.Module:
     """
     We will convert an observed model (a module with observer calls) to a reference
     quantized model, the rule is simple:
@@ -889,31 +942,39 @@ def convert(
     if isinstance(convert_custom_config, Dict):
         warnings.warn(
             "Passing a convert_custom_config_dict to convert is deprecated and will not be supported "
-            "in a future version. Please pass in a ConvertCustomConfig instead.")
+            "in a future version. Please pass in a ConvertCustomConfig instead."
+        )
         convert_custom_config = ConvertCustomConfig.from_dict(convert_custom_config)
 
     if isinstance(qconfig_mapping, Dict):
         warnings.warn(
             "Passing a QConfig dictionary to convert is deprecated and will not be supported "
-            "in a future version. Please pass in a QConfigMapping instead.")
-        qconfig_mapping = QConfigMapping.from_dict(qconfig_mapping) if qconfig_mapping else None
+            "in a future version. Please pass in a QConfigMapping instead."
+        )
+        qconfig_mapping = (
+            QConfigMapping.from_dict(qconfig_mapping) if qconfig_mapping else None
+        )
     qconfig_mapping = copy.deepcopy(qconfig_mapping)
-    assert(qconfig_mapping is None or isinstance(qconfig_mapping, QConfigMapping))
+    assert qconfig_mapping is None or isinstance(qconfig_mapping, QConfigMapping)
 
     if isinstance(backend_config, Dict):
         warnings.warn(
             "Passing a backend_config_dict to prepare is deprecated and will not be supported "
-            "in a future version. Please pass in a BackendConfig instead.")
+            "in a future version. Please pass in a BackendConfig instead."
+        )
         backend_config = BackendConfig.from_dict(backend_config)
 
     if backend_config is None:
         backend_config = get_native_backend_config()
 
-    assert _is_observed_module(model), \
-        'incoming model must be produced by prepare_fx'
+    assert _is_observed_module(model), "incoming model must be produced by prepare_fx"
     observed_graph_module_attrs = model.meta["_observed_graph_module_attrs"]
-    node_name_to_scope: Dict[str, Tuple[str, type]] = observed_graph_module_attrs.node_name_to_scope
-    prepare_custom_config: PrepareCustomConfig = observed_graph_module_attrs.prepare_custom_config
+    node_name_to_scope: Dict[
+        str, Tuple[str, type]
+    ] = observed_graph_module_attrs.node_name_to_scope
+    prepare_custom_config: PrepareCustomConfig = (
+        observed_graph_module_attrs.prepare_custom_config
+    )
     observed_node_names: Set[str] = observed_graph_module_attrs.observed_node_names
     node_name_to_qconfig: Dict[str, QConfigAny] = observed_graph_module_attrs.node_name_to_qconfig  # type: ignore[assignment]
 
@@ -940,19 +1001,27 @@ def convert(
 
         _compare_prepare_convert_qconfig_mappings(prepare_qconfig_mapping, qconfig_mapping)  # type: ignore[arg-type]
         convert_node_name_to_qconfig = _generate_node_name_to_qconfig(
-            model, modules_copy, model.graph, qconfig_mapping, node_name_to_scope)
+            model, modules_copy, model.graph, qconfig_mapping, node_name_to_scope
+        )
         # check the convert_node_name_to_qconfig generated and ensure that
         # all the values either match what was set in prepare node_name_to_qconfig
         # or are set to None in the convert_node_name_to_qconfig.
         for k, v in node_name_to_qconfig.items():
-            assert k in convert_node_name_to_qconfig, 'Expected key {} in convert node_name_to_qconfig'.format(k)
+            assert (
+                k in convert_node_name_to_qconfig
+            ), "Expected key {} in convert node_name_to_qconfig".format(k)
             if convert_node_name_to_qconfig[k] is not None:
-                assert qconfig_equals(v, convert_node_name_to_qconfig[k]), \
-                    "Expected k {} to have the same value in prepare and convert QConfigMappings, " \
-                    "but {} was updated to {}".format(k, v, convert_node_name_to_qconfig[k])
+                assert qconfig_equals(v, convert_node_name_to_qconfig[k]), (
+                    "Expected k {} to have the same value in prepare and convert QConfigMappings, "
+                    "but {} was updated to {}".format(
+                        k, v, convert_node_name_to_qconfig[k]
+                    )
+                )
         node_name_to_qconfig = convert_node_name_to_qconfig
 
-    custom_module_classes = get_custom_module_class_keys(convert_custom_config.observed_to_quantized_mapping)
+    custom_module_classes = get_custom_module_class_keys(
+        convert_custom_config.observed_to_quantized_mapping
+    )
     custom_module_class_mapping = convert_custom_config.observed_to_quantized_mapping
 
     if observed_graph_module_attrs.equalization_node_name_to_qconfig is not None:
@@ -968,7 +1037,7 @@ def convert(
 
     graph_inputs: List[str] = []
     for node in model.graph.nodes:
-        if node.op == 'placeholder':
+        if node.op == "placeholder":
             graph_inputs.append(node.name)
 
     # additional state to override inputs to be quantized, if specified
@@ -977,7 +1046,9 @@ def convert(
     input_quantized_idxs: List[int] = prepare_custom_config.input_quantized_indexes
     output_quantized_idxs: List[int] = prepare_custom_config.output_quantized_indexes
 
-    root_module_to_quantized_reference_module = get_root_module_to_quantized_reference_module(backend_config)
+    root_module_to_quantized_reference_module = (
+        get_root_module_to_quantized_reference_module(backend_config)
+    )
     # convert tuples so that it can work with isinstance(module, tuple_of_classes)
     root_module_classes = tuple(root_module_to_quantized_reference_module.keys())
     qat_module_classes = get_qat_module_classes(backend_config)
@@ -985,7 +1056,7 @@ def convert(
     statically_quantized_custom_module_nodes: Set[Node] = set()
 
     for node in list(model.graph.nodes):
-        if node.op == 'placeholder':
+        if node.op == "placeholder":
             cur_placeholder_node_idx = placeholder_node_seen_cnt
             placeholder_node_seen_cnt += 1
             if cur_placeholder_node_idx in input_quantized_idxs:
@@ -1006,7 +1077,9 @@ def convert(
             # outputs can be Node, list, tuple, dict, other cases are not supported yet
             if isinstance(output, (list, tuple)):
                 for idx in output_quantized_idxs:
-                    _maybe_recursive_remove_dequantize(output[idx], return_node, model.graph)
+                    _maybe_recursive_remove_dequantize(
+                        output[idx], return_node, model.graph
+                    )
             elif isinstance(output, (Node, dict)):
                 # we treat dict as a single argument currently, but it can be extended
                 # to support {"key": dtype} after we change output_quantized_idxs to
@@ -1014,43 +1087,73 @@ def convert(
                 if 0 in output_quantized_idxs:
                     _maybe_recursive_remove_dequantize(output, return_node, model.graph)
             else:
-                warnings.warn(f"Unsupported node type for output_quantized_idxs: {type(output)}")
+                warnings.warn(
+                    f"Unsupported node type for output_quantized_idxs: {type(output)}"
+                )
         elif node.op == "call_module":
             mod = _get_module(node, modules)
             assert mod is not None
             if _is_activation_post_process(mod):
                 observed_node = node.args[0]
                 if observed_node in statically_quantized_custom_module_nodes:
-                    _replace_observer_or_dequant_stub_with_dequantize_node(node, model.graph)
+                    _replace_observer_or_dequant_stub_with_dequantize_node(
+                        node, model.graph
+                    )
                 else:
                     if is_decomposed:
                         _replace_observer_with_quantize_dequantize_node_decomposed(
-                            model, model.graph, node, modules, node_name_to_scope,
-                            node_name_to_qconfig)
+                            model,
+                            model.graph,
+                            node,
+                            modules,
+                            node_name_to_scope,
+                            node_name_to_qconfig,
+                        )
                     else:
                         _replace_observer_with_quantize_dequantize_node(
-                            model, model.graph, node, modules, node_name_to_scope,
-                            node_name_to_qconfig)
+                            model,
+                            model.graph,
+                            node,
+                            modules,
+                            node_name_to_scope,
+                            node_name_to_qconfig,
+                        )
             elif isinstance(mod, DeQuantStub):
-                _replace_observer_or_dequant_stub_with_dequantize_node(node, model.graph)
+                _replace_observer_or_dequant_stub_with_dequantize_node(
+                    node, model.graph
+                )
             elif _is_observed_standalone_module(mod):
                 convert_standalone_module(
-                    node, modules, model, is_reference, backend_config)
+                    node, modules, model, is_reference, backend_config
+                )
             # below this point `type_before_parametrizations` is used
             # instead of `type` to handle situations with fx quant + sparsity
-            elif type_before_parametrizations(mod) in set(
-                    root_module_classes).union(qat_module_classes).union(fused_module_classes):
+            elif type_before_parametrizations(mod) in set(root_module_classes).union(
+                qat_module_classes
+            ).union(fused_module_classes):
                 # extra check for fused module classes to make sure they are fused module classes
                 # of target modules
-                if type_before_parametrizations(mod) in fused_module_classes and \
-                   type_before_parametrizations(mod[0]) not in root_module_classes:  # type: ignore[index]
+                if (
+                    type_before_parametrizations(mod) in fused_module_classes
+                    and type_before_parametrizations(mod[0]) not in root_module_classes
+                ):  # type: ignore[index]
                     continue
                 convert_weighted_module(
-                    node, modules, observed_node_names, node_name_to_qconfig, backend_config, is_decomposed)
+                    node,
+                    modules,
+                    observed_node_names,
+                    node_name_to_qconfig,
+                    backend_config,
+                    is_decomposed,
+                )
             elif type_before_parametrizations(mod) in custom_module_classes:
                 convert_custom_module(
-                    node, model.graph, modules, custom_module_class_mapping,
-                    statically_quantized_custom_module_nodes)
+                    node,
+                    model.graph,
+                    modules,
+                    custom_module_class_mapping,
+                    statically_quantized_custom_module_nodes,
+                )
 
     # remove deadcode after converting observers to quant/dequant ops
     model.graph.eliminate_dead_code()

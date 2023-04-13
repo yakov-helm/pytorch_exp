@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -28,7 +26,7 @@ class RowWiseDNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
         in_quantized=st.booleans(),
         out_quantized=st.booleans(),
         prepack_weight=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_rowwise_dnnlowp_fully_connected_int(
         self,
@@ -74,7 +72,9 @@ class RowWiseDNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
                 X,
                 X_min,
                 X_max,
-                W[i : i + 1,],
+                W[
+                    i : i + 1,
+                ],
                 W_min,
                 W_max,
             )

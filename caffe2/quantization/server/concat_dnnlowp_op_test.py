@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -21,7 +19,7 @@ class DNNLowPConcatOpTest(hu.HypothesisTestCase):
         axis=st.integers(0, 1),
         in_quantized=st.booleans(),
         out_quantized=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_dnnlowp_concat_int(
         self, dim1, dim2, axis, in_quantized, out_quantized, gc, dc

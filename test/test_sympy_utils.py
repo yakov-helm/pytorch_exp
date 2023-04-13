@@ -211,9 +211,12 @@ class TestValueRanges(TestCase):
 
 
 class TestSympyInterp(TestCase):
-    @parametrize("fn", UNARY_OPS + BINARY_OPS + UNARY_BOOL_OPS + BINARY_BOOL_OPS + COMPARE_OPS)
+    @parametrize(
+        "fn", UNARY_OPS + BINARY_OPS + UNARY_BOOL_OPS + BINARY_BOOL_OPS + COMPARE_OPS
+    )
     def test_interp(self, fn):
         from sympy.abc import x, y
+
         vals = CONSTANTS
         if fn in {*UNARY_BOOL_OPS, *BINARY_BOOL_OPS}:
             vals = [True, False]
@@ -234,7 +237,9 @@ class TestSympyInterp(TestCase):
                 ref_r = getattr(ReferenceAnalysis, fn)(*sargs)
                 # Yes, I know this is a longwinded way of saying xreplace; the
                 # point is to test sympy_interp
-                r = sympy_interp(ReferenceAnalysis, dict(zip(symbols, sargs)), sympy_expr)
+                r = sympy_interp(
+                    ReferenceAnalysis, dict(zip(symbols, sargs)), sympy_expr
+                )
                 self.assertEqual(ref_r, r)
 
 

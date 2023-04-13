@@ -16,13 +16,10 @@ class DefaultState:
         "process_group",
         "world_size",
         "gradient_predivide_factor",
-        "gradient_postdivide_factor"
+        "gradient_postdivide_factor",
     ]
 
-    def __init__(
-        self,
-        process_group: dist.ProcessGroup
-    ):
+    def __init__(self, process_group: dist.ProcessGroup):
         if process_group is None:
             raise ValueError(f"Expected to pass in an explicit ProcessGroup to {self}.")
         self.process_group = process_group
@@ -32,13 +29,16 @@ class DefaultState:
         self.gradient_predivide_factor = self._get_gradient_predivide_factor(
             self.world_size
         )
-        self.gradient_postdivide_factor = self.world_size / self.gradient_predivide_factor
+        self.gradient_postdivide_factor = (
+            self.world_size / self.gradient_predivide_factor
+        )
 
     def _get_gradient_predivide_factor(self, world_size: int) -> float:
         factor: int = 1
         while world_size % factor == 0 and world_size / factor > factor:
             factor *= 2
         return float(factor)
+
 
 class LowPrecisionState(DefaultState):
     r"""
@@ -75,6 +75,7 @@ def _decompress(state: LowPrecisionState, grad: torch.Tensor):
     # Don't let this memory get reused until after the transfer.
     orig_grad_data.record_stream(torch.cuda.current_stream())  # type: ignore[arg-type]
 
+
 def allreduce_hook(state: DefaultState, grad: torch.Tensor):
     r"""
     This FSDP communication hook implements ``all_reduce`` algorithm
@@ -94,6 +95,7 @@ def allreduce_hook(state: DefaultState, grad: torch.Tensor):
     if state.gradient_postdivide_factor > 1:
         grad.div_(state.gradient_postdivide_factor)
 
+
 def reduce_scatter_hook(state: DefaultState, grad: torch.Tensor, output: torch.Tensor):
     r"""
     This FSDP communication hook implements ``reduce_scatter`` algorithm for
@@ -108,14 +110,18 @@ def reduce_scatter_hook(state: DefaultState, grad: torch.Tensor, output: torch.T
     # Average grad by pre-division factor.
     if state.gradient_predivide_factor > 1:
         grad.div_(state.gradient_predivide_factor)
-    dist.reduce_scatter_tensor(
-        output, grad, group=state.process_group
-    )
+    dist.reduce_scatter_tensor(output, grad, group=state.process_group)
     # Average grad's shard by post-division factor.
     if state.gradient_postdivide_factor > 1:
         output.div_(state.gradient_postdivide_factor)
 
-def _low_precision_hook(prec: torch.dtype, state: LowPrecisionState, grad: torch.Tensor, output: torch.Tensor):
+
+def _low_precision_hook(
+    prec: torch.dtype,
+    state: LowPrecisionState,
+    grad: torch.Tensor,
+    output: torch.Tensor,
+):
     if grad.dtype != prec:
         grad.data = grad.data.to(prec)
     if output is not None:
@@ -127,7 +133,10 @@ def _low_precision_hook(prec: torch.dtype, state: LowPrecisionState, grad: torch
         allreduce_hook(state, grad)
         _decompress(state, grad)
 
-def fp16_compress_hook(state: LowPrecisionState, grad: torch.Tensor, output: torch.Tensor = None):
+
+def fp16_compress_hook(
+    state: LowPrecisionState, grad: torch.Tensor, output: torch.Tensor = None
+):
     r"""
     This FSDP communication hook implements a simple gradient compression
     approach that casts ``grad`` to half-precision floating-point format (``torch.float16``).
@@ -144,7 +153,10 @@ def fp16_compress_hook(state: LowPrecisionState, grad: torch.Tensor, output: tor
     fp16_hook = functools.partial(_low_precision_hook, torch.float16)
     return fp16_hook(state, grad, output)
 
-def bf16_compress_hook(state: LowPrecisionState, grad: torch.Tensor, output: torch.Tensor = None):
+
+def bf16_compress_hook(
+    state: LowPrecisionState, grad: torch.Tensor, output: torch.Tensor = None
+):
     r"""
     This FSDP communication hook implements a simple gradient compression
     approach that casts ``grad`` to half-precision floating-point format (``torch.float16``).

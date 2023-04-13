@@ -1,5 +1,3 @@
-
-
 import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 import numpy as np
@@ -19,7 +17,7 @@ class DNNLowPResizeNearestOpTest(hu.HypothesisTestCase):
         C=st.integers(1, 32),
         scale_w=st.floats(0.25, 4.0) | st.just(2.0),
         scale_h=st.floats(0.25, 4.0) | st.just(2.0),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(deadline=None, max_examples=50)
     def test_resize_nearest(self, N, H, W, C, scale_w, scale_h, gc, dc):
@@ -52,8 +50,12 @@ class DNNLowPResizeNearestOpTest(hu.HypothesisTestCase):
             outH_idxs, outW_idxs = np.meshgrid(
                 np.arange(outH), np.arange(outW), indexing="ij"
             )
-            inH_idxs = np.minimum(np.float32(outH_idxs) / scale_h, H - 1).astype(np.int32)
-            inW_idxs = np.minimum(np.float32(outW_idxs) / scale_w, W - 1).astype(np.int32)
+            inH_idxs = np.minimum(np.float32(outH_idxs) / scale_h, H - 1).astype(
+                np.int32
+            )
+            inW_idxs = np.minimum(np.float32(outW_idxs) / scale_w, W - 1).astype(
+                np.int32
+            )
             Y = X[:, inH_idxs, inW_idxs, :]
             return Y
 

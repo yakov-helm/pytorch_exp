@@ -2,9 +2,6 @@
 # Module caffe2.python.layers.functional
 
 
-
-
-
 from caffe2.python import core, schema, scope, workspace
 from caffe2.python.layers.layers import (
     ModelLayer,
@@ -18,9 +15,17 @@ logger.setLevel(logging.INFO)
 
 
 class Functional(ModelLayer):
-
-    def __init__(self, model, input_record, output_names_or_num, function,
-                 name='functional', output_dtypes=None, tags=None, **kwargs):
+    def __init__(
+        self,
+        model,
+        input_record,
+        output_names_or_num,
+        function,
+        name="functional",
+        output_dtypes=None,
+        tags=None,
+        **kwargs,
+    ):
 
         # allow coercion
         input_record = schema.as_record(input_record)
@@ -28,16 +33,15 @@ class Functional(ModelLayer):
         super().__init__(model, name, input_record, tags=tags, **kwargs)
         self._function = function
         self._kwargs = kwargs
-        return_struct = (
-            isinstance(output_names_or_num, list) or
-            (isinstance(output_names_or_num, int) and
-             output_names_or_num != 1)
+        return_struct = isinstance(output_names_or_num, list) or (
+            isinstance(output_names_or_num, int) and output_names_or_num != 1
         )
 
         with scope.NameScope(self.name, reset=True):
             if isinstance(output_names_or_num, int):
                 struct_output_schema = schema.NewRecord(
-                    model.net, schema.RawTuple(output_names_or_num))
+                    model.net, schema.RawTuple(output_names_or_num)
+                )
             elif isinstance(output_names_or_num, schema.Field):
                 self.output_schema = output_names_or_num.clone(keep_blobs=True)
                 return
@@ -46,7 +50,8 @@ class Functional(ModelLayer):
                     output_names_or_num = [output_names_or_num]
                 out_tuple = [(out, np.void) for out in output_names_or_num]
                 struct_output_schema = schema.NewRecord(
-                    model.net, schema.Struct(*out_tuple))
+                    model.net, schema.Struct(*out_tuple)
+                )
 
         num_outputs = len(struct_output_schema.field_blobs())
 
@@ -63,22 +68,22 @@ class Functional(ModelLayer):
             if not isinstance(output_dtypes, list):
                 output_dtypes = [output_dtypes] * num_outputs
             assert len(output_dtypes) == num_outputs
-            for dtype, scalar in zip(output_dtypes,
-                                     self.output_schema.all_scalars()):
+            for dtype, scalar in zip(output_dtypes, self.output_schema.all_scalars()):
                 scalar.set_type(dtype)
             return
 
         # Fake execution of the function to infer shapes and types automatically
         had_issues = False
         try:
-            type_net = core.Net('_temp_type_and_shape_inference_net')
+            type_net = core.Net("_temp_type_and_shape_inference_net")
             schema.InitEmptyRecord(type_net, input_record, enforce_types=True)
 
             function(type_net, self.input_record, self.output_schema, **kwargs)
             (shapes, types) = workspace.InferShapesAndTypes([type_net], {})
             for i in range(num_outputs):
-                scalar_schema = (self.output_schema[i] if return_struct
-                                 else self.output_schema)
+                scalar_schema = (
+                    self.output_schema[i] if return_struct else self.output_schema
+                )
                 blob = scalar_schema()
                 if blob not in types or blob not in shapes:
                     had_issues = True
@@ -116,8 +121,8 @@ class Functional(ModelLayer):
 
         if had_issues:
             logger.warning(
-                "Type inference had problems for layer: {}".format(self.name))
+                "Type inference had problems for layer: {}".format(self.name)
+            )
 
     def add_ops(self, net):
-        self._function(
-            net, self.input_record, self.output_schema, **(self._kwargs))
+        self._function(net, self.input_record, self.output_schema, **(self._kwargs))

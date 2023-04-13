@@ -2,9 +2,6 @@
 # Module caffe2.python.attention
 
 
-
-
-
 from caffe2.python import brew
 
 
@@ -30,14 +27,14 @@ def _calc_weighted_context(
     attention_weighted_encoder_context = brew.batch_mat_mul(
         model,
         [encoder_outputs_transposed, attention_weights_3d],
-        s(scope, 'attention_weighted_encoder_context'),
+        s(scope, "attention_weighted_encoder_context"),
     )
     # [batch_size, encoder_output_dim]
     attention_weighted_encoder_context, _ = model.net.Reshape(
         attention_weighted_encoder_context,
         [
             attention_weighted_encoder_context,
-            s(scope, 'attention_weighted_encoder_context_old_shape'),
+            s(scope, "attention_weighted_encoder_context_old_shape"),
         ],
         shape=[1, -1, encoder_output_dim],
     )
@@ -54,16 +51,16 @@ def _calc_attention_weights(
     if encoder_lengths is not None:
         attention_logits_transposed = model.net.SequenceMask(
             [attention_logits_transposed, encoder_lengths],
-            ['masked_attention_logits'],
-            mode='sequence',
+            ["masked_attention_logits"],
+            mode="sequence",
         )
 
     # [batch_size, encoder_length, 1]
     attention_weights_3d = brew.softmax(
         model,
         attention_logits_transposed,
-        s(scope, 'attention_weights_3d'),
-        engine='CUDNN',
+        s(scope, "attention_weights_3d"),
+        engine="CUDNN",
         axis=1,
     )
     return attention_weights_3d
@@ -86,7 +83,7 @@ def _calc_attention_logits_from_sum_match(
     attention_logits = brew.fc(
         model,
         decoder_hidden_encoder_outputs_sum,
-        s(scope, 'attention_logits'),
+        s(scope, "attention_logits"),
         dim_in=encoder_output_dim,
         dim_out=1,
         axis=2,
@@ -97,7 +94,7 @@ def _calc_attention_logits_from_sum_match(
     attention_logits_transposed = brew.transpose(
         model,
         attention_logits,
-        s(scope, 'attention_logits_transposed'),
+        s(scope, "attention_logits_transposed"),
         axes=[1, 0, 2],
     )
     return attention_logits_transposed
@@ -146,7 +143,7 @@ def apply_recurrent_attention(
         dim_in=encoder_output_dim,
         dim_out=encoder_output_dim,
         scope=scope,
-        name='weighted_prev_attention_context',
+        name="weighted_prev_attention_context",
     )
 
     weighted_decoder_hidden_state = _apply_fc_weight_for_sum_match(
@@ -155,7 +152,7 @@ def apply_recurrent_attention(
         dim_in=decoder_hidden_state_dim,
         dim_out=encoder_output_dim,
         scope=scope,
-        name='weighted_decoder_hidden_state',
+        name="weighted_decoder_hidden_state",
     )
     # [1, batch_size, encoder_output_dim]
     decoder_hidden_encoder_outputs_sum_tmp = model.net.Add(
@@ -163,7 +160,7 @@ def apply_recurrent_attention(
             weighted_prev_attention_context,
             weighted_decoder_hidden_state,
         ],
-        s(scope, 'decoder_hidden_encoder_outputs_sum_tmp'),
+        s(scope, "decoder_hidden_encoder_outputs_sum_tmp"),
     )
     # [encoder_length, batch_size, encoder_output_dim]
     decoder_hidden_encoder_outputs_sum = model.net.Add(
@@ -171,7 +168,7 @@ def apply_recurrent_attention(
             weighted_encoder_outputs,
             decoder_hidden_encoder_outputs_sum_tmp,
         ],
-        s(scope, 'decoder_hidden_encoder_outputs_sum'),
+        s(scope, "decoder_hidden_encoder_outputs_sum"),
         broadcast=1,
     )
     attention_logits_transposed = _calc_attention_logits_from_sum_match(
@@ -197,9 +194,13 @@ def apply_recurrent_attention(
         attention_weights_3d=attention_weights_3d,
         scope=scope,
     )
-    return attention_weighted_encoder_context, attention_weights_3d, [
-        decoder_hidden_encoder_outputs_sum,
-    ]
+    return (
+        attention_weighted_encoder_context,
+        attention_weights_3d,
+        [
+            decoder_hidden_encoder_outputs_sum,
+        ],
+    )
 
 
 def apply_regular_attention(
@@ -218,13 +219,13 @@ def apply_regular_attention(
         dim_in=decoder_hidden_state_dim,
         dim_out=encoder_output_dim,
         scope=scope,
-        name='weighted_decoder_hidden_state',
+        name="weighted_decoder_hidden_state",
     )
 
     # [encoder_length, batch_size, encoder_output_dim]
     decoder_hidden_encoder_outputs_sum = model.net.Add(
         [weighted_encoder_outputs, weighted_decoder_hidden_state],
-        s(scope, 'decoder_hidden_encoder_outputs_sum'),
+        s(scope, "decoder_hidden_encoder_outputs_sum"),
         broadcast=1,
         use_grad_hack=1,
     )
@@ -252,9 +253,13 @@ def apply_regular_attention(
         attention_weights_3d=attention_weights_3d,
         scope=scope,
     )
-    return attention_weighted_encoder_context, attention_weights_3d, [
-        decoder_hidden_encoder_outputs_sum,
-    ]
+    return (
+        attention_weighted_encoder_context,
+        attention_weights_3d,
+        [
+            decoder_hidden_encoder_outputs_sum,
+        ],
+    )
 
 
 def apply_dot_attention(
@@ -272,7 +277,7 @@ def apply_dot_attention(
         weighted_decoder_hidden_state = brew.fc(
             model,
             decoder_hidden_state_t,
-            s(scope, 'weighted_decoder_hidden_state'),
+            s(scope, "weighted_decoder_hidden_state"),
             dim_in=decoder_hidden_state_dim,
             dim_out=encoder_output_dim,
             axis=2,
@@ -283,7 +288,7 @@ def apply_dot_attention(
     # [batch_size, decoder_state_dim]
     squeezed_weighted_decoder_hidden_state = model.net.Squeeze(
         weighted_decoder_hidden_state,
-        s(scope, 'squeezed_weighted_decoder_hidden_state'),
+        s(scope, "squeezed_weighted_decoder_hidden_state"),
         dims=[0],
     )
 
@@ -300,7 +305,7 @@ def apply_dot_attention(
             encoder_outputs_transposed,
             expanddims_squeezed_weighted_decoder_hidden_state,
         ],
-        s(scope, 'attention_logits'),
+        s(scope, "attention_logits"),
         trans_a=1,
     )
 
@@ -342,32 +347,32 @@ def apply_soft_coverage_attention(
         dim_in=decoder_hidden_state_dim,
         dim_out=encoder_output_dim,
         scope=scope,
-        name='weighted_decoder_hidden_state',
+        name="weighted_decoder_hidden_state",
     )
 
     # [encoder_length, batch_size, encoder_output_dim]
     decoder_hidden_encoder_outputs_sum_tmp = model.net.Add(
         [weighted_encoder_outputs, weighted_decoder_hidden_state],
-        s(scope, 'decoder_hidden_encoder_outputs_sum_tmp'),
+        s(scope, "decoder_hidden_encoder_outputs_sum_tmp"),
         broadcast=1,
     )
     # [batch_size, encoder_length]
     coverage_t_prev_2d = model.net.Squeeze(
         coverage_t_prev,
-        s(scope, 'coverage_t_prev_2d'),
+        s(scope, "coverage_t_prev_2d"),
         dims=[0],
     )
     # [encoder_length, batch_size]
     coverage_t_prev_transposed = brew.transpose(
         model,
         coverage_t_prev_2d,
-        s(scope, 'coverage_t_prev_transposed'),
+        s(scope, "coverage_t_prev_transposed"),
     )
 
     # [encoder_length, batch_size, encoder_output_dim]
     scaled_coverage_weights = model.net.Mul(
         [coverage_weights, coverage_t_prev_transposed],
-        s(scope, 'scaled_coverage_weights'),
+        s(scope, "scaled_coverage_weights"),
         broadcast=1,
         axis=0,
     )
@@ -375,7 +380,7 @@ def apply_soft_coverage_attention(
     # [encoder_length, batch_size, encoder_output_dim]
     decoder_hidden_encoder_outputs_sum = model.net.Add(
         [decoder_hidden_encoder_outputs_sum_tmp, scaled_coverage_weights],
-        s(scope, 'decoder_hidden_encoder_outputs_sum'),
+        s(scope, "decoder_hidden_encoder_outputs_sum"),
     )
 
     # [batch_size, encoder_length, 1]
@@ -406,13 +411,13 @@ def apply_soft_coverage_attention(
     # [batch_size, encoder_length]
     attention_weights_2d = model.net.Squeeze(
         attention_weights_3d,
-        s(scope, 'attention_weights_2d'),
+        s(scope, "attention_weights_2d"),
         dims=[2],
     )
 
     coverage_t = model.net.Add(
         [coverage_t_prev, attention_weights_2d],
-        s(scope, 'coverage_t'),
+        s(scope, "coverage_t"),
         broadcast=1,
     )
 

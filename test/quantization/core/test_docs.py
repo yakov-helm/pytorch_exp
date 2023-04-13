@@ -24,7 +24,9 @@ class TestQuantizationDocs(QuantizationTestCase):
     """
 
     def run(self, result=None):
-        with override_quantized_engine("qnnpack") if IS_ARM64 else contextlib.nullcontext():
+        with override_quantized_engine(
+            "qnnpack"
+        ) if IS_ARM64 else contextlib.nullcontext():
             super().run(result)
 
     def _get_code(

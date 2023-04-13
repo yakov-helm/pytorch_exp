@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -20,7 +18,7 @@ class DNNLowPOpSumOpTest(hu.HypothesisTestCase):
         N=st.integers(32, 256),
         M=st.integers(1, 3),
         is_empty=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_dnnlowp_elementwise_sum_int(self, N, M, is_empty, gc, dc):
         if is_empty:

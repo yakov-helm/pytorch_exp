@@ -1,5 +1,3 @@
-
-
 import logging
 
 import caffe2.python.hypothesis_test_util as hu
@@ -41,6 +39,7 @@ class TestCopyRowsToTensor(hu.HypothesisTestCase):
             for idx in indices:
                 input_tensor[idx] = row
             return [input_tensor]
+
         op = core.CreateOperator(
             "CopyRowsToTensor", ["input_tensor", "indices", "row"], ["input_tensor"]
         )

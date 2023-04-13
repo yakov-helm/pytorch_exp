@@ -5,15 +5,20 @@ import torch
 
 from torch.testing._internal.common_utils import TestGradients, run_tests
 from torch.testing._internal.common_methods_invocations import op_db
-from torch.testing._internal.common_device_type import \
-    (instantiate_device_type_tests, ops, OpDTypes)
+from torch.testing._internal.common_device_type import (
+    instantiate_device_type_tests,
+    ops,
+    OpDTypes,
+)
 
 # TODO: fixme https://github.com/pytorch/pytorch/issues/68972
 torch.set_default_dtype(torch.float32)
 
 # gradcheck requires double precision
-_gradcheck_ops = partial(ops, dtypes=OpDTypes.supported,
-                         allowed_dtypes=[torch.double, torch.cdouble])
+_gradcheck_ops = partial(
+    ops, dtypes=OpDTypes.supported, allowed_dtypes=[torch.double, torch.cdouble]
+)
+
 
 class TestBwdGradients(TestGradients):
     # Tests that gradients are computed correctly
@@ -48,16 +53,20 @@ class TestBwdGradients(TestGradients):
                     result = inplace(sample)
                     result.sum().backward()
         else:
-            self._grad_test_helper(device, dtype, op, self._get_safe_inplace(op.get_inplace()))
+            self._grad_test_helper(
+                device, dtype, op, self._get_safe_inplace(op.get_inplace())
+            )
 
     # Test that gradients of gradients are computed correctly
     @_gradcheck_ops(op_db)
     def test_fn_gradgrad(self, device, dtype, op):
         self._skip_helper(op, device, dtype)
         if not op.supports_gradgrad:
-            self.skipTest("Op claims it doesn't support gradgrad. This is not verified.")
+            self.skipTest(
+                "Op claims it doesn't support gradgrad. This is not verified."
+            )
         else:
-            self._check_helper(device, dtype, op, op.get_op(), 'bwgrad_bwgrad')
+            self._check_helper(device, dtype, op, op.get_op(), "bwgrad_bwgrad")
 
     # Test that gradients of gradients are properly raising
     @_gradcheck_ops(op_db)
@@ -68,7 +77,7 @@ class TestBwdGradients(TestGradients):
 
         err_msg = r"derivative for .* is not implemented"
         with self.assertRaisesRegex(RuntimeError, err_msg):
-            self._check_helper(device, dtype, op, op.get_op(), 'bwgrad_bwgrad')
+            self._check_helper(device, dtype, op, op.get_op(), "bwgrad_bwgrad")
 
     # Method gradgrad (and grad, see above) tests are disabled since they're
     #   costly and redundant with function gradgrad (and grad) tests
@@ -82,10 +91,12 @@ class TestBwdGradients(TestGradients):
         self._skip_helper(op, device, dtype)
         if not op.inplace_variant or not op.supports_inplace_autograd:
             self.skipTest("Skipped! Operation does not support inplace autograd.")
-        self._check_helper(device, dtype, op, self._get_safe_inplace(op.get_inplace()), "bwgrad_bwgrad")
+        self._check_helper(
+            device, dtype, op, self._get_safe_inplace(op.get_inplace()), "bwgrad_bwgrad"
+        )
 
 
 instantiate_device_type_tests(TestBwdGradients, globals())
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

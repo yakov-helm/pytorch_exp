@@ -2,8 +2,16 @@ import math
 import torch
 from torch import Tensor
 
-from .optimizer import (Optimizer, _use_grad_for_differentiable, _get_value, _dispatch_sqrt, _stack_if_compiling,
-                        _default_to_fused_or_foreach, _differentiable_doc, _foreach_doc)
+from .optimizer import (
+    Optimizer,
+    _use_grad_for_differentiable,
+    _get_value,
+    _dispatch_sqrt,
+    _stack_if_compiling,
+    _default_to_fused_or_foreach,
+    _differentiable_doc,
+    _foreach_doc,
+)
 from typing import List, Optional
 from torch.utils._foreach_utils import _group_tensors_by_device_and_dtype
 
@@ -55,7 +63,9 @@ class RAdam(Optimizer):
             for s in state_values:
                 s["step"] = torch.tensor(float(s["step"]))
 
-    def _init_group(self, group, params_with_grad, grads, exp_avgs, exp_avg_sqs, state_steps):
+    def _init_group(
+        self, group, params_with_grad, grads, exp_avgs, exp_avg_sqs, state_steps
+    ):
         for p in group["params"]:
             if p.grad is not None:
                 params_with_grad.append(p)
@@ -101,7 +111,9 @@ class RAdam(Optimizer):
             state_steps = []
             beta1, beta2 = group["betas"]
 
-            self._init_group(group, params_with_grad, grads, exp_avgs, exp_avg_sqs, state_steps)
+            self._init_group(
+                group, params_with_grad, grads, exp_avgs, exp_avg_sqs, state_steps
+            )
 
             radam(
                 params_with_grad,
@@ -178,7 +190,9 @@ RAdam.__doc__ = r"""Implements RAdam algorithm.
     .. _author's implementation:
         https://github.com/LiyuanLucasLiu/RAdam
 
-    """.format(foreach=_foreach_doc, differentiable=_differentiable_doc)
+    """.format(
+    foreach=_foreach_doc, differentiable=_differentiable_doc
+)
 
 
 def radam(
@@ -209,7 +223,9 @@ def radam(
         )
 
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
+        _, foreach = _default_to_fused_or_foreach(
+            params, differentiable, use_fused=False
+        )
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")
@@ -258,8 +274,8 @@ def _single_tensor_radam(
         step_t += 1
         step = _get_value(step_t)
 
-        bias_correction1 = 1 - beta1 ** step
-        bias_correction2 = 1 - beta2 ** step
+        bias_correction1 = 1 - beta1**step
+        bias_correction2 = 1 - beta2**step
 
         if weight_decay != 0:
             grad = grad.add(param, alpha=weight_decay)
@@ -274,7 +290,7 @@ def _single_tensor_radam(
         # maximum length of the approximated SMA
         rho_inf = 2 / (1 - beta2) - 1
         # compute the length of the approximated SMA
-        rho_t = rho_inf - 2 * step * (beta2 ** step) / bias_correction2
+        rho_t = rho_inf - 2 * step * (beta2**step) / bias_correction2
 
         if rho_t > 5.0:
             # Compute the variance rectification term and update parameters accordingly
@@ -315,28 +331,50 @@ def _multi_tensor_radam(
 
     assert not differentiable, "_foreach ops don't support autograd"
 
-    grouped_tensors = _group_tensors_by_device_and_dtype([params, grads, exp_avgs, exp_avg_sqs, state_steps])
-    for grouped_params, grouped_grads, grouped_exp_avgs, grouped_exp_avg_sqs, grouped_state_steps in grouped_tensors.values():
+    grouped_tensors = _group_tensors_by_device_and_dtype(
+        [params, grads, exp_avgs, exp_avg_sqs, state_steps]
+    )
+    for (
+        grouped_params,
+        grouped_grads,
+        grouped_exp_avgs,
+        grouped_exp_avg_sqs,
+        grouped_state_steps,
+    ) in grouped_tensors.values():
         # Update steps
         torch._foreach_add_(grouped_state_steps, 1)
 
         # maximum length of the approximated SMA
         rho_inf = 2 / (1 - beta2) - 1
         # compute the length of the approximated SMA
-        rho_t_list = [rho_inf - 2 * _get_value(step) * (beta2 ** _get_value(step)) /
-                      (1 - beta2 ** _get_value(step)) for step in grouped_state_steps]
+        rho_t_list = [
+            rho_inf
+            - 2
+            * _get_value(step)
+            * (beta2 ** _get_value(step))
+            / (1 - beta2 ** _get_value(step))
+            for step in grouped_state_steps
+        ]
 
-        bias_correction1 = [1 - beta1 ** _get_value(step) for step in grouped_state_steps]
-        bias_correction2 = [1 - beta2 ** _get_value(step) for step in grouped_state_steps]
+        bias_correction1 = [
+            1 - beta1 ** _get_value(step) for step in grouped_state_steps
+        ]
+        bias_correction2 = [
+            1 - beta2 ** _get_value(step) for step in grouped_state_steps
+        ]
         if weight_decay != 0:
-            grouped_grads = torch._foreach_add(grouped_grads, grouped_params, alpha=weight_decay)
+            grouped_grads = torch._foreach_add(
+                grouped_grads, grouped_params, alpha=weight_decay
+            )
 
         # Decay the first and second moment running average coefficient
         torch._foreach_mul_(grouped_exp_avgs, beta1)
         torch._foreach_add_(grouped_exp_avgs, grouped_grads, alpha=1 - beta1)
 
         torch._foreach_mul_(grouped_exp_avg_sqs, beta2)
-        torch._foreach_addcmul_(grouped_exp_avg_sqs, grouped_grads, grouped_grads, 1 - beta2)
+        torch._foreach_addcmul_(
+            grouped_exp_avg_sqs, grouped_grads, grouped_grads, 1 - beta2
+        )
 
         rect = [
             _dispatch_sqrt(
@@ -355,10 +393,17 @@ def _multi_tensor_radam(
         torch._foreach_add_(exp_avg_sq_sqrt, eps)
         bias_correction_sqrt = [_dispatch_sqrt(bc) for bc in bias_correction2]
         denom = torch._foreach_div(exp_avg_sq_sqrt, bias_correction_sqrt)
-        step_size = _stack_if_compiling([(lr * rect / bc) * -1 for rect, bc in zip(rect, bias_correction1)])
+        step_size = _stack_if_compiling(
+            [(lr * rect / bc) * -1 for rect, bc in zip(rect, bias_correction1)]
+        )
 
         torch._foreach_addcdiv_(grouped_params, grouped_exp_avgs, denom, step_size)
 
-        denom = [torch.ones_like(exp_av, memory_format=torch.preserve_format) for exp_av in grouped_exp_avgs]
-        step_size = _stack_if_compiling([(lr * rect / bc) * -1 for rect, bc in zip(unrectified, bias_correction1)])
+        denom = [
+            torch.ones_like(exp_av, memory_format=torch.preserve_format)
+            for exp_av in grouped_exp_avgs
+        ]
+        step_size = _stack_if_compiling(
+            [(lr * rect / bc) * -1 for rect, bc in zip(unrectified, bias_correction1)]
+        )
         torch._foreach_addcdiv_(grouped_params, grouped_exp_avgs, denom, step_size)

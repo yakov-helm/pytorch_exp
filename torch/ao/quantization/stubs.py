@@ -1,5 +1,5 @@
-
 from torch import nn
+
 
 class QuantStub(nn.Module):
     r"""Quantize stub module, before calibration, this is same as an observer,
@@ -9,6 +9,7 @@ class QuantStub(nn.Module):
         qconfig: quantization configuration for the tensor,
             if qconfig is not provided, we will get qconfig from parent modules
     """
+
     def __init__(self, qconfig=None):
         super().__init__()
         if qconfig:
@@ -26,6 +27,7 @@ class DeQuantStub(nn.Module):
         qconfig: quantization configuration for the tensor,
             if qconfig is not provided, we will get qconfig from parent modules
     """
+
     def __init__(self, qconfig=None):
         super().__init__()
         if qconfig:
@@ -52,10 +54,10 @@ class QuantWrapper(nn.Module):
 
     def __init__(self, module):
         super().__init__()
-        qconfig = module.qconfig if hasattr(module, 'qconfig') else None
-        self.add_module('quant', QuantStub(qconfig))
-        self.add_module('dequant', DeQuantStub(qconfig))
-        self.add_module('module', module)
+        qconfig = module.qconfig if hasattr(module, "qconfig") else None
+        self.add_module("quant", QuantStub(qconfig))
+        self.add_module("dequant", DeQuantStub(qconfig))
+        self.add_module("module", module)
         self.train(module.training)
 
     def forward(self, X):

@@ -9,6 +9,7 @@ from torch import nn
 from torch.testing._internal.common_utils import TestCase, run_tests
 from typing import List
 
+
 class StaticModule:
     def __init__(self, scripted):
         # this is an nn.Module
@@ -111,24 +112,30 @@ def trivial_graph(a, b, c):
     s = torch.tensor([[3, 3], [3, 3]])
     return a + b * c + s
 
+
 def elementwise_square_addition(input1, input2):
     return input1 * input1 + input2 * input2
+
 
 def fork_wait_graph1(input1, input2):
     fut = torch.jit.fork(elementwise_square_addition, input1, input2)
     return torch.jit.wait(fut)
 
+
 def fork_wait_graph2(input1, input2):
     fut = torch.jit.fork(loop_graph, input1, input2, 5)
     return torch.jit.wait(fut)
+
 
 """
    graph with multiple fork/wait operations
    :param input: torch.tensor input to forked subgraph
    :param iters: number of future/wait pairs to be created
 """
+
+
 def fork_wait_graph3(input, iters: int):
-    futures : List[torch.jit.Future[torch.Tensor]] = []
+    futures: List[torch.jit.Future[torch.Tensor]] = []
     for _ in range(iters):
         futures.append(torch.jit.fork(torch.neg, input))
     results = []
@@ -136,14 +143,17 @@ def fork_wait_graph3(input, iters: int):
         results.append(torch.jit.wait(future))
     return torch.sum(torch.stack(results))
 
+
 """
    graph with multi-level fork/wait operations
    :param input: torch.tensor input to forked subgraph
    :param num_forks: number of top level forks
    :param num_child_forks: number of child forks per parent fork
 """
+
+
 def fork_wait_graph4(input, num_forks: int, num_child_forks: int):
-    futures : List[torch.jit.Future[torch.Tensor]] = []
+    futures: List[torch.jit.Future[torch.Tensor]] = []
     for _ in range(num_forks):
         futures.append(torch.jit.fork(fork_wait_graph3, input, num_child_forks))
     results = []
@@ -151,12 +161,15 @@ def fork_wait_graph4(input, num_forks: int, num_child_forks: int):
         results.append(torch.jit.wait(future))
     return torch.sum(torch.stack(results))
 
+
 def add_tensor(input1, input2):
     return input1 + input2
+
 
 def fork_wait_graph_exception(input1, input2):
     fut = torch.jit.fork(add_tensor, input1, input2)
     return torch.jit.wait(fut)
+
 
 def loop_graph(a, b, iters: int):
     c = a + b * 2
@@ -216,6 +229,7 @@ class TestStaticModule(TestCase):
     Test Case: To test simple fork/wait operation in a graph
     fork is called on simple addition operation on input tensors
     """
+
     def test_fork_wait_1(self):
         inp1 = torch.ones(5, 5)
         inp2 = torch.randn(5, 5)
@@ -229,6 +243,7 @@ class TestStaticModule(TestCase):
     Test Case: To test simple fork/wait operation with
     StaticRuntime runAsync API returning future
     """
+
     def test_fork_wait_1_async(self):
         inp1 = torch.ones(5, 5)
         inp2 = torch.randn(5, 5)
@@ -243,6 +258,7 @@ class TestStaticModule(TestCase):
     Test Case: To test fork/wait operation in a graph on
     a loop subgraph performing mix of operations
     """
+
     def test_fork_wait_2(self):
         inp1 = torch.randn(5, 5)
         inp2 = torch.randn(5, 5)
@@ -256,6 +272,7 @@ class TestStaticModule(TestCase):
     Test Case: To test fork/wait operation on a loop
     subgraph with StaticRuntime runAsync API returning future
     """
+
     def test_fork_wait_2_async(self):
         inp1 = torch.randn(5, 5)
         inp2 = torch.randn(5, 5)
@@ -270,6 +287,7 @@ class TestStaticModule(TestCase):
     Test Case: To test fork/wait operation in a graph on
     having multiple fork/wait operations
     """
+
     def test_fork_wait_3(self):
         input = torch.ones(3, 3)
         num_forks = 10
@@ -283,6 +301,7 @@ class TestStaticModule(TestCase):
     Test Case: To test fork/wait operation in a graph with
     multiple fork/wait operations on runAsync API returning future
     """
+
     def test_fork_wait_3_async(self):
         input = torch.ones(3, 3)
         num_forks = 10
@@ -297,6 +316,7 @@ class TestStaticModule(TestCase):
     Test Case: To test fork/wait operation in a graph on
     multiple nested fork/wait operations
     """
+
     def test_fork_wait_4(self):
         input = torch.ones(3, 3)
         num_forks = 10
@@ -311,6 +331,7 @@ class TestStaticModule(TestCase):
     Test Case: To test fork/wait operation in a graph with multiple
     nested fork/wait operations on runAsync API returning future
     """
+
     def test_fork_wait_4_async(self):
         input = torch.ones(3, 3)
         num_forks = 10
@@ -319,7 +340,8 @@ class TestStaticModule(TestCase):
         static_runtime_module = StaticModule(torch_graph)
         output_ref = torch_graph(input, num_forks, num_child_forks)
         output_test = static_runtime_module.runAsync(
-            (input, num_forks, num_child_forks), {})
+            (input, num_forks, num_child_forks), {}
+        )
         output_test.wait()
         torch.testing.assert_close(output_test.value(), output_ref)
 
@@ -331,6 +353,7 @@ class TestStaticModule(TestCase):
     by prim::fork to parent graph. Returned exception is
     checked for substring expected_error_msg as declared below
     """
+
     def test_fork_wait_exception(self):
         # incompatible tensors for add due to shape mismatch
         input1 = torch.randn(4, 7)
@@ -349,7 +372,7 @@ class TestStaticModule(TestCase):
                 raise RuntimeError(
                     "Tried execution of add.Tensors with incompatible shape. "
                     "Exception raised by forked runtime execution does "
-                    f"not contain expected substring: \"{expected_error_msg}\""
+                    f'not contain expected substring: "{expected_error_msg}"'
                 ) from error
 
     """
@@ -360,6 +383,7 @@ class TestStaticModule(TestCase):
     by prim::fork to parent graph. Returned exception is
     checked for substring expected_error_msg as declared below
     """
+
     def test_fork_wait_exception_async(self):
         # incompatible tensors for add due to shape mismatch
         input1 = torch.randn(4, 7)
@@ -367,8 +391,7 @@ class TestStaticModule(TestCase):
         torch_graph = torch.jit.script(fork_wait_graph_exception)
         try:
             static_runtime_module = StaticModule(torch_graph)
-            output_test = static_runtime_module.runAsync(
-                (input1, input2), {})
+            output_test = static_runtime_module.runAsync((input1, input2), {})
         except Exception as error:
             expected_error_msg = (
                 "The size of tensor a (7) must match the size "
@@ -379,7 +402,7 @@ class TestStaticModule(TestCase):
                 raise RuntimeError(
                     "Tried execution of add.Tensors with incompatible shape. "
                     "Exception raised by forked runtime execution does "
-                    f"not contain expected substring: \"{expected_error_msg}\""
+                    f'not contain expected substring: "{expected_error_msg}"'
                 ) from error
 
     def test_multihead_attention_layer(self):
@@ -592,13 +615,14 @@ class TestStaticModule(TestCase):
                 return y * foo.x
 
         mod = torch.jit.script(Mod()).eval()
-        y = torch.randn((1, ))
+        y = torch.randn((1,))
         expected = mod(y)
 
         static_mod = StaticModule(torch.jit.freeze(mod))
         actual = static_mod(y)
 
         self.assertEqual(expected, actual)
+
 
 if __name__ == "__main__":
     run_tests()

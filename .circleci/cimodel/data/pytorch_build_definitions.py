@@ -111,10 +111,10 @@ class Conf:
             parameters["resource_class"] = resource_class
         if phase == "build" and self.rocm_version is not None:
             parameters["resource_class"] = "xlarge"
-        if hasattr(self, 'filters'):
-            parameters['filters'] = self.filters
+        if hasattr(self, "filters"):
+            parameters["filters"] = self.filters
         if self.build_only:
-            parameters['build_only'] = miniutils.quote(str(int(True)))
+            parameters["build_only"] = miniutils.quote(str(int(True)))
         return parameters
 
     def gen_workflow_job(self, phase):
@@ -160,6 +160,7 @@ class HiddenConf(object):
     def gen_build_name(self, _):
         return self.name
 
+
 class DocPushConf(object):
     def __init__(self, name, parent_build=None, branch="master"):
         self.name = name
@@ -173,10 +174,12 @@ class DocPushConf(object):
                 "branch": self.branch,
                 "requires": [self.parent_build],
                 "context": "org-member",
-                "filters": gen_filter_dict(branches_list=["nightly"],
-                                           tags_list=RC_PATTERN)
+                "filters": gen_filter_dict(
+                    branches_list=["nightly"], tags_list=RC_PATTERN
+                ),
             }
         }
+
 
 def gen_docs_configs(xenial_parent_config):
     configs = []
@@ -185,8 +188,9 @@ def gen_docs_configs(xenial_parent_config):
         HiddenConf(
             "pytorch_python_doc_build",
             parent_build=xenial_parent_config,
-            filters=gen_filter_dict(branches_list=["master", "main", "nightly"],
-                                    tags_list=RC_PATTERN),
+            filters=gen_filter_dict(
+                branches_list=["master", "main", "nightly"], tags_list=RC_PATTERN
+            ),
         )
     )
     configs.append(
@@ -201,8 +205,9 @@ def gen_docs_configs(xenial_parent_config):
         HiddenConf(
             "pytorch_cpp_doc_build",
             parent_build=xenial_parent_config,
-            filters=gen_filter_dict(branches_list=["master", "main", "nightly"],
-                                    tags_list=RC_PATTERN),
+            filters=gen_filter_dict(
+                branches_list=["master", "main", "nightly"], tags_list=RC_PATTERN
+            ),
         )
     )
     configs.append(
@@ -351,8 +356,7 @@ def instantiate_configs(only_slow_gradcheck):
             and compiler_name == "gcc"
             and fc.find_prop("compiler_version") == "5.4"
         ):
-            c.filters = gen_filter_dict(branches_list=r"/.*/",
-                                        tags_list=RC_PATTERN)
+            c.filters = gen_filter_dict(branches_list=r"/.*/", tags_list=RC_PATTERN)
             c.dependent_tests = gen_docs_configs(c)
 
         config_list.append(c)

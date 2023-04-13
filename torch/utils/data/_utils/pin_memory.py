@@ -37,7 +37,8 @@ def _pin_memory_loop(in_queue, out_queue, device_id, done_event, device):
                 data = pin_memory(data, device)
             except Exception:
                 data = ExceptionWrapper(
-                    where="in pin memory thread for device {}".format(device_id))
+                    where="in pin memory thread for device {}".format(device_id)
+                )
             r = (idx, data)
         while not done_event.is_set():
             try:
@@ -53,6 +54,7 @@ def _pin_memory_loop(in_queue, out_queue, device_id, done_event, device):
         # to the next
         do_one_step()
 
+
 def pin_memory(data, device=None):
     if isinstance(data, torch.Tensor):
         return data.pin_memory(device)
@@ -64,10 +66,12 @@ def pin_memory(data, device=None):
         except TypeError:
             # The mapping type may not support `__init__(iterable)`.
             return {k: pin_memory(sample, device) for k, sample in data.items()}
-    elif isinstance(data, tuple) and hasattr(data, '_fields'):  # namedtuple
+    elif isinstance(data, tuple) and hasattr(data, "_fields"):  # namedtuple
         return type(data)(*(pin_memory(sample, device) for sample in data))
     elif isinstance(data, tuple):
-        return [pin_memory(sample, device) for sample in data]  # Backwards compatibility.
+        return [
+            pin_memory(sample, device) for sample in data
+        ]  # Backwards compatibility.
     elif isinstance(data, collections.abc.Sequence):
         try:
             return type(data)([pin_memory(sample, device) for sample in data])  # type: ignore[call-arg]

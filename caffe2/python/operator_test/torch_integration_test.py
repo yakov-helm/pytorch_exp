@@ -1,5 +1,3 @@
-
-
 import struct
 import unittest
 
@@ -124,7 +122,7 @@ class TorchIntegration(hu.HypothesisTestCase):
         rotated=st.booleans(),
         angle_bound_on=st.booleans(),
         clip_angle_thresh=st.sampled_from([-1.0, 1.0]),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_bbox_transform(
         self,
@@ -183,7 +181,7 @@ class TorchIntegration(hu.HypothesisTestCase):
         angle_bound_on=st.booleans(),
         clip_angle_thresh=st.sampled_from([-1.0, 1.0]),
         batch_splits_dtype=st.sampled_from([torch.float32, torch.int32]),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_box_with_nms_limits(
         self,
@@ -690,9 +688,7 @@ class TorchIntegration(hu.HypothesisTestCase):
 
         rtol = 1e-3 if fast_gelu else 1e-4
         atol = 1e-5
-        assert_allclose(
-            expected_output, actual_output.cpu(), rtol=rtol, atol=atol
-        )
+        assert_allclose(expected_output, actual_output.cpu(), rtol=rtol, atol=atol)
 
     def test_gelu_op(self):
         self._test_gelu_op(device="cpu")
@@ -844,16 +840,16 @@ class TorchIntegration(hu.HypothesisTestCase):
 
     def test_alias_with_name_is_in_place(self):
         device = "cuda" if workspace.has_cuda_support else "cpu"
-        x = torch.tensor([3., 42.]).to(device=device)
+        x = torch.tensor([3.0, 42.0]).to(device=device)
         y = torch.ops._caffe2.AliasWithName(x, "new_name")
         x[1] = 6
-        assert_allclose(x, torch.tensor([3., 6.]).to(device=device))
+        assert_allclose(x, torch.tensor([3.0, 6.0]).to(device=device))
         # y should also change because y is alias of x
-        assert_allclose(y, torch.tensor([3., 6.]).to(device=device))
+        assert_allclose(y, torch.tensor([3.0, 6.0]).to(device=device))
 
     @unittest.skipIf(not workspace.has_cuda_support, "No cuda support")
     def test_copy_between_cpu_and_gpu(self):
-        x_cpu_ref = torch.tensor([1., 2., 3.])
+        x_cpu_ref = torch.tensor([1.0, 2.0, 3.0])
         x_gpu_ref = x_cpu_ref.to("cuda")
 
         x_gpu = torch.ops._caffe2.CopyCPUToGPU(x_cpu_ref)

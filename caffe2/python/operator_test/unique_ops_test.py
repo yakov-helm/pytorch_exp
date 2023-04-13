@@ -14,10 +14,6 @@
 ##############################################################################
 
 
-
-
-
-
 from hypothesis import given, settings
 import hypothesis.strategies as st
 import numpy as np
@@ -42,9 +38,10 @@ class TestUniqueOps(serial.SerializedTestCase):
             min_len=0,
             dtype=np.int32,
             # allow negatives
-            elements=st.integers(min_value=-10, max_value=10)),
+            elements=st.integers(min_value=-10, max_value=10),
+        ),
         return_remapping=st.booleans(),
-        **hu.gcs_no_hip
+        **hu.gcs_no_hip,
     )
     @settings(deadline=10000)
     def test_unique_op(self, X, return_remapping, gc, dc):
@@ -54,14 +51,14 @@ class TestUniqueOps(serial.SerializedTestCase):
 
         op = core.CreateOperator(
             "Unique",
-            ['X'],
+            ["X"],
             ["U", "remap"] if return_remapping else ["U"],
         )
         self.assertDeviceChecks(
             device_options=dc,
             op=op,
             inputs=[X],
-            outputs_to_check=[0, 1] if return_remapping else [0]
+            outputs_to_check=[0, 1] if return_remapping else [0],
         )
         self.assertReferenceChecks(
             device_option=gc,
@@ -70,6 +67,8 @@ class TestUniqueOps(serial.SerializedTestCase):
             reference=partial(_unique_ref, return_inverse=return_remapping),
         )
 
+
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

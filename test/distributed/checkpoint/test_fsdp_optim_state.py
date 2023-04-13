@@ -94,9 +94,7 @@ class FsdpOptimStateCheckpoint(DTensorTestBase):
             return list(iter(opt.state.values()))[idx]
 
         # Adam lazily creates its state
-        self.assertEqual(
-            opt_at(optim, 0)["exp_avg"], opt_at(optim_2, 0)["exp_avg"]
-        )
+        self.assertEqual(opt_at(optim, 0)["exp_avg"], opt_at(optim_2, 0)["exp_avg"])
         self.assertEqual(
             opt_at(optim, 0)["exp_avg_sq"], opt_at(optim_2, 0)["exp_avg_sq"]
         )

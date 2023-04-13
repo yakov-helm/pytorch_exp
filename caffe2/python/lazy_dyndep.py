@@ -2,9 +2,6 @@
 # Module caffe2.python.lazy_dyndep
 
 
-
-
-
 import os
 from caffe2.python import dyndep, lazy
 
@@ -35,7 +32,7 @@ def RegisterOpsLibrary(name):
         # Note(jiayq): if the name does not exist, instead of immediately
         # failing we will simply print a warning, deferring failure to the
         # time when an actual call is made.
-        print('Ignoring {} as it is not a valid file.'.format(name))
+        print("Ignoring {} as it is not a valid file.".format(name))
         return
     global _LAZY_IMPORTED_DYNDEPS
     _LAZY_IMPORTED_DYNDEPS.add(name)
@@ -80,5 +77,6 @@ def _import_lazy():
                 _error_handler(e)
         finally:
             _LAZY_IMPORTED_DYNDEPS.remove(name)
+
 
 lazy.RegisterLazyImport(_import_lazy)

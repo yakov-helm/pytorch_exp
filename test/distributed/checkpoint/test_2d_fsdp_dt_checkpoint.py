@@ -56,9 +56,7 @@ def _distribute_and_fsdp_wrap_module(
     module, module_shard, mesh_2d, fsdp_pg, use_orig_params, fsdp_nested
 ):
     if module_shard:
-        module = parallelize_module(
-            module, mesh_2d, PairwiseParallel(), tp_mesh_dim=1
-        )
+        module = parallelize_module(module, mesh_2d, PairwiseParallel(), tp_mesh_dim=1)
     pg = fsdp_pg if module_shard else distributed_c10d._get_default_group()
 
     if fsdp_nested:
@@ -158,9 +156,7 @@ class Test2dFsdpDtCheckpoint(DTensorTestBase):
                     model.named_parameters(), model_2.named_parameters()
                 ):
                     if isinstance(n_p1[1], DTensor):
-                        self.assertNotEqual(
-                            n_p1[1].to_local(), n_p2[1].to_local()
-                        )
+                        self.assertNotEqual(n_p1[1].to_local(), n_p2[1].to_local())
                     else:
                         self.assertNotEqual(n_p1[1], n_p2[1])
 
@@ -204,9 +200,7 @@ class Test2dFsdpDtCheckpoint(DTensorTestBase):
             return list(opt.state.values())[idx]
 
         # Adam lazily creates its state
-        self.assertEqual(
-            opt_at(optim, 0)["exp_avg"], opt_at(optim_2, 0)["exp_avg"]
-        )
+        self.assertEqual(opt_at(optim, 0)["exp_avg"], opt_at(optim_2, 0)["exp_avg"])
         self.assertEqual(
             opt_at(optim, 0)["exp_avg_sq"], opt_at(optim_2, 0)["exp_avg_sq"]
         )

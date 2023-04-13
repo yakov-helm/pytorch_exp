@@ -2,16 +2,13 @@
 # Module caffe2.python.session
 
 
-
-
-
-
 from caffe2.python import core, workspace
 from caffe2.python.task import Cluster, Task, TaskGroup, WorkspaceType
 
 
 class CompiledRunnable:
-    """ Wrapper for compiled runnable returned from session.compile() """
+    """Wrapper for compiled runnable returned from session.compile()"""
+
     def __init__(self, obj, session_class):
         self.obj = obj
         self.session_class = session_class
@@ -85,9 +82,9 @@ class Session:
     def compile(cls, runnable, workspace_type=None, setup_net_list=None):
         if isinstance(runnable, CompiledRunnable):
             assert cls == runnable.session_class, (
-                'Runnable was compiled for different session type. ' +
-                'Need: %s, got: %s' % (
-                    cls.__name__, runnable.session_class.__name__))
+                "Runnable was compiled for different session type. "
+                + "Need: %s, got: %s" % (cls.__name__, runnable.session_class.__name__)
+            )
             return runnable
 
         if runnable in cls._compiled_cache:
@@ -96,9 +93,11 @@ class Session:
         if isinstance(runnable, TaskGroup):
             if workspace_type:
                 if runnable.workspace_type():
-                    assert runnable.workspace_type() == workspace_type, \
-                        "Require {} but already have {}".format(
-                            workspace_type, runnable.workspace_type())
+                    assert (
+                        runnable.workspace_type() == workspace_type
+                    ), "Require {} but already have {}".format(
+                        workspace_type, runnable.workspace_type()
+                    )
                 else:
                     runnable._workspace_type = workspace_type
             tg = runnable
@@ -123,10 +122,11 @@ class Session:
                     # a root ExecutionStep
                     tg.add(Task(step=runnable.Steps()))
             else:
-                step = core.execution_step('runnable', runnable)
+                step = core.execution_step("runnable", runnable)
                 tg.add(Task(step=step))
         compiled = CompiledRunnable(
-            cls._compile_task_group(tg, setup_net_list), session_class=cls)
+            cls._compile_task_group(tg, setup_net_list), session_class=cls
+        )
         cls._compiled_cache[runnable] = compiled
         return compiled
 
@@ -141,10 +141,9 @@ class Session:
                 So far this is only used by the DistributedSession, in which we
                 need to pass a list of special nets to setup the master.
         """
-        assert self.is_open(), 'Session is closed.'
-        assert runnable is not None, 'Got a none runnable.'
-        self._run_compiled(self.compile(runnable, workspace_type,
-                                        setup_net_list).obj)
+        assert self.is_open(), "Session is closed."
+        assert runnable is not None, "Got a none runnable."
+        self._run_compiled(self.compile(runnable, workspace_type, setup_net_list).obj)
 
     def close(self):
         if self.is_open():
@@ -165,7 +164,7 @@ class Session:
         pass
 
     def __enter__(self):
-        assert self._open, 'Session already closed.'
+        assert self._open, "Session already closed."
         return self
 
     def __exit__(self, ex_type, value, traceback):
@@ -182,6 +181,7 @@ class LocalSession(Session):
     but this behavior may change in the future. Only tasks pointing to the
     same logical node are guaranteed to always run in the same workspace.
     """
+
     def __init__(self, ws=None):
         Session.__init__(self)
         self._ws = ws or workspace.C.Workspace.current
@@ -190,7 +190,7 @@ class LocalSession(Session):
     def _compile_task_group(cls, task_group, setup_net_list=None):
         with Cluster():
             task = task_group.to_task()
-        plan = core.Plan('task_group_plan')
+        plan = core.Plan("task_group_plan")
         plan.AddStep(task.get_step())
         return (plan, task.output_list(), task.workspace_type())
 
@@ -205,7 +205,9 @@ class LocalSession(Session):
         output_list.set_values(outputs, _fetch_func=self._fetch_output)
         task_ws = (
             workspace.C.Workspace(self._ws)
-            if workspace_type == WorkspaceType.PRIVATE else self._ws)
+            if workspace_type == WorkspaceType.PRIVATE
+            else self._ws
+        )
         with workspace.WorkspaceGuard(task_ws):
             task_ws.run(plan)
 

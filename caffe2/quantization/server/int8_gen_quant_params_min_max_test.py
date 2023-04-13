@@ -14,7 +14,6 @@
 ##############################################################################
 
 
-
 import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 import numpy as np
@@ -30,7 +29,7 @@ class TestInt8GenQuantParamsMinMaxOperator(hu.HypothesisTestCase):
         m=st.integers(10, 10),
         preserve_sparsity=st.booleans(),
         rnd_seed=st.integers(1, 5),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_int8_gen_quant_params_min_max_op(
         self, n, m, preserve_sparsity, rnd_seed, gc, dc
@@ -38,9 +37,7 @@ class TestInt8GenQuantParamsMinMaxOperator(hu.HypothesisTestCase):
         X_min = 0 if preserve_sparsity else -77
         X_max = X_min + 255
         np.random.seed(rnd_seed)
-        X = np.round(np.random.rand(n, m) * (X_max - X_min) + X_min).astype(
-            np.float32
-        )
+        X = np.round(np.random.rand(n, m) * (X_max - X_min) + X_min).astype(np.float32)
         # Calculate X_qparam
         hist, bin_edges = np.histogram(X.flatten(), bins=2048)
         X_qparam = dnnlowp_pybind11.ChooseStaticQuantizationParams(
@@ -73,8 +70,18 @@ class TestInt8GenQuantParamsMinMaxOperator(hu.HypothesisTestCase):
 
         shapes, types = workspace.InferShapesAndTypes(
             [gen_quant_params_net],
-            blob_dimensions={"X": [n, m], "X_min": [1], "X_max": [1], "quant_scheme": [1]},
-            blob_types={"X": core.DataType.FLOAT, "X_min": core.DataType.FLOAT, "X_max": core.DataType.FLOAT, "quant_scheme": core.DataType.STRING}
+            blob_dimensions={
+                "X": [n, m],
+                "X_min": [1],
+                "X_max": [1],
+                "quant_scheme": [1],
+            },
+            blob_types={
+                "X": core.DataType.FLOAT,
+                "X_min": core.DataType.FLOAT,
+                "X_max": core.DataType.FLOAT,
+                "quant_scheme": core.DataType.STRING,
+            },
         )
         self.assertEqual(shapes["quant_param"], [1])
         self.assertEqual(types["quant_param"], core.DataType.FLOAT)

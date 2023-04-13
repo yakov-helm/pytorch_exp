@@ -4,8 +4,13 @@
 from torch._C import _disabled_torch_function_impl
 import torch.fx
 import torch.nn.functional as F
-from torch.testing._internal.common_utils import run_tests, TestCase, skipIfTorchDynamo, \
-    parametrize, instantiate_parametrized_tests
+from torch.testing._internal.common_utils import (
+    run_tests,
+    TestCase,
+    skipIfTorchDynamo,
+    parametrize,
+    instantiate_parametrized_tests,
+)
 import torch
 import operator
 import itertools
@@ -16,9 +21,19 @@ import sympy
 from torch.utils._pytree import tree_map
 from torch.fx.experimental import symbolic_shapes
 from torch.fx.experimental.proxy_tensor import make_fx
-from torch.fx.experimental.symbolic_shapes import SymNode, \
-    FloorDiv, ShapeEnv, sym_sqrt, sym_float, to_node, GuardOnDataDependentSymNode, \
-    guard_bool, guard_int, guard_float, DimDynamic
+from torch.fx.experimental.symbolic_shapes import (
+    SymNode,
+    FloorDiv,
+    ShapeEnv,
+    sym_sqrt,
+    sym_float,
+    to_node,
+    GuardOnDataDependentSymNode,
+    guard_bool,
+    guard_int,
+    guard_float,
+    DimDynamic,
+)
 from torch.utils._python_dispatch import TorchDispatchMode
 from torch import SymBool, SymInt, SymFloat, sym_int
 
@@ -31,8 +46,10 @@ def register_meta(op):
     def decorator(f):
         def add_func(op):
             meta_funcs[op] = f
+
         tree_map(add_func, op)
         return f
+
     return decorator
 
 
@@ -81,13 +98,26 @@ def create_contiguous(shape):
 
 class FakeSymbolicTensor(torch.Tensor):
     @staticmethod
-    def __new__(cls, sym_shape, sym_strides, dtype, layout, requires_grad, device, storage_offset=0):
+    def __new__(
+        cls,
+        sym_shape,
+        sym_strides,
+        dtype,
+        layout,
+        requires_grad,
+        device,
+        storage_offset=0,
+    ):
         # TODO: this is wrong in general
         sym_stride = create_contiguous(sym_shape)
         r = torch.Tensor._make_wrapper_subclass(
-            cls, sym_shape,
-            sym_stride, storage_offset,
-            dtype=dtype, layout=layout, requires_grad=requires_grad,
+            cls,
+            sym_shape,
+            sym_stride,
+            storage_offset,
+            dtype=dtype,
+            layout=layout,
+            requires_grad=requires_grad,
             device=device,
         )
         return r
@@ -95,7 +125,9 @@ class FakeSymbolicTensor(torch.Tensor):
     __torch_function__ = _disabled_torch_function_impl
 
     def new_empty(self, shape):
-        return FakeSymbolicTensor(shape, None, self.dtype, self.layout, self.requires_grad, self.device)
+        return FakeSymbolicTensor(
+            shape, None, self.dtype, self.layout, self.requires_grad, self.device
+        )
 
     @classmethod
     def __torch_dispatch__(cls, func_overload, types, args=(), kwargs=None):
@@ -105,7 +137,14 @@ class FakeSymbolicTensor(torch.Tensor):
         if func_overload == torch.ops.aten.new_empty.default:
             self = args[0]
             shape = args[1]
-            return FakeSymbolicTensor(shape, self.stride(), self.dtype, self.layout, self.requires_grad, self.device)
+            return FakeSymbolicTensor(
+                shape,
+                self.stride(),
+                self.dtype,
+                self.layout,
+                self.requires_grad,
+                self.device,
+            )
 
         raise RuntimeError(f"operator {func_overload} not supported")
 
@@ -115,17 +154,30 @@ def create_symbolic_tensor(name, arg, shape_env):
 
     constraint_dims = [None] * arg.dim()
     dynamic_dims = [DimDynamic.DUCK] * arg.dim()
-    sym_shapes, sym_strides, sym_storage_offset = \
-        shape_env.create_symbolic_sizes_strides_storage_offset(
-            arg,
-            source=ConstantSource(name),
-            dynamic_dims=dynamic_dims,
-            constraint_dims=constraint_dims
-        )
-    return FakeSymbolicTensor(sym_shapes, sym_strides, arg.dtype, arg.layout, arg.requires_grad, arg.device, sym_storage_offset)
+    (
+        sym_shapes,
+        sym_strides,
+        sym_storage_offset,
+    ) = shape_env.create_symbolic_sizes_strides_storage_offset(
+        arg,
+        source=ConstantSource(name),
+        dynamic_dims=dynamic_dims,
+        constraint_dims=constraint_dims,
+    )
+    return FakeSymbolicTensor(
+        sym_shapes,
+        sym_strides,
+        arg.dtype,
+        arg.layout,
+        arg.requires_grad,
+        arg.device,
+        sym_storage_offset,
+    )
+
 
 def create_symint(shape_env, i: int):
     from torch._dynamo.source import ConstantSource
+
     return shape_env.create_symintnode(
         shape_env.create_symbol(
             i,
@@ -133,25 +185,36 @@ def create_symint(shape_env, i: int):
             dynamic_dim=DimDynamic.DUCK,
             constraint_dim=None,
         ),
-        hint=i
+        hint=i,
     )
 
-@skipIfTorchDynamo("Creating ShapeEnv fails for confusing reasons (also we never expect dynamo to see code like this)")
-class TestPySymInt(TestCase):
 
+@skipIfTorchDynamo(
+    "Creating ShapeEnv fails for confusing reasons (also we never expect dynamo to see code like this)"
+)
+class TestPySymInt(TestCase):
     def test_arith_ops(self):
         shape_env = ShapeEnv()
         symints = []
         for i in range(2, 5):
             symints.append((i, create_symint(shape_env, i)))
 
-        ops = [operator.add, operator.sub, operator.floordiv, operator.mul, operator.mod]
+        ops = [
+            operator.add,
+            operator.sub,
+            operator.floordiv,
+            operator.mul,
+            operator.mod,
+        ]
 
         for op in ops:
             for args in itertools.permutations(symints, 2):
-                if not isinstance(args[0][1], int) and ((op != operator.mod or op != operator.floordiv) and args[1][0] != 0):
-                    self.assertTrue(op(args[0][1], args[1][1]) == op(args[0][0], args[1][0]))
-
+                if not isinstance(args[0][1], int) and (
+                    (op != operator.mod or op != operator.floordiv) and args[1][0] != 0
+                ):
+                    self.assertTrue(
+                        op(args[0][1], args[1][1]) == op(args[0][0], args[1][0])
+                    )
 
     def test_reverse_arith_ops(self):
         shape_env = ShapeEnv()
@@ -161,7 +224,6 @@ class TestPySymInt(TestCase):
 
         a = create_symint(shape_env, 2)
         self.assertTrue(5 * a == 5 * 2)
-
 
     def test_roundtrip(self):
         shape_env = ShapeEnv()
@@ -326,7 +388,7 @@ class TestPySymInt(TestCase):
     def test_meta_symint(self):
         shape_env = ShapeEnv()
         a0 = create_symint(shape_env, 2)
-        r = torch.empty(a0, device='meta')
+        r = torch.empty(a0, device="meta")
         self.assertIsInstance(r.shape[0], SymInt)
 
     def test_guard_int(self):
@@ -381,12 +443,13 @@ class TestPySymInt(TestCase):
         r = math.ceil(a0 / 2)
         self.assertEqual(r, 3)
         self.assertIsInstance(r, torch.SymInt, msg=type(r))
-        self.assertExpectedInline(str(shape_env.guards[0][0]), """Eq(ceiling(s0/2), 3)""")
+        self.assertExpectedInline(
+            str(shape_env.guards[0][0]), """Eq(ceiling(s0/2), 3)"""
+        )
         r = math.floor(3.0 * a0)
         self.assertEqual(r, 15)
         self.assertIsInstance(r, torch.SymInt, msg=type(r))
         self.assertExpectedInline(str(shape_env.guards[1][0]), """Eq(3*s0, 15)""")
-
 
     def test_int_conversion(self):
         shape_env = ShapeEnv()
@@ -402,7 +465,7 @@ class TestPySymInt(TestCase):
     def test_non_overlapping_and_dense(self):
         shape_env = ShapeEnv()
         a0 = create_symint(shape_env, 5)
-        r = torch.empty_strided((a0, 7), (1, a0), device='meta')
+        r = torch.empty_strided((a0, 7), (1, a0), device="meta")
         self.assertTrue(torch.ops.aten.is_non_overlapping_and_dense.default(r))
 
     def test_specialize_zero_one(self):
@@ -477,7 +540,9 @@ class TestPySymInt(TestCase):
         fx_g = make_fx(f, tracing_mode="symbolic")(torch.randn(5, 3), torch.randn(4, 3))
         out = fx_g.print_readable(print_output=False)
 
-        self.assertExpectedInline(out.strip(), """\
+        self.assertExpectedInline(
+            out.strip(),
+            """\
 class f(torch.nn.Module):
     def forward(self, a_1: f32[s0, s1], b_1: f32[s2, s1]):
         # No stacktrace found for following nodes
@@ -491,14 +556,18 @@ class f(torch.nn.Module):
         native_dropout = torch.ops.aten.native_dropout.default(new_empty, 0.5, True);  new_empty = None
         getitem: f32[s0 + s2, 2*s1] = native_dropout[0]
         getitem_1: b8[s0 + s2, 2*s1] = native_dropout[1];  native_dropout = None
-        return (getitem, getitem_1)""")  # noqa: B950
+        return (getitem, getitem_1)""",
+        )  # noqa: B950
 
-@skipIfTorchDynamo("Creating ShapeEnv fails for confusing reasons (also we never expect dynamo to see code like this)")
+
+@skipIfTorchDynamo(
+    "Creating ShapeEnv fails for confusing reasons (also we never expect dynamo to see code like this)"
+)
 class TestSymNumberMagicMethods(TestCase):
     def _do_test(self, fn, inp1, inp2, shape_env, is_unary_fn):
         # Helper function
         # NB: don't use one as that will get specialized
-        seed_node = (create_symint(shape_env, 2) / 2.).node
+        seed_node = (create_symint(shape_env, 2) / 2.0).node
         bool_seed_node = (create_symint(shape_env, 2) == 2).node
 
         def get_sym_inp(inp):
@@ -520,9 +589,13 @@ class TestSymNumberMagicMethods(TestCase):
             elif fn == "pow" and inp1 == 0 and inp2 < 0:
                 # ZeroDivisionError: 0.0 cannot be raised to a negative power
                 return self.assertRaises((ZeroDivisionError,))
-            elif fn == "pow" and inp1 < 0 and inp2 in (2.5, -2.5) and (
-                type(inp1) in (SymFloat, SymInt) or
-                type(inp2) in (SymFloat, SymInt)
+            elif (
+                fn == "pow"
+                and inp1 < 0
+                and inp2 in (2.5, -2.5)
+                and (
+                    type(inp1) in (SymFloat, SymInt) or type(inp2) in (SymFloat, SymInt)
+                )
             ):
                 # Complex result, which we do not support:
                 # TypeError: Cannot convert complex to float
@@ -583,7 +656,6 @@ class TestSymNumberMagicMethods(TestCase):
             out = guard_fn(out)
             self.assertEqual(out, ref_out)
 
-
     @parametrize("fn", list(symbolic_shapes.magic_methods.keys()))
     def test_bool_method(self, fn):
         if fn not in symbolic_shapes.bool_magic_methods:
@@ -592,7 +664,6 @@ class TestSymNumberMagicMethods(TestCase):
         is_unary_fn = fn in symbolic_shapes.unary_magic_methods
         shape_env = ShapeEnv()
         self._do_test(fn, True, False, shape_env, is_unary_fn)
-
 
     @parametrize("fn", list(symbolic_shapes.magic_methods.keys()))
     @parametrize("first_type", ["int", "float"])
@@ -635,7 +706,9 @@ class TestSymNumberMagicMethods(TestCase):
 
             self._do_test(fn, inp1, inp2, shape_env, is_unary_fn)
 
+
 instantiate_parametrized_tests(TestSymNumberMagicMethods)
+
 
 class TestFloorDiv(TestCase):
     @staticmethod
@@ -669,7 +742,9 @@ class TestFloorDiv(TestCase):
         )
 
         for x, y in TestFloorDiv.yield_test_cases(values):
-            self.assertEqual(TestFloorDiv.python_floordiv(x, y), TestFloorDiv.torch_floordiv(x, y))
+            self.assertEqual(
+                TestFloorDiv.python_floordiv(x, y), TestFloorDiv.torch_floordiv(x, y)
+            )
 
     def test_floordiv_bool(self):
         values = (
@@ -682,14 +757,20 @@ class TestFloorDiv(TestCase):
 
         for x, y in TestFloorDiv.yield_test_cases(values, negate=False):
             # Compares to int since our FloorDiv has no bool support
-            self.assertEqual(TestFloorDiv.python_floordiv(x, y), TestFloorDiv.torch_floordiv(int(x), int(y)))
+            self.assertEqual(
+                TestFloorDiv.python_floordiv(x, y),
+                TestFloorDiv.torch_floordiv(int(x), int(y)),
+            )
             # Tests that our impl throws
             self.assertRaisesRegex(
                 TypeError,
-                (rf"unsupported operand type\(s\) for //: "
-                 rf"'{type(sympy.sympify(x)).__name__}' and '{type(sympy.sympify(y)).__name__}'"
-                 rf", expected integer or real"),
-                lambda: TestFloorDiv.torch_floordiv(x, y))
+                (
+                    rf"unsupported operand type\(s\) for //: "
+                    rf"'{type(sympy.sympify(x)).__name__}' and '{type(sympy.sympify(y)).__name__}'"
+                    rf", expected integer or real"
+                ),
+                lambda: TestFloorDiv.torch_floordiv(x, y),
+            )
 
     def test_floordiv_complex(self):
         values = (
@@ -706,10 +787,13 @@ class TestFloorDiv(TestCase):
             self.assertRaises(TypeError, lambda: TestFloorDiv.python_floordiv(x, y))
             self.assertRaisesRegex(
                 TypeError,
-                (rf"unsupported operand type\(s\) for //: "
-                 rf"'{type(sympy.sympify(x)).__name__}' and '{type(sympy.sympify(y)).__name__}'"
-                 rf", expected integer or real"),
-                lambda: TestFloorDiv.torch_floordiv(x, y))
+                (
+                    rf"unsupported operand type\(s\) for //: "
+                    rf"'{type(sympy.sympify(x)).__name__}' and '{type(sympy.sympify(y)).__name__}'"
+                    rf", expected integer or real"
+                ),
+                lambda: TestFloorDiv.torch_floordiv(x, y),
+            )
 
     def test_floordiv_div_by_zero(self):
         values = (
@@ -722,11 +806,14 @@ class TestFloorDiv(TestCase):
             # We don't test error messages to avoid depending on Python
             # interpreter version
             if type(y) is not sympy.Symbol:
-                self.assertRaises(ZeroDivisionError, lambda: TestFloorDiv.python_floordiv(x, y))
+                self.assertRaises(
+                    ZeroDivisionError, lambda: TestFloorDiv.python_floordiv(x, y)
+                )
             self.assertRaisesRegex(
                 ZeroDivisionError,
                 "division by zero",
-                lambda: TestFloorDiv.torch_floordiv(x, y))
+                lambda: TestFloorDiv.torch_floordiv(x, y),
+            )
 
     def test_floordiv_zero_base(self):
         values = (
@@ -737,7 +824,10 @@ class TestFloorDiv(TestCase):
 
         for x, y in TestFloorDiv.yield_test_cases(values, negate=False):
             if type(x) is not sympy.Symbol:
-                self.assertEqual(TestFloorDiv.python_floordiv(x, y), TestFloorDiv.torch_floordiv(x, y))
+                self.assertEqual(
+                    TestFloorDiv.python_floordiv(x, y),
+                    TestFloorDiv.torch_floordiv(x, y),
+                )
             else:
                 self.assertEqual(0, TestFloorDiv.torch_floordiv(x, y))
 
@@ -750,7 +840,9 @@ class TestFloorDiv(TestCase):
         )
 
         for x, y in TestFloorDiv.yield_test_cases(values):
-            self.assertEqual(TestFloorDiv.python_floordiv(x, y), TestFloorDiv.torch_floordiv(x, y))
+            self.assertEqual(
+                TestFloorDiv.python_floordiv(x, y), TestFloorDiv.torch_floordiv(x, y)
+            )
 
     def test_floordiv_simplify(self):
         # Tests how we simplify or evaluate FloorDiv without free variables
@@ -787,6 +879,7 @@ class TestFloorDiv(TestCase):
         )
 
         for base, divisor in itertools.product(cases, repeat=2):
+
             def op():
                 return FloorDiv(base, divisor)
 
@@ -796,9 +889,12 @@ class TestFloorDiv(TestCase):
             if is_complex(base) or is_complex(divisor):
                 self.assertRaisesRegex(
                     TypeError,
-                    (r"unsupported operand type\(s\) for //: 'Symbol' and 'Symbol',"
-                     r" expected integer or real"),
-                    op)
+                    (
+                        r"unsupported operand type\(s\) for //: 'Symbol' and 'Symbol',"
+                        r" expected integer or real"
+                    ),
+                    op,
+                )
                 continue
 
             op = op()
@@ -816,5 +912,6 @@ class TestFloorDiv(TestCase):
                 self.assertEqual(op.is_integer, None)
                 self.assertTrue(op.is_real)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_tests()

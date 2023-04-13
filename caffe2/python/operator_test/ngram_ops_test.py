@@ -1,8 +1,3 @@
-
-
-
-
-
 import hypothesis.strategies as st
 
 from caffe2.python import core, workspace
@@ -20,7 +15,7 @@ class TestNGramOps(hu.HypothesisTestCase):
         out_of_vcb=st.floats(min_value=0, max_value=0.5),
         max_categorical_limit=st.integers(min_value=5, max_value=20),
         max_in_vcb_val=st.integers(min_value=1000, max_value=10000),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_ngram_from_categorical_op(
         self,
@@ -39,10 +34,7 @@ class TestNGramOps(hu.HypothesisTestCase):
         categorical_limits = np.random.randint(
             2, high=max_categorical_limit, size=col_num
         ).astype(np.int32)
-        vcb = [
-            np.random.choice(max_in_vcb_val, x, False)
-            for x in categorical_limits
-        ]
+        vcb = [np.random.choice(max_in_vcb_val, x, False) for x in categorical_limits]
         vals = np.array([x for l in vcb for x in l], dtype=np.int32)
 
         # Enforce round(floats) to be negative.
@@ -61,15 +53,15 @@ class TestNGramOps(hu.HypothesisTestCase):
         expected_output = np.array(expected_output, dtype=np.int32)
 
         workspace.ResetWorkspace()
-        workspace.FeedBlob('floats', floats)
+        workspace.FeedBlob("floats", floats)
         op = core.CreateOperator(
             "NGramFromCategorical",
-            ['floats'],
-            ['output'],
+            ["floats"],
+            ["output"],
             col_ids=col_ids,
             categorical_limits=categorical_limits,
             vals=vals,
         )
         workspace.RunOperatorOnce(op)
-        output = workspace.blobs['output']
+        output = workspace.blobs["output"]
         np.testing.assert_array_equal(output, expected_output)

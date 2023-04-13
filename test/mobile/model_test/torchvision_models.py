@@ -14,7 +14,7 @@ class MobileNetV2Module:
         augment_model_with_bundled_inputs(
             optimized_module,
             [
-                (example, ),
+                (example,),
             ],
         )
         optimized_module(example)

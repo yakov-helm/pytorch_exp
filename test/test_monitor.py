@@ -1,7 +1,8 @@
 # Owner(s): ["oncall: r2p"]
 
 from torch.testing._internal.common_utils import (
-    TestCase, run_tests,
+    TestCase,
+    run_tests,
 )
 
 from datetime import timedelta, datetime
@@ -17,6 +18,7 @@ from torch.monitor import (
     Stat,
     TensorboardEventHandler,
 )
+
 
 class TestMonitor(TestCase):
     def test_interval_stat(self) -> None:
@@ -97,6 +99,7 @@ class TestMonitor(TestCase):
         log_event(e)
         self.assertEqual(len(events), 2)
 
+
 class TestMonitorTensorboard(TestCase):
     def setUp(self):
         global SummaryWriter, event_multiplexer
@@ -145,13 +148,17 @@ class TestMonitorTensorboard(TestCase):
             for tag in run_dict
         }
         scalars = {
-            tag: [e.tensor_proto.float_val[0] for e in events] for tag, events in raw_result.items()
+            tag: [e.tensor_proto.float_val[0] for e in events]
+            for tag, events in raw_result.items()
         }
-        self.assertEqual(scalars, {
-            "asdf.sum": [10],
-            "asdf.count": [5],
-        })
+        self.assertEqual(
+            scalars,
+            {
+                "asdf.sum": [10],
+                "asdf.count": [5],
+            },
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

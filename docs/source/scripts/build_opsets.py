@@ -53,6 +53,7 @@ def get_prims():
 
     return op_schema_pairs
 
+
 def main():
     aten_ops_list = get_aten()
     prims_ops_list = get_prims()
@@ -70,5 +71,5 @@ def main():
             f.write(f'"``{name}``","{schema}"\n')
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

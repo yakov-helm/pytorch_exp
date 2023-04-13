@@ -38,6 +38,7 @@ from torch.testing._internal.common_quantization import (
 from torch.testing._internal.common_quantized import override_qengines
 from torch.testing._internal.common_utils import IS_ARM64
 
+
 class SubModule(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -199,10 +200,18 @@ class TestNumericSuiteEager(QuantizationTestCase):
                 for i, val in enumerate(v["quantized"]):
                     self.assertTrue(v["float"][i].shape == v["quantized"][i].shape)
 
-        model_list = [AnnotatedConvModel(qengine),
-                      AnnotatedConvTransposeModel("qnnpack"),  # ConvT cannot use per channel weights
-                      AnnotatedConvBnReLUModel(qengine)]
-        module_swap_list = [nn.Conv2d, nn.intrinsic.modules.fused.ConvReLU2d, nn.ConvTranspose2d]
+        model_list = [
+            AnnotatedConvModel(qengine),
+            AnnotatedConvTransposeModel(
+                "qnnpack"
+            ),  # ConvT cannot use per channel weights
+            AnnotatedConvBnReLUModel(qengine),
+        ]
+        module_swap_list = [
+            nn.Conv2d,
+            nn.intrinsic.modules.fused.ConvReLU2d,
+            nn.ConvTranspose2d,
+        ]
         for model in model_list:
             model.eval()
             if hasattr(model, "fuse_model"):
@@ -277,7 +286,6 @@ class TestNumericSuiteEager(QuantizationTestCase):
         # mod1 contains a linear that is quantized, so we insert a shadow module
         self.assertTrue(isinstance(q_model.mod1, Shadow))
         self.assertFalse(isinstance(q_model.conv, Shadow))
-
 
     @override_qengines
     def test_compare_model_stub_functional_static(self):
@@ -485,7 +493,9 @@ class TestNumericSuiteEager(QuantizationTestCase):
                 for i, val in enumerate(v["quantized"]):
                     self.assertTrue(len(v["float"][i]) == len(v["quantized"][i]))
                     if i == 0:
-                        self.assertTrue(v["float"][i][0].shape == v["quantized"][i][0].shape)
+                        self.assertTrue(
+                            v["float"][i][0].shape == v["quantized"][i][0].shape
+                        )
                     else:
                         self.assertTrue(
                             v["float"][i][0].shape == v["quantized"][i][0].shape
@@ -539,12 +549,23 @@ class TestNumericSuiteEager(QuantizationTestCase):
 
     @skip_if_no_torchvision
     def _test_vision_model(self, float_model):
-        float_model.to('cpu')
+        float_model.to("cpu")
         float_model.eval()
         float_model.fuse_model()
         float_model.qconfig = torch.ao.quantization.default_qconfig
-        img_data = [(torch.rand(2, 3, 224, 224, dtype=torch.float), torch.randint(0, 1, (2,), dtype=torch.long)) for _ in range(2)]
-        qmodel = quantize(float_model, torch.ao.quantization.default_eval_fn, [img_data], inplace=False)
+        img_data = [
+            (
+                torch.rand(2, 3, 224, 224, dtype=torch.float),
+                torch.randint(0, 1, (2,), dtype=torch.long),
+            )
+            for _ in range(2)
+        ]
+        qmodel = quantize(
+            float_model,
+            torch.ao.quantization.default_eval_fn,
+            [img_data],
+            inplace=False,
+        )
 
         wt_compare_dict = compare_weights(float_model.state_dict(), qmodel.state_dict())
 
@@ -559,9 +580,11 @@ class TestNumericSuiteEager(QuantizationTestCase):
         # 'quantized', containing the activations of floating point and quantized model at matching locations.
         act_compare_dict = compare_model_outputs(float_model, qmodel, data)
 
-
         for key in act_compare_dict:
-            compute_error(act_compare_dict[key]['float'][0], act_compare_dict[key]['quantized'][0].dequantize())
+            compute_error(
+                act_compare_dict[key]["float"][0],
+                act_compare_dict[key]["quantized"][0].dequantize(),
+            )
 
         prepare_model_outputs(float_model, qmodel)
 
@@ -578,10 +601,12 @@ class TestNumericSuiteEager(QuantizationTestCase):
     @unittest.skipIf(IS_ARM64, "Not working on arm right now")
     def test_mobilenet_v2(self):
         from torchvision.models.quantization import mobilenet_v2
+
         self._test_vision_model(mobilenet_v2(pretrained=True, quantize=False))
 
     @skip_if_no_torchvision
     @unittest.skipIf(IS_ARM64, "Not working on arm right now")
     def test_mobilenet_v3(self):
         from torchvision.models.quantization import mobilenet_v3_large
+
         self._test_vision_model(mobilenet_v3_large(pretrained=True, quantize=False))

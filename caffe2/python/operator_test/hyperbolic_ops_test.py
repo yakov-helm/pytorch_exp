@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core
 import caffe2.python.hypothesis_test_util as hu
 import caffe2.python.serialized_test.serialized_test_util as serial
@@ -16,7 +11,8 @@ class TestHyperbolicOps(serial.SerializedTestCase):
             op_name,
             ["X"],
             ["X"] if in_place else ["Y"],
-            engine=engine,)
+            engine=engine,
+        )
 
         def ref(X):
             return [np_ref(X)]
@@ -39,7 +35,11 @@ class TestHyperbolicOps(serial.SerializedTestCase):
     def test_cosh(self, X, gc, dc):
         self._test_hyperbolic_op("Cosh", np.cosh, X, False, "", gc, dc)
 
-    @serial.given(X=hu.tensor(dtype=np.float32), in_place=st.booleans(),
-           engine=st.sampled_from(["", "CUDNN"]), **hu.gcs)
+    @serial.given(
+        X=hu.tensor(dtype=np.float32),
+        in_place=st.booleans(),
+        engine=st.sampled_from(["", "CUDNN"]),
+        **hu.gcs,
+    )
     def test_tanh(self, X, in_place, engine, gc, dc):
         self._test_hyperbolic_op("Tanh", np.tanh, X, in_place, engine, gc, dc)

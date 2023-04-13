@@ -1,5 +1,3 @@
-
-
 import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 from caffe2.python import core, utils
@@ -10,7 +8,7 @@ class OrderSwitchOpsTest(hu.HypothesisTestCase):
     @given(
         X=hu.tensor(min_dim=3, max_dim=5, min_value=1, max_value=5),
         engine=st.sampled_from(["", "CUDNN"]),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=10000)
     def test_nchw2nhwc(self, X, engine, gc, dc):
@@ -26,7 +24,7 @@ class OrderSwitchOpsTest(hu.HypothesisTestCase):
     @given(
         X=hu.tensor(min_dim=3, max_dim=5, min_value=1, max_value=5),
         engine=st.sampled_from(["", "CUDNN"]),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=10000)
     def test_nhwc2nchw(self, X, engine, gc, dc):

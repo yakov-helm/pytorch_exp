@@ -38,8 +38,12 @@ def make_functionalize_test(cls):
     return skipIfRocm(FunctionalizeTest)
 
 
-FunctionalizeTestPythonKeyAOT = make_functionalize_test(test_aotdispatch.TestAOTAutograd)
-FunctionalizeTestPythonKeyPartitioning = make_functionalize_test(test_aotdispatch.TestPartitioning)
+FunctionalizeTestPythonKeyAOT = make_functionalize_test(
+    test_aotdispatch.TestAOTAutograd
+)
+FunctionalizeTestPythonKeyPartitioning = make_functionalize_test(
+    test_aotdispatch.TestPartitioning
+)
 
 if __name__ == "__main__":
     run_tests()

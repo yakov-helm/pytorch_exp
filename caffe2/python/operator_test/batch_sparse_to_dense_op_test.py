@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core
 import caffe2.python.hypothesis_test_util as hu
 import caffe2.python.serialized_test.serialized_test_util as serial
@@ -12,12 +7,11 @@ import numpy as np
 
 
 class TestBatchSparseToDense(serial.SerializedTestCase):
-
     @given(
         batch_size=st.integers(5, 10),
         dense_last_dim=st.integers(5, 10),
         default_value=st.floats(min_value=2.0, max_value=3.0),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=None)
     def test_batch_sparse_to_dense(
@@ -33,18 +27,18 @@ class TestBatchSparseToDense(serial.SerializedTestCase):
         V = np.random.rand(num_data).astype(np.float32)
 
         op = core.CreateOperator(
-            'BatchSparseToDense',
-            ['L', 'I', 'V'],
-            ['O'],
+            "BatchSparseToDense",
+            ["L", "I", "V"],
+            ["O"],
             dense_last_dim=dense_last_dim,
             default_value=default_value,
         )
 
         S = np.random.rand(batch_size, dense_last_dim).astype(np.float32)
         op2 = core.CreateOperator(
-            'BatchSparseToDense',
-            ['L', 'I', 'V', 'S'],
-            ['O'],
+            "BatchSparseToDense",
+            ["L", "I", "V", "S"],
+            ["O"],
             default_value=default_value,
         )
 
@@ -70,14 +64,12 @@ class TestBatchSparseToDense(serial.SerializedTestCase):
         self.assertReferenceChecks(gc, op2, [L, I, V, S], batch_sparse_to_dense_ref)
         self.assertGradientChecks(gc, op2, [L, I, V, S], 2, [0])
         self.assertDeviceChecks(dc, op, [L.astype(np.int32), I, V], [0])
-        self.assertReferenceChecks(gc, op, [L.astype(np.int32), I, V], batch_sparse_to_dense_ref)
+        self.assertReferenceChecks(
+            gc, op, [L.astype(np.int32), I, V], batch_sparse_to_dense_ref
+        )
         self.assertGradientChecks(gc, op, [L.astype(np.int32), I, V], 2, [0])
 
-    @given(
-        batch_size=st.integers(5, 10),
-        dense_last_dim=st.integers(5, 10),
-        **hu.gcs
-    )
+    @given(batch_size=st.integers(5, 10), dense_last_dim=st.integers(5, 10), **hu.gcs)
     @settings(deadline=None)
     def test_batch_dense_to_sparse(self, batch_size, dense_last_dim, gc, dc):
         L = np.random.randint(1, dense_last_dim + 1, size=(batch_size))
@@ -89,9 +81,9 @@ class TestBatchSparseToDense(serial.SerializedTestCase):
         D = np.random.rand(batch_size, dense_last_dim).astype(np.float32)
 
         op = core.CreateOperator(
-            'BatchDenseToSparse',
-            ['L', 'I', 'D'],
-            ['V'],
+            "BatchDenseToSparse",
+            ["L", "I", "D"],
+            ["V"],
         )
 
         def batch_dense_to_sparse_ref(L, I, D):
@@ -104,11 +96,14 @@ class TestBatchSparseToDense(serial.SerializedTestCase):
                     i_idx += 1
                 batch += 1
             return [ret]
+
         print(L, I, D)
 
         self.assertDeviceChecks(dc, op, [L, I, D], [0])
         self.assertReferenceChecks(gc, op, [L, I, D], batch_dense_to_sparse_ref)
         self.assertGradientChecks(gc, op, [L, I, D], 2, [0])
         self.assertDeviceChecks(dc, op, [L.astype(np.int32), I, D], [0])
-        self.assertReferenceChecks(gc, op, [L.astype(np.int32), I, D], batch_dense_to_sparse_ref)
+        self.assertReferenceChecks(
+            gc, op, [L.astype(np.int32), I, D], batch_dense_to_sparse_ref
+        )
         self.assertGradientChecks(gc, op, [L.astype(np.int32), I, D], 2, [0])

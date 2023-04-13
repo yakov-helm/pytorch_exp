@@ -238,7 +238,8 @@ class Skippable(nn.Module):
 
 # TODO(sublee): Move to above of Skippable class for better read flow.
 def skippable(
-    stash: Iterable[str] = (), pop: Iterable[str] = (),
+    stash: Iterable[str] = (),
+    pop: Iterable[str] = (),
 ) -> Callable[[Type[SkippableModule]], Type[Skippable]]:
     """The decorator to define a :class:`nn.Module <torch.nn.Module>` with skip
     connections. Decorated modules are called "skippable". This functionality
@@ -295,7 +296,11 @@ def skippable(
     def extend_skippable(module_cls: Type[SkippableModule]) -> Type[Skippable]:
         name = module_cls.__name__
         bases = (Skippable,)
-        attrs = {"module_cls": module_cls, "stashable_names": stashable_names, "poppable_names": poppable_names}
+        attrs = {
+            "module_cls": module_cls,
+            "stashable_names": stashable_names,
+            "poppable_names": poppable_names,
+        }
         return type(name, bases, attrs)
 
     return extend_skippable
@@ -397,7 +402,10 @@ def verify_skippables(module: nn.Sequential) -> None:
                 continue
 
             if (ns, name) in stashed:
-                msg = f"'{layer_name}' redeclared '{name}' as stashable " "but not isolated by namespace"
+                msg = (
+                    f"'{layer_name}' redeclared '{name}' as stashable "
+                    "but not isolated by namespace"
+                )
                 msgs.append(msg)
                 continue
 
@@ -408,7 +416,10 @@ def verify_skippables(module: nn.Sequential) -> None:
                 continue
 
             if (ns, name) in popped:
-                msg = f"'{layer_name}' redeclared '{name}' as poppable " "but not isolated by namespace"
+                msg = (
+                    f"'{layer_name}' redeclared '{name}' as poppable "
+                    "but not isolated by namespace"
+                )
                 msgs.append(msg)
                 continue
 
@@ -425,5 +436,6 @@ def verify_skippables(module: nn.Sequential) -> None:
 
     if msgs:
         raise TypeError(
-            "one or more pairs of stash and pop do not match:\n\n%s" "" % "\n".join("* %s" % x for x in msgs)
+            "one or more pairs of stash and pop do not match:\n\n%s"
+            "" % "\n".join("* %s" % x for x in msgs)
         )

@@ -30,6 +30,7 @@ if TEST_WITH_DEV_DBG_ASAN:
     print("Multiprocessing spawn is not compatible with dev/dbg asan", file=sys.stderr)
     sys.exit(0)
 
+
 def gpus_for_rank(world_size):
     visible_devices = list(range(torch.cuda.device_count()))
     gpus_per_process = torch.cuda.device_count() // world_size
@@ -185,7 +186,6 @@ class DistributedDataParallelCommHookTest(MultiProcessTestCase):
 
         torch.testing.assert_close(hook_grads, reference_grads, rtol=1e-5, atol=1e-4)
 
-
     @requires_nccl()
     @skip_if_lt_x_gpu(2)
     def test_ddp_comm_hook_noop_hook(self):
@@ -220,7 +220,7 @@ class DistributedDataParallelCommHookTest(MultiProcessTestCase):
         device_id = gpus_for_rank(self.world_size)[self.rank][0]
         model = nn.Sequential(
             nn.Linear(2, 4000, bias=False),
-            *[nn.Linear(4000, 4000, bias=False) for _ in range(10)]
+            *[nn.Linear(4000, 4000, bias=False) for _ in range(10)],
         )
         gpu_model = DistributedDataParallel(
             model.to(device_id),

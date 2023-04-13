@@ -1,20 +1,16 @@
-
-
-
-
 from caffe2.python import core, workspace
 import unittest
 
-core.GlobalInit(['python'])
+core.GlobalInit(["python"])
 
 
 class BlobDeallocationTest(unittest.TestCase):
     def test(self):
-        net = core.Net('net')
+        net = core.Net("net")
 
-        x = net.GivenTensorStringFill([], ['x'], shape=[3], values=['a', 'b', 'c'])
-        y = net.GivenTensorStringFill([], ['y'], shape=[3], values=['d', 'e', 'f'])
-        net.Concat([x, y], ['concated', '_'], axis=0)
+        x = net.GivenTensorStringFill([], ["x"], shape=[3], values=["a", "b", "c"])
+        y = net.GivenTensorStringFill([], ["y"], shape=[3], values=["d", "e", "f"])
+        net.Concat([x, y], ["concated", "_"], axis=0)
 
         workspace.ResetWorkspace()
         workspace.RunNetOnce(net)
@@ -24,5 +20,5 @@ class BlobDeallocationTest(unittest.TestCase):
         self.assertTrue(True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

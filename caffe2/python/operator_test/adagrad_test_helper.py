@@ -111,7 +111,9 @@ def adagrad_sparse_test_helper(
 
     op = core.CreateOperator(
         "RowWiseSparseAdagrad" if row_wise else "SparseAdagrad",
-        ["param", "momentum", "indices", "grad", "lr"] if count is None else ["param", "momentum", "indices", "grad", "lr", "count"],
+        ["param", "momentum", "indices", "grad", "lr"]
+        if count is None
+        else ["param", "momentum", "indices", "grad", "lr", "count"],
         ["param", "momentum"],
         epsilon=epsilon,
         weight_decay=weight_decay,
@@ -120,7 +122,9 @@ def adagrad_sparse_test_helper(
         device_option=gc,
     )
 
-    def ref_sparse(param, momentum, indices, grad, lr, count=None, ref_using_fp16=False):
+    def ref_sparse(
+        param, momentum, indices, grad, lr, count=None, ref_using_fp16=False
+    ):
         param_out = np.copy(param)
         momentum_out = np.copy(momentum)
         # Need to do this because it's possible ref_adagrad's using_fp16 could
@@ -161,5 +165,5 @@ def adagrad_sparse_test_helper(
             gc,
             op,
             [param_i, momentum_i, indices, grad, lr, count, ref_using_fp16],
-            ref_sparse
+            ref_sparse,
         )

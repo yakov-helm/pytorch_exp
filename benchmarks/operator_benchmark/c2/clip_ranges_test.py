@@ -14,7 +14,7 @@ clip_ranges_long_configs = op_bench.cross_product_configs(
     N=[2],
     MAX_LENGTH=range(1, 100),
     dtype=["int32"],
-    tags=["long"]
+    tags=["long"],
 )
 
 
@@ -38,7 +38,9 @@ class ClipRangesBenchmark(op_bench_c2.Caffe2BenchmarkBase):
         self.set_module_name("clip_ranges")
 
     def forward(self):
-        op = core.CreateOperator("ClipRanges", self.input, self.input, max_length=self.max_length)
+        op = core.CreateOperator(
+            "ClipRanges", self.input, self.input, max_length=self.max_length
+        )
         return op
 
 

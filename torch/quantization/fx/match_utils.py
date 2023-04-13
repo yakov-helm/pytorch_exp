@@ -10,5 +10,5 @@ from torch.ao.quantization.fx.match_utils import (
     _MatchResult,
     MatchAllNode,
     _is_match,
-    _find_matches
+    _find_matches,
 )

@@ -20,14 +20,26 @@ class TwoNumberStatsProto(google.protobuf.message.Message):
     stddev: float = ...
     count: int = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        mean : typing.Optional[float] = ...,
-        stddev : typing.Optional[float] = ...,
-        count : typing.Optional[int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"count",b"count",u"mean",b"mean",u"stddev",b"stddev"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"count",b"count",u"mean",b"mean",u"stddev",b"stddev"]) -> None: ...
+        mean: typing.Optional[float] = ...,
+        stddev: typing.Optional[float] = ...,
+        count: typing.Optional[int] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "count", b"count", "mean", b"mean", "stddev", b"stddev"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "count", b"count", "mean", b"mean", "stddev", b"stddev"
+        ],
+    ) -> None: ...
+
 global___TwoNumberStatsProto = TwoNumberStatsProto
 
 class BlobProfile(google.protobuf.message.Message):
@@ -38,14 +50,25 @@ class BlobProfile(google.protobuf.message.Message):
 
     @property
     def bytes_used(self) -> global___TwoNumberStatsProto: ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        bytes_used : typing.Optional[global___TwoNumberStatsProto] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"bytes_used",b"bytes_used",u"name",b"name"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"bytes_used",b"bytes_used",u"name",b"name"]) -> None: ...
+        name: typing.Optional[typing.Text] = ...,
+        bytes_used: typing.Optional[global___TwoNumberStatsProto] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "bytes_used", b"bytes_used", "name", b"name"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "bytes_used", b"bytes_used", "name", b"name"
+        ],
+    ) -> None: ...
+
 global___BlobProfile = BlobProfile
 
 class ProfDAGProto(google.protobuf.message.Message):
@@ -59,25 +82,59 @@ class ProfDAGProto(google.protobuf.message.Message):
     name: typing.Text = ...
     mean: float = ...
     stddev: float = ...
-    extra_info: google.protobuf.internal.containers.RepeatedScalarFieldContainer[typing.Text] = ...
+    extra_info: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
 
     @property
     def execution_time(self) -> global___TwoNumberStatsProto: ...
-
     @property
-    def output_profile(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___BlobProfile]: ...
-
-    def __init__(self,
+    def output_profile(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___BlobProfile
+    ]: ...
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        mean : typing.Optional[float] = ...,
-        stddev : typing.Optional[float] = ...,
-        execution_time : typing.Optional[global___TwoNumberStatsProto] = ...,
-        output_profile : typing.Optional[typing.Iterable[global___BlobProfile]] = ...,
-        extra_info : typing.Optional[typing.Iterable[typing.Text]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"execution_time",b"execution_time",u"mean",b"mean",u"name",b"name",u"stddev",b"stddev"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"execution_time",b"execution_time",u"extra_info",b"extra_info",u"mean",b"mean",u"name",b"name",u"output_profile",b"output_profile",u"stddev",b"stddev"]) -> None: ...
+        name: typing.Optional[typing.Text] = ...,
+        mean: typing.Optional[float] = ...,
+        stddev: typing.Optional[float] = ...,
+        execution_time: typing.Optional[global___TwoNumberStatsProto] = ...,
+        output_profile: typing.Optional[typing.Iterable[global___BlobProfile]] = ...,
+        extra_info: typing.Optional[typing.Iterable[typing.Text]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "execution_time",
+            b"execution_time",
+            "mean",
+            b"mean",
+            "name",
+            b"name",
+            "stddev",
+            b"stddev",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "execution_time",
+            b"execution_time",
+            "extra_info",
+            b"extra_info",
+            "mean",
+            b"mean",
+            "name",
+            b"name",
+            "output_profile",
+            b"output_profile",
+            "stddev",
+            b"stddev",
+        ],
+    ) -> None: ...
+
 global___ProfDAGProto = ProfDAGProto
 
 class ProfDAGProtos(google.protobuf.message.Message):
@@ -88,19 +145,34 @@ class ProfDAGProtos(google.protobuf.message.Message):
     net_name: typing.Text = ...
 
     @property
-    def stats(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ProfDAGProto]: ...
-
+    def stats(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ProfDAGProto
+    ]: ...
     @property
-    def ops_stats(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___OpProfile]: ...
-
-    def __init__(self,
+    def ops_stats(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___OpProfile
+    ]: ...
+    def __init__(
+        self,
         *,
-        stats : typing.Optional[typing.Iterable[global___ProfDAGProto]] = ...,
-        net_name : typing.Optional[typing.Text] = ...,
-        ops_stats : typing.Optional[typing.Iterable[global___OpProfile]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"net_name",b"net_name"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"net_name",b"net_name",u"ops_stats",b"ops_stats",u"stats",b"stats"]) -> None: ...
+        stats: typing.Optional[typing.Iterable[global___ProfDAGProto]] = ...,
+        net_name: typing.Optional[typing.Text] = ...,
+        ops_stats: typing.Optional[typing.Iterable[global___OpProfile]] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["net_name", b"net_name"]
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "net_name", b"net_name", "ops_stats", b"ops_stats", "stats", b"stats"
+        ],
+    ) -> None: ...
+
 global___ProfDAGProtos = ProfDAGProtos
 
 class OpProfile(google.protobuf.message.Message):
@@ -114,13 +186,39 @@ class OpProfile(google.protobuf.message.Message):
     type: typing.Text = ...
     exec_time_secs: float = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        idx : typing.Optional[typing.Text] = ...,
-        net_name : typing.Optional[typing.Text] = ...,
-        type : typing.Optional[typing.Text] = ...,
-        exec_time_secs : typing.Optional[float] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"exec_time_secs",b"exec_time_secs",u"idx",b"idx",u"net_name",b"net_name",u"type",b"type"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"exec_time_secs",b"exec_time_secs",u"idx",b"idx",u"net_name",b"net_name",u"type",b"type"]) -> None: ...
+        idx: typing.Optional[typing.Text] = ...,
+        net_name: typing.Optional[typing.Text] = ...,
+        type: typing.Optional[typing.Text] = ...,
+        exec_time_secs: typing.Optional[float] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "exec_time_secs",
+            b"exec_time_secs",
+            "idx",
+            b"idx",
+            "net_name",
+            b"net_name",
+            "type",
+            b"type",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "exec_time_secs",
+            b"exec_time_secs",
+            "idx",
+            b"idx",
+            "net_name",
+            b"net_name",
+            "type",
+            b"type",
+        ],
+    ) -> None: ...
+
 global___OpProfile = OpProfile

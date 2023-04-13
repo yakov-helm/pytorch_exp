@@ -34,8 +34,9 @@ def vector_to_parameters(vec: torch.Tensor, parameters: Iterable[torch.Tensor]) 
     """
     # Ensure vec of type Tensor
     if not isinstance(vec, torch.Tensor):
-        raise TypeError('expected torch.Tensor, but got: {}'
-                        .format(torch.typename(vec)))
+        raise TypeError(
+            "expected torch.Tensor, but got: {}".format(torch.typename(vec))
+        )
     # Flag for the device where the parameter is located
     param_device = None
 
@@ -48,7 +49,7 @@ def vector_to_parameters(vec: torch.Tensor, parameters: Iterable[torch.Tensor]) 
         # The length of the parameter
         num_param = param.numel()
         # Slice the vector, reshape it, and replace the old data of the parameter
-        param.data = vec[pointer:pointer + num_param].view_as(param).data
+        param.data = vec[pointer : pointer + num_param].view_as(param).data
 
         # Increment the pointer
         pointer += num_param
@@ -75,10 +76,12 @@ def _check_param_device(param: torch.Tensor, old_param_device: Optional[int]) ->
     else:
         warn = False
         if param.is_cuda:  # Check if in same GPU
-            warn = (param.get_device() != old_param_device)
+            warn = param.get_device() != old_param_device
         else:  # Check if in CPU
-            warn = (old_param_device != -1)
+            warn = old_param_device != -1
         if warn:
-            raise TypeError('Found two parameters on different devices, '
-                            'this is currently not supported.')
+            raise TypeError(
+                "Found two parameters on different devices, "
+                "this is currently not supported."
+            )
     return old_param_device

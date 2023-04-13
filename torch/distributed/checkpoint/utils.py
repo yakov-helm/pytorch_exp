@@ -119,9 +119,7 @@ class _DistWrapper:
         Same as c10d::all_gather_object but works without distributed enabled.
         """
         if self.use_dist:
-            gather_objs = cast(
-                List[T], [None] * dist.get_world_size(self.group)
-            )
+            gather_objs = cast(List[T], [None] * dist.get_world_size(self.group))
 
             dist.all_gather_object(
                 object_list=gather_objs, obj=object, group=self.group
@@ -138,9 +136,7 @@ class _DistWrapper:
             gather_result = cast(List[T], [None])
             dist.scatter_object_list(
                 scatter_object_output_list=gather_result,
-                scatter_object_input_list=object_list
-                if self.is_coordinator
-                else None,
+                scatter_object_input_list=object_list if self.is_coordinator else None,
                 src=self.coordinator_rank,
                 group=self.group,
             )
@@ -280,9 +276,7 @@ class _DistWrapper:
             try:
                 result = map_fun()
             except BaseException as e:
-                result = CheckpointException(
-                    step, {self.rank: _wrap_exception(e)}
-                )
+                result = CheckpointException(step, {self.rank: _wrap_exception(e)})
         final_result = self.broadcast_object(result)
         if isinstance(final_result, CheckpointException):
             raise final_result
@@ -300,22 +294,17 @@ def _find_shard(tensor: ShardedTensor, index: MetadataIndex) -> Shard:
     if index.index is not None:
         if (
             len(shards) > index.index
-            and torch.Size(shards[index.index].metadata.shard_offsets)
-            == index.offset
+            and torch.Size(shards[index.index].metadata.shard_offsets) == index.offset
         ):
             return shards[index.index]
 
     for shard in shards:
         if torch.Size(shard.metadata.shard_offsets) == index.offset:
             return shard
-    raise ValueError(
-        f"Could not find shard at '{index.offset}' for FQN: '{index.fqn}'"
-    )
+    raise ValueError(f"Could not find shard at '{index.offset}' for FQN: '{index.fqn}'")
 
 
-def find_tensor_shard(
-    tensor: torch.Tensor, index: MetadataIndex
-) -> torch.Tensor:
+def find_tensor_shard(tensor: torch.Tensor, index: MetadataIndex) -> torch.Tensor:
     if isinstance(tensor, DTensor):
         return tensor.to_local()
     if isinstance(tensor, ShardedTensor):
@@ -330,9 +319,7 @@ def find_tensor_shard(
     return tensor
 
 
-def find_state_dict_object(
-    state_dict: STATE_DICT_TYPE, index: MetadataIndex
-) -> Any:
+def find_state_dict_object(state_dict: STATE_DICT_TYPE, index: MetadataIndex) -> Any:
     if index.fqn not in state_dict:
         raise ValueError(f"Could not find FQN: '{index.fqn}'")
     obj = state_dict[index.fqn]

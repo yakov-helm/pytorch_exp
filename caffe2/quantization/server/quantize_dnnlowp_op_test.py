@@ -1,5 +1,3 @@
-
-
 import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 import numpy as np
@@ -13,10 +11,12 @@ workspace.GlobalInit(["caffe2", "--caffe2_omp_num_threads=11"])
 
 
 class DNNLowPQuantizeOpTest(hu.HypothesisTestCase):
-    @given(size=st.integers(1024, 2048),
-           is_empty=st.booleans(),
-           absorb=st.booleans(),
-           **hu.gcs_cpu_only)
+    @given(
+        size=st.integers(1024, 2048),
+        is_empty=st.booleans(),
+        absorb=st.booleans(),
+        **hu.gcs_cpu_only,
+    )
     @settings(max_examples=10, deadline=None)
     def test_dnnlowp_quantize(self, size, is_empty, absorb, gc, dc):
         if is_empty:
@@ -53,7 +53,8 @@ class DNNLowPQuantizeOpTest(hu.HypothesisTestCase):
             net.Proto().op.extend([quantize_2])
             if absorb:
                 net_str = dnnlowp_pybind11.freeze_quantization_params(
-                    net.Proto().SerializeToString())
+                    net.Proto().SerializeToString()
+                )
                 net.Proto().ParseFromString(net_str)
             workspace.FeedBlob("X", X, device_option=gc)
             workspace.RunNetOnce(net)

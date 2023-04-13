@@ -1,8 +1,3 @@
-
-
-
-
-
 import unittest
 
 from caffe2.proto import caffe2_pb2
@@ -591,73 +586,71 @@ node {
 class TensorboardExporterTest(unittest.TestCase):
     def test_that_operators_gets_non_colliding_names(self):
         op = caffe2_pb2.OperatorDef()
-        op.type = 'foo'
-        op.input.extend(['foo'])
+        op.type = "foo"
+        op.input.extend(["foo"])
         tb._fill_missing_operator_names([op])
-        self.assertEqual(op.input[0], 'foo')
-        self.assertEqual(op.name, 'foo_1')
+        self.assertEqual(op.input[0], "foo")
+        self.assertEqual(op.name, "foo_1")
 
     def test_that_replacing_colons_gives_non_colliding_names(self):
         # .. and update shapes
         op = caffe2_pb2.OperatorDef()
-        op.name = 'foo:0'
-        op.input.extend(['foo:0', 'foo$0'])
-        shapes = {'foo:0': [1]}
+        op.name = "foo:0"
+        op.input.extend(["foo:0", "foo$0"])
+        shapes = {"foo:0": [1]}
         track_blob_names = tb._get_blob_names([op])
-        tb._replace_colons(shapes, track_blob_names, [op], '$')
-        self.assertEqual(op.input[0], 'foo$0')
-        self.assertEqual(op.input[1], 'foo$0_1')
+        tb._replace_colons(shapes, track_blob_names, [op], "$")
+        self.assertEqual(op.input[0], "foo$0")
+        self.assertEqual(op.input[1], "foo$0_1")
         # Collision but blobs and op names are handled later by
         # _fill_missing_operator_names.
-        self.assertEqual(op.name, 'foo$0')
+        self.assertEqual(op.name, "foo$0")
         self.assertEqual(len(shapes), 1)
-        self.assertEqual(shapes['foo$0'], [1])
+        self.assertEqual(shapes["foo$0"], [1])
         self.assertEqual(len(track_blob_names), 2)
-        self.assertEqual(track_blob_names['foo$0'], 'foo:0')
-        self.assertEqual(track_blob_names['foo$0_1'], 'foo$0')
+        self.assertEqual(track_blob_names["foo$0"], "foo:0")
+        self.assertEqual(track_blob_names["foo$0_1"], "foo$0")
 
     def test_that_adding_gradient_scope_does_no_fancy_renaming(self):
         # because it cannot create collisions
         op = caffe2_pb2.OperatorDef()
-        op.name = 'foo_grad'
-        op.input.extend(['foo_grad', 'foo_grad_1'])
-        shapes = {'foo_grad': [1]}
+        op.name = "foo_grad"
+        op.input.extend(["foo_grad", "foo_grad_1"])
+        shapes = {"foo_grad": [1]}
         track_blob_names = tb._get_blob_names([op])
         tb._add_gradient_scope(shapes, track_blob_names, [op])
-        self.assertEqual(op.input[0], 'GRADIENTS/foo_grad')
-        self.assertEqual(op.input[1], 'GRADIENTS/foo_grad_1')
-        self.assertEqual(op.name, 'GRADIENTS/foo_grad')
+        self.assertEqual(op.input[0], "GRADIENTS/foo_grad")
+        self.assertEqual(op.input[1], "GRADIENTS/foo_grad_1")
+        self.assertEqual(op.name, "GRADIENTS/foo_grad")
         self.assertEqual(len(shapes), 1)
-        self.assertEqual(shapes['GRADIENTS/foo_grad'], [1])
+        self.assertEqual(shapes["GRADIENTS/foo_grad"], [1])
         self.assertEqual(len(track_blob_names), 2)
-        self.assertEqual(
-            track_blob_names['GRADIENTS/foo_grad'], 'foo_grad')
-        self.assertEqual(
-            track_blob_names['GRADIENTS/foo_grad_1'], 'foo_grad_1')
+        self.assertEqual(track_blob_names["GRADIENTS/foo_grad"], "foo_grad")
+        self.assertEqual(track_blob_names["GRADIENTS/foo_grad_1"], "foo_grad_1")
 
     def test_that_auto_ssa_gives_non_colliding_names(self):
         op1 = caffe2_pb2.OperatorDef()
-        op1.output.extend(['foo'])
+        op1.output.extend(["foo"])
         op2 = caffe2_pb2.OperatorDef()
-        op2.input.extend(['foo'])
-        op2.output.extend(['foo'])
-        op2.output.extend(['foo_1'])
-        shapes = {'foo': [1], 'foo_1': [2]}
+        op2.input.extend(["foo"])
+        op2.output.extend(["foo"])
+        op2.output.extend(["foo_1"])
+        shapes = {"foo": [1], "foo_1": [2]}
         track_blob_names = tb._get_blob_names([op1, op2])
         tb._convert_to_ssa(shapes, track_blob_names, [op1, op2])
-        self.assertEqual(op1.output[0], 'foo')
-        self.assertEqual(op2.input[0], 'foo')
-        self.assertEqual(op2.output[0], 'foo_1')
+        self.assertEqual(op1.output[0], "foo")
+        self.assertEqual(op2.input[0], "foo")
+        self.assertEqual(op2.output[0], "foo_1")
         # Unfortunate name but we do not parse original `_` for now.
-        self.assertEqual(op2.output[1], 'foo_1_1')
+        self.assertEqual(op2.output[1], "foo_1_1")
         self.assertEqual(len(shapes), 3)
-        self.assertEqual(shapes['foo'], [1])
-        self.assertEqual(shapes['foo_1'], [1])
-        self.assertEqual(shapes['foo_1_1'], [2])
+        self.assertEqual(shapes["foo"], [1])
+        self.assertEqual(shapes["foo_1"], [1])
+        self.assertEqual(shapes["foo_1_1"], [2])
         self.assertEqual(len(track_blob_names), 3)
-        self.assertEqual(track_blob_names['foo'], 'foo')
-        self.assertEqual(track_blob_names['foo_1'], 'foo')
-        self.assertEqual(track_blob_names['foo_1_1'], 'foo_1')
+        self.assertEqual(track_blob_names["foo"], "foo")
+        self.assertEqual(track_blob_names["foo_1"], "foo")
+        self.assertEqual(track_blob_names["foo_1_1"], "foo_1")
 
     def test_simple_cnnmodel(self):
         model = cnn.CNNModelHelper("NCHW", name="overfeat")
@@ -681,23 +674,27 @@ class TensorboardExporterTest(unittest.TestCase):
             shapes={},
         )
         self.assertEqual(
-            track_blob_names['GRADIENTS/conv1/conv1_b_grad'],
-            'conv1/conv1_b_grad',
+            track_blob_names["GRADIENTS/conv1/conv1_b_grad"],
+            "conv1/conv1_b_grad",
         )
         self.maxDiff = None
         # We can't guarantee the order in which they appear, so we sort
         # both before we compare them
         sep = "node {"
-        expected = "\n".join(sorted(
-            sep + "\n  " + part.strip()
-            for part in EXPECTED.strip().split(sep)
-            if part.strip()
-        ))
-        actual = "\n".join(sorted(
-            sep + "\n  " + part.strip()
-            for part in str(graph).strip().split(sep)
-            if part.strip()
-        ))
+        expected = "\n".join(
+            sorted(
+                sep + "\n  " + part.strip()
+                for part in EXPECTED.strip().split(sep)
+                if part.strip()
+            )
+        )
+        actual = "\n".join(
+            sorted(
+                sep + "\n  " + part.strip()
+                for part in str(graph).strip().split(sep)
+                if part.strip()
+            )
+        )
         self.assertMultiLineEqual(actual, expected)
 
 

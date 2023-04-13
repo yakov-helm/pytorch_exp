@@ -1,8 +1,3 @@
-
-
-
-
-
 from builtins import bytes
 import copy
 import logging
@@ -18,6 +13,7 @@ try:
     from tensorboard.compat.proto.graph_pb2 import GraphDef
 except ImportError:
     from tensorflow.core.framework import tensor_shape_pb2
+
     try:
         # tensorflow>=1.0.0
         from tensorflow import NodeDef, GraphDef
@@ -29,10 +25,10 @@ except ImportError:
 def _make_unique_name(seen, name, min_version=0):
     assert name is not None
     i = min_version
-    x = '%s_%d' % (name, i) if i else name
+    x = "%s_%d" % (name, i) if i else name
     while x in seen:
         i += 1
-        x = '%s_%d' % (name, i)
+        x = "%s_%d" % (name, i)
     seen.add(x)
     return x
 
@@ -102,8 +98,7 @@ def _rename_all(shapes, track_blob_names, ops, f):
     renamed = {}
 
     def g(name):
-        """ Collision-free version of f.
-        """
+        """Collision-free version of f."""
         if name is None:
             return None
         if name in renamed:
@@ -139,11 +134,13 @@ def _add_gradient_scope(shapes, track_blob_names, ops):
     Note: breaks graph execution since the blob -> gradient mapping is
     hardcoded.
     """
+
     def f(name):
-        if '_grad' in name:
-            return 'GRADIENTS/{}'.format(name)
+        if "_grad" in name:
+            return "GRADIENTS/{}".format(name)
         else:
             return name
+
     _rename_all(shapes, track_blob_names, ops, f)
 
 
@@ -151,18 +148,20 @@ def _replace_colons(shapes, track_blob_names, ops, repl):
     """
     `:i` has a special meaning in Tensorflow.
     """
+
     def f(name):
-        return name.replace(':', repl)
+        return name.replace(":", repl)
+
     _rename_all(shapes, track_blob_names, ops, f)
 
 
 def _fill_missing_operator_names(ops):
-    ''' Give missing operators a name.
+    """Give missing operators a name.
 
     We expect C2 operators to be generally unnamed. This gives them a scope
     (inferred from their outputs) and a name after their type. Duplicates will
     be postfixed by an index.
-    '''
+    """
     seen = set()
     for op in ops:
         # Make sure operator names don't collide with blobs.
@@ -177,7 +176,7 @@ def _fill_missing_operator_names(ops):
             name = os.path.join(scope, op.type)
         else:
             name = op.type
-        assert(name)
+        assert name
         op.name = _make_unique_name(seen, name)
 
 
@@ -197,12 +196,12 @@ def _add_tf_shape(m, ints):
         dim = tensor_shape_pb2.TensorShapeProto.Dim()
         dim.size = i
         sh.dim.extend([dim])
-    m['_output_shapes'].list.shape.extend([sh])
+    m["_output_shapes"].list.shape.extend([sh])
 
 
 def _set_tf_attr(m, arg):
     k = arg.name
-    if k == 'shape' and arg.ints:
+    if k == "shape" and arg.ints:
         _add_tf_shape(m, arg.ints)
         return
     if arg.HasField("f"):
@@ -212,9 +211,7 @@ def _set_tf_attr(m, arg):
         m[k].i = arg.i
         return
     if arg.HasField("s"):
-        m[k].s = (
-            arg.s if isinstance(arg.s, bytes) else str(arg.s).encode('utf-8')
-        )
+        m[k].s = arg.s if isinstance(arg.s, bytes) else str(arg.s).encode("utf-8")
         return
     if arg.floats:
         m[k].list.f.extend(arg.floats)
@@ -224,8 +221,7 @@ def _set_tf_attr(m, arg):
         return
     if arg.strings:
         m[k].list.s.extend(
-            s if isinstance(s, bytes) else str(s).encode('utf-8')
-            for s in arg.strings
+            s if isinstance(s, bytes) else str(s).encode("utf-8") for s in arg.strings
         )
         return
     # The value is an empty list.
@@ -256,13 +252,13 @@ def _blob_to_node(producing_ops, shapes, name):
     n.name = name
     inputs = producing_ops.get(name, [])
     if inputs:
-        n.op = 'Blob'
+        n.op = "Blob"
     else:
-        n.op = 'Placeholder'
-    n.input.extend('%s:%d' % (op.name, i) for op, i in inputs)
+        n.op = "Placeholder"
+    n.input.extend("%s:%d" % (op.name, i) for op, i in inputs)
     if inputs:
         device = inputs[0][0].device_option
-        if (all(input[0].device_option == device for input in inputs)):
+        if all(input[0].device_option == device for input in inputs):
             n.device = _tf_device(device)
     if shapes and name in shapes:
         _add_tf_shape(n.attr, shapes[name])
@@ -272,7 +268,7 @@ def _blob_to_node(producing_ops, shapes, name):
 def _operators_to_graph_def(
     shapes,
     ops,
-    replace_colons='$',
+    replace_colons="$",
     with_ssa=True,
     with_gradient_scope=True,
     track_blob_names=None,  # pass an empty array to track blob names
@@ -316,7 +312,7 @@ def _try_get_shapes(nets):
         shapes, _ = workspace.InferShapesAndTypes(nets)
         return shapes
     except Exception as e:
-        logging.warning('Failed to compute shapes: %s', e)
+        logging.warning("Failed to compute shapes: %s", e)
         return {}
 
 
@@ -328,9 +324,7 @@ def nets_to_graph_def(nets, shapes=None, **kwargs):
     for net in nets:
         _propagate_device_option(net)
     return _operators_to_graph_def(
-        shapes,
-        [op for net in nets for op in net.op],
-        **kwargs
+        shapes, [op for net in nets for op in net.op], **kwargs
     )
 
 

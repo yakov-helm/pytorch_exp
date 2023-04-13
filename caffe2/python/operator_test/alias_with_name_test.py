@@ -11,7 +11,7 @@ class TestAliasWithNameOp(hu.HypothesisTestCase):
     @given(
         shape=st.lists(st.integers(0, 5), min_size=1, max_size=3),
         dtype=st.sampled_from([np.float32, np.int64]),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_alias_with_name_op(self, shape, dtype, dc, gc):
         test_input = (100 * np.random.random(shape)).astype(dtype)

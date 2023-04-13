@@ -43,9 +43,7 @@ bias = torch.randn(intermediate_size, requires_grad=True, device=device, dtype=d
 
 
 # Get the optimized function
-opt_fn = memory_efficient_pointwise_fusion(
-    aot_fn, compiler_name="torchscript_nvfuser"
-)
+opt_fn = memory_efficient_pointwise_fusion(aot_fn, compiler_name="torchscript_nvfuser")
 
 
 # Profile cuda kernels

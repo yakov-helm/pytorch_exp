@@ -1,6 +1,7 @@
 import torch
 from torch.fx import GraphModule
 from torch.nn.utils.fusion import fuse_conv_bn_weights
+
 # TODO[jerryzh168]: move this to a more general util function
 from torch.ao.quantization.fx.prepare import (
     _is_activation_post_process_node,
@@ -14,10 +15,14 @@ def _get_tensor_constant_from_node(node, m):
     assert node.op == "get_attr"
     return getattr(m, node.target)
 
+
 # fuse conv bn weights, inplace modification of the graph_module and graph
 def _fuse_conv_bn_(m: GraphModule) -> None:
     for n in m.graph.nodes:
-        if n.op != "call_function" or n.target != torch.ops.aten._native_batch_norm_legit_no_training.default:
+        if (
+            n.op != "call_function"
+            or n.target != torch.ops.aten._native_batch_norm_legit_no_training.default
+        ):
             continue
         bn_op = n
         n = bn_op.args[0]
@@ -41,7 +46,9 @@ def _fuse_conv_bn_(m: GraphModule) -> None:
         bn_rv = _get_tensor_constant_from_node(bn_op.args[4], m)
         bn_eps = bn_op.args[6]
 
-        fused_weight, fused_bias = fuse_conv_bn_weights(conv_w, conv_b, bn_rm, bn_rv, bn_eps, bn_w, bn_b, transpose=transpose)
+        fused_weight, fused_bias = fuse_conv_bn_weights(
+            conv_w, conv_b, bn_rm, bn_rv, bn_eps, bn_w, bn_b, transpose=transpose
+        )
 
         # update the weight and bias for conv
         conv_args = list(conv_op.args)
@@ -73,11 +80,16 @@ def _fuse_conv_bn_(m: GraphModule) -> None:
         # if users2 and users3 are empty then bn will be removed through dead code elimination
 
         for user in bn_op.users:
-            if user.op != "call_function" or user.target != operator.getitem or user.args[1] != 0:
+            if (
+                user.op != "call_function"
+                or user.target != operator.getitem
+                or user.args[1] != 0
+            ):
                 continue
             user.replace_all_uses_with(conv_op)
     m.graph.eliminate_dead_code()
     m.recompile()
+
 
 # TODO: remove hack when we have better support for pattern matching
 # move around the observer for addmm
@@ -95,8 +107,8 @@ def _rearrange_weight_observer_for_decomposed_linear(
     """
     aten = torch.ops.aten
     op_to_weight_obs_index = {
-        aten.addmm.default : 2,
-        aten.mm.default : 1,
+        aten.addmm.default: 2,
+        aten.mm.default: 1,
     }
     named_modules = dict(model.named_modules(remove_duplicate=False))
     for node in model.graph.nodes:
@@ -120,7 +132,7 @@ def _rearrange_weight_observer_for_decomposed_linear(
                 "call_function",
                 torch.ops.aten.t.default,
                 tuple(args),
-                transpose_node.kwargs
+                transpose_node.kwargs,
             )
         root_node.replace_input_with(maybe_weight_obs, new_transpose_node)
 

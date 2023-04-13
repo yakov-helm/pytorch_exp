@@ -21,17 +21,21 @@ from torch.testing._internal.common_utils import (
 )
 
 if TEST_WITH_DEV_DBG_ASAN:
-    print("Skip dev-asan as torch + multiprocessing spawn have known issues", file=sys.stderr)
+    print(
+        "Skip dev-asan as torch + multiprocessing spawn have known issues",
+        file=sys.stderr,
+    )
     sys.exit(0)
 
+
 class TestShardedTensorNNInit(ShardedTensorTestBase):
-    """ Testing torch.nn.init functions for ShardedTensor """
+    """Testing torch.nn.init functions for ShardedTensor"""
 
     @with_comms
     @skip_if_lt_x_gpu(4)
     @requires_nccl()
     def test_init_sharded_tensor_with_uniform(self):
-        """ Test torch.nn.init.uniform_(ShardedTensor, a, b) """
+        """Test torch.nn.init.uniform_(ShardedTensor, a, b)"""
 
         spec = ChunkShardingSpec(
             dim=0,
@@ -66,7 +70,7 @@ class TestShardedTensorNNInit(ShardedTensorTestBase):
     @skip_if_lt_x_gpu(4)
     @requires_nccl()
     def test_init_sharded_tensor_with_normal(self):
-        """ Test torch.nn.init.normal_(ShardedTensor, mean, std) """
+        """Test torch.nn.init.normal_(ShardedTensor, mean, std)"""
 
         spec = ChunkShardingSpec(
             dim=0,
@@ -101,7 +105,7 @@ class TestShardedTensorNNInit(ShardedTensorTestBase):
     @skip_if_lt_x_gpu(4)
     @requires_nccl()
     def test_init_sharded_tensor_with_kaiming_uniform(self):
-        """ Test torch.nn.init.kaiming_uniform_(ShardedTensor, a, mode, nonlinearit) """
+        """Test torch.nn.init.kaiming_uniform_(ShardedTensor, a, mode, nonlinearit)"""
 
         spec = ChunkShardingSpec(
             dim=0,
@@ -115,7 +119,7 @@ class TestShardedTensorNNInit(ShardedTensorTestBase):
         h, w = 8, 2
         expected_h = 2
         expected_device = torch.device(f"cuda:{self.rank}")
-        a, mode, nonlinearity = 0, 'fan_in', 'leaky_relu'
+        a, mode, nonlinearity = 0, "fan_in", "leaky_relu"
 
         seed = 1234
         dtype = torch.double
@@ -129,8 +133,11 @@ class TestShardedTensorNNInit(ShardedTensorTestBase):
         torch.nn.init.kaiming_uniform_(st, a=a, mode=mode, nonlinearity=nonlinearity)
 
         torch.manual_seed(seed)
-        torch.nn.init.kaiming_uniform_(local_tensor_clone, a=a, mode=mode, nonlinearity=nonlinearity)
+        torch.nn.init.kaiming_uniform_(
+            local_tensor_clone, a=a, mode=mode, nonlinearity=nonlinearity
+        )
         self.assertEqual(local_tensor_clone, st.local_shards()[0].tensor)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_tests()

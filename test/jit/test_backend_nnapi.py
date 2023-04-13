@@ -30,9 +30,13 @@ without the delegate API.
 # Second skip is because ASAN is currently causing an error.
 # It is still unclear how to resolve this. T95764916
 torch_root = Path(__file__).resolve().parent.parent.parent
-lib_path = torch_root / 'build' / 'lib' / 'libnnapi_backend.so'
-@unittest.skipIf(not os.path.exists(lib_path),
-                 "Skipping the test as libnnapi_backend.so was not found")
+lib_path = torch_root / "build" / "lib" / "libnnapi_backend.so"
+
+
+@unittest.skipIf(
+    not os.path.exists(lib_path),
+    "Skipping the test as libnnapi_backend.so was not found",
+)
 @unittest.skipIf(TEST_WITH_ASAN, "Unresolved bug with ASAN")
 class TestNnapiBackend(TestNNAPI):
     def setUp(self):
@@ -79,35 +83,44 @@ method_compile_spec must use the following format:
 
         # No forward key
         compile_spec = {"backward": {"inputs": args}}
-        with self.assertRaisesRegex(RuntimeError, "method_compile_spec does not contain the \"forward\" key." + errorMsgTail):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            'method_compile_spec does not contain the "forward" key.' + errorMsgTail,
+        ):
             torch._C._jit_to_backend("nnapi", traced, compile_spec)
 
         # No dictionary under the forward key
         compile_spec = {"forward": 1}
-        with self.assertRaisesRegex(RuntimeError,
-                                    "method_compile_spec does not contain a dictionary with an \"inputs\" key, "
-                                    "under it's \"forward\" key."
-                                    + errorMsgTail):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            'method_compile_spec does not contain a dictionary with an "inputs" key, '
+            'under it\'s "forward" key.' + errorMsgTail,
+        ):
             torch._C._jit_to_backend("nnapi", traced, compile_spec)
 
         # No inputs key (in the dictionary under the forward key)
         compile_spec = {"forward": {"not inputs": args}}
-        with self.assertRaisesRegex(RuntimeError,
-                                    "method_compile_spec does not contain a dictionary with an \"inputs\" key, "
-                                    "under it's \"forward\" key."
-                                    + errorMsgTail):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            'method_compile_spec does not contain a dictionary with an "inputs" key, '
+            'under it\'s "forward" key.' + errorMsgTail,
+        ):
             torch._C._jit_to_backend("nnapi", traced, compile_spec)
 
         # No Tensor or TensorList under the inputs key
         compile_spec = {"forward": {"inputs": 1}}
-        with self.assertRaisesRegex(RuntimeError,
-                                    "method_compile_spec does not contain either a Tensor or TensorList, under it's \"inputs\" key."
-                                    + errorMsgTail):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            'method_compile_spec does not contain either a Tensor or TensorList, under it\'s "inputs" key.'
+            + errorMsgTail,
+        ):
             torch._C._jit_to_backend("nnapi", traced, compile_spec)
         compile_spec = {"forward": {"inputs": [1]}}
-        with self.assertRaisesRegex(RuntimeError,
-                                    "method_compile_spec does not contain either a Tensor or TensorList, under it's \"inputs\" key."
-                                    + errorMsgTail):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            'method_compile_spec does not contain either a Tensor or TensorList, under it\'s "inputs" key.'
+            + errorMsgTail,
+        ):
             torch._C._jit_to_backend("nnapi", traced, compile_spec)
 
     def tearDown(self):

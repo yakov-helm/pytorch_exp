@@ -10,7 +10,7 @@ from torch._functorch.aot_autograd import (
     get_aot_graph_name,
     get_aot_compilation_context,
     make_boxed_func,
-    make_boxed_compiler
+    make_boxed_compiler,
 )
 from torch._functorch.compilers import (
     ts_compile,
@@ -20,7 +20,7 @@ from torch._functorch.compilers import (
     memory_efficient_fusion,
     debug_compile,
     print_compile,
-    default_decompositions
+    default_decompositions,
 )
 from torch._functorch.partitioners import (
     min_cut_rematerialization_partition,

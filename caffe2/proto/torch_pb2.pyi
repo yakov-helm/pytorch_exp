@@ -14,11 +14,16 @@ import typing_extensions
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
 
 global___ProtoVersion = ProtoVersion
-class _ProtoVersion(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[ProtoVersion], type):
+
+class _ProtoVersion(
+    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[ProtoVersion], type
+):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
     PROTO_VERSION_NEWEST = ProtoVersion.V(6)
+
 class ProtoVersion(metaclass=_ProtoVersion):
-    V = typing.NewType('V', int)
+    V = typing.NewType("V", int)
+
 PROTO_VERSION_NEWEST = ProtoVersion.V(6)
 
 class RecordRef(google.protobuf.message.Message):
@@ -26,12 +31,18 @@ class RecordRef(google.protobuf.message.Message):
     KEY_FIELD_NUMBER: int
     key: typing.Text = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        key : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"key",b"key"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"key",b"key"]) -> None: ...
+        key: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["key", b"key"]
+    ) -> bool: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["key", b"key"]
+    ) -> None: ...
+
 global___RecordRef = RecordRef
 
 class TensorDef(google.protobuf.message.Message):
@@ -58,22 +69,67 @@ class TensorDef(google.protobuf.message.Message):
 
     @property
     def data(self) -> global___RecordRef: ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        dims : typing.Optional[typing.Iterable[int]] = ...,
-        offset : typing.Optional[int] = ...,
-        strides : typing.Optional[typing.Iterable[int]] = ...,
-        requires_grad : typing.Optional[bool] = ...,
-        data_type : typing.Optional[caffe2.proto.caffe2_pb2.TensorProto.DataType] = ...,
-        data : typing.Optional[global___RecordRef] = ...,
-        device : typing.Optional[typing.Text] = ...,
-        is_quantized : typing.Optional[bool] = ...,
-        scale : typing.Optional[float] = ...,
-        zero_point : typing.Optional[int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"data",b"data",u"data_type",b"data_type",u"device",b"device",u"is_quantized",b"is_quantized",u"offset",b"offset",u"requires_grad",b"requires_grad",u"scale",b"scale",u"zero_point",b"zero_point"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"data",b"data",u"data_type",b"data_type",u"device",b"device",u"dims",b"dims",u"is_quantized",b"is_quantized",u"offset",b"offset",u"requires_grad",b"requires_grad",u"scale",b"scale",u"strides",b"strides",u"zero_point",b"zero_point"]) -> None: ...
+        dims: typing.Optional[typing.Iterable[int]] = ...,
+        offset: typing.Optional[int] = ...,
+        strides: typing.Optional[typing.Iterable[int]] = ...,
+        requires_grad: typing.Optional[bool] = ...,
+        data_type: typing.Optional[caffe2.proto.caffe2_pb2.TensorProto.DataType] = ...,
+        data: typing.Optional[global___RecordRef] = ...,
+        device: typing.Optional[typing.Text] = ...,
+        is_quantized: typing.Optional[bool] = ...,
+        scale: typing.Optional[float] = ...,
+        zero_point: typing.Optional[int] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "data",
+            b"data",
+            "data_type",
+            b"data_type",
+            "device",
+            b"device",
+            "is_quantized",
+            b"is_quantized",
+            "offset",
+            b"offset",
+            "requires_grad",
+            b"requires_grad",
+            "scale",
+            b"scale",
+            "zero_point",
+            b"zero_point",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "data",
+            b"data",
+            "data_type",
+            b"data_type",
+            "device",
+            b"device",
+            "dims",
+            b"dims",
+            "is_quantized",
+            b"is_quantized",
+            "offset",
+            b"offset",
+            "requires_grad",
+            b"requires_grad",
+            "scale",
+            b"scale",
+            "strides",
+            b"strides",
+            "zero_point",
+            b"zero_point",
+        ],
+    ) -> None: ...
+
 global___TensorDef = TensorDef
 
 class AttributeDef(google.protobuf.message.Message):
@@ -85,14 +141,26 @@ class AttributeDef(google.protobuf.message.Message):
     name: typing.Text = ...
     id: int = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        type : typing.Optional[typing.Text] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        id : typing.Optional[int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"id",b"id",u"name",b"name",u"type",b"type"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"id",b"id",u"name",b"name",u"type",b"type"]) -> None: ...
+        type: typing.Optional[typing.Text] = ...,
+        name: typing.Optional[typing.Text] = ...,
+        id: typing.Optional[int] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "id", b"id", "name", b"name", "type", b"type"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "id", b"id", "name", b"name", "type", b"type"
+        ],
+    ) -> None: ...
+
 global___AttributeDef = AttributeDef
 
 class ParameterDef(google.protobuf.message.Message):
@@ -104,14 +172,26 @@ class ParameterDef(google.protobuf.message.Message):
     tensor_id: int = ...
     name: typing.Text = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        is_buffer : typing.Optional[bool] = ...,
-        tensor_id : typing.Optional[int] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"is_buffer",b"is_buffer",u"name",b"name",u"tensor_id",b"tensor_id"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"is_buffer",b"is_buffer",u"name",b"name",u"tensor_id",b"tensor_id"]) -> None: ...
+        is_buffer: typing.Optional[bool] = ...,
+        tensor_id: typing.Optional[int] = ...,
+        name: typing.Optional[typing.Text] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "is_buffer", b"is_buffer", "name", b"name", "tensor_id", b"tensor_id"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "is_buffer", b"is_buffer", "name", b"name", "tensor_id", b"tensor_id"
+        ],
+    ) -> None: ...
+
 global___ParameterDef = ParameterDef
 
 class ModuleDef(google.protobuf.message.Message):
@@ -132,45 +212,101 @@ class ModuleDef(google.protobuf.message.Message):
     get_state_attribute_id: int = ...
 
     @property
-    def submodules(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ModuleDef]: ...
-
+    def submodules(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ModuleDef
+    ]: ...
     @property
     def torchscript_arena(self) -> global___RecordRef: ...
-
     @property
-    def caffe2_nets(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[caffe2.proto.caffe2_pb2.NetDef]: ...
-
+    def caffe2_nets(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        caffe2.proto.caffe2_pb2.NetDef
+    ]: ...
     @property
     def pickle_arena(self) -> global___RecordRef: ...
-
     @property
     def cpp_arena(self) -> global___RecordRef: ...
-
     @property
-    def parameters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ParameterDef]: ...
-
+    def parameters(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ParameterDef
+    ]: ...
     @property
-    def attributes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___AttributeDef]: ...
-
+    def attributes(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___AttributeDef
+    ]: ...
     @property
     def torchscript_debug_arena(self) -> global___RecordRef: ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        submodules : typing.Optional[typing.Iterable[global___ModuleDef]] = ...,
-        torchscript_arena : typing.Optional[global___RecordRef] = ...,
-        caffe2_nets : typing.Optional[typing.Iterable[caffe2.proto.caffe2_pb2.NetDef]] = ...,
-        pickle_arena : typing.Optional[global___RecordRef] = ...,
-        cpp_arena : typing.Optional[global___RecordRef] = ...,
-        parameters : typing.Optional[typing.Iterable[global___ParameterDef]] = ...,
-        name : typing.Optional[typing.Text] = ...,
-        optimize : typing.Optional[bool] = ...,
-        attributes : typing.Optional[typing.Iterable[global___AttributeDef]] = ...,
-        get_state_attribute_id : typing.Optional[int] = ...,
-        torchscript_debug_arena : typing.Optional[global___RecordRef] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"cpp_arena",b"cpp_arena",u"get_state_attribute_id",b"get_state_attribute_id",u"name",b"name",u"optimize",b"optimize",u"pickle_arena",b"pickle_arena",u"torchscript_arena",b"torchscript_arena",u"torchscript_debug_arena",b"torchscript_debug_arena"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"attributes",b"attributes",u"caffe2_nets",b"caffe2_nets",u"cpp_arena",b"cpp_arena",u"get_state_attribute_id",b"get_state_attribute_id",u"name",b"name",u"optimize",b"optimize",u"parameters",b"parameters",u"pickle_arena",b"pickle_arena",u"submodules",b"submodules",u"torchscript_arena",b"torchscript_arena",u"torchscript_debug_arena",b"torchscript_debug_arena"]) -> None: ...
+        submodules: typing.Optional[typing.Iterable[global___ModuleDef]] = ...,
+        torchscript_arena: typing.Optional[global___RecordRef] = ...,
+        caffe2_nets: typing.Optional[
+            typing.Iterable[caffe2.proto.caffe2_pb2.NetDef]
+        ] = ...,
+        pickle_arena: typing.Optional[global___RecordRef] = ...,
+        cpp_arena: typing.Optional[global___RecordRef] = ...,
+        parameters: typing.Optional[typing.Iterable[global___ParameterDef]] = ...,
+        name: typing.Optional[typing.Text] = ...,
+        optimize: typing.Optional[bool] = ...,
+        attributes: typing.Optional[typing.Iterable[global___AttributeDef]] = ...,
+        get_state_attribute_id: typing.Optional[int] = ...,
+        torchscript_debug_arena: typing.Optional[global___RecordRef] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "cpp_arena",
+            b"cpp_arena",
+            "get_state_attribute_id",
+            b"get_state_attribute_id",
+            "name",
+            b"name",
+            "optimize",
+            b"optimize",
+            "pickle_arena",
+            b"pickle_arena",
+            "torchscript_arena",
+            b"torchscript_arena",
+            "torchscript_debug_arena",
+            b"torchscript_debug_arena",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "attributes",
+            b"attributes",
+            "caffe2_nets",
+            b"caffe2_nets",
+            "cpp_arena",
+            b"cpp_arena",
+            "get_state_attribute_id",
+            b"get_state_attribute_id",
+            "name",
+            b"name",
+            "optimize",
+            b"optimize",
+            "parameters",
+            b"parameters",
+            "pickle_arena",
+            b"pickle_arena",
+            "submodules",
+            b"submodules",
+            "torchscript_arena",
+            b"torchscript_arena",
+            "torchscript_debug_arena",
+            b"torchscript_debug_arena",
+        ],
+    ) -> None: ...
+
 global___ModuleDef = ModuleDef
 
 class LibDef(google.protobuf.message.Message):
@@ -179,13 +315,24 @@ class LibDef(google.protobuf.message.Message):
 
     @property
     def torchscript_arena(self) -> global___RecordRef: ...
-
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        torchscript_arena : typing.Optional[global___RecordRef] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"torchscript_arena",b"torchscript_arena"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"torchscript_arena",b"torchscript_arena"]) -> None: ...
+        torchscript_arena: typing.Optional[global___RecordRef] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "torchscript_arena", b"torchscript_arena"
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "torchscript_arena", b"torchscript_arena"
+        ],
+    ) -> None: ...
+
 global___LibDef = LibDef
 
 class ModelDef(google.protobuf.message.Message):
@@ -201,18 +348,48 @@ class ModelDef(google.protobuf.message.Message):
 
     @property
     def main_module(self) -> global___ModuleDef: ...
-
     @property
-    def tensors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___TensorDef]: ...
-
-    def __init__(self,
+    def tensors(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___TensorDef
+    ]: ...
+    def __init__(
+        self,
         *,
-        proto_version : typing.Optional[int] = ...,
-        main_module : typing.Optional[global___ModuleDef] = ...,
-        producer_name : typing.Optional[typing.Text] = ...,
-        producer_version : typing.Optional[typing.Text] = ...,
-        tensors : typing.Optional[typing.Iterable[global___TensorDef]] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"main_module",b"main_module",u"producer_name",b"producer_name",u"producer_version",b"producer_version",u"proto_version",b"proto_version"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"main_module",b"main_module",u"producer_name",b"producer_name",u"producer_version",b"producer_version",u"proto_version",b"proto_version",u"tensors",b"tensors"]) -> None: ...
+        proto_version: typing.Optional[int] = ...,
+        main_module: typing.Optional[global___ModuleDef] = ...,
+        producer_name: typing.Optional[typing.Text] = ...,
+        producer_version: typing.Optional[typing.Text] = ...,
+        tensors: typing.Optional[typing.Iterable[global___TensorDef]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "main_module",
+            b"main_module",
+            "producer_name",
+            b"producer_name",
+            "producer_version",
+            b"producer_version",
+            "proto_version",
+            b"proto_version",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "main_module",
+            b"main_module",
+            "producer_name",
+            b"producer_name",
+            "producer_version",
+            b"producer_version",
+            "proto_version",
+            b"proto_version",
+            "tensors",
+            b"tensors",
+        ],
+    ) -> None: ...
+
 global___ModelDef = ModelDef

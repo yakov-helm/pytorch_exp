@@ -2,9 +2,6 @@
 # Module caffe2.python.models.seq2seq.beam_search
 
 
-
-
-
 from collections import namedtuple
 from caffe2.python import core
 import caffe2.python.models.seq2seq.seq2seq_util as seq2seq_util
@@ -30,11 +27,11 @@ class BeamSearchForwardOnly:
         window: width of global blob to read/write in time dimension
     """
 
-    LinkConfig = namedtuple('LinkConfig', ['blob', 'offset', 'window'])
+    LinkConfig = namedtuple("LinkConfig", ["blob", "offset", "window"])
 
     StateConfig = namedtuple(
-        'StateConfig',
-        ['initial_value', 'state_prev_link', 'state_link'],
+        "StateConfig",
+        ["initial_value", "state_prev_link", "state_link"],
     )
 
     def __init__(
@@ -48,7 +45,7 @@ class BeamSearchForwardOnly:
         self.beam_size = beam_size
         self.model = model
         self.step_model = Seq2SeqModelHelper(
-            name='step_model',
+            name="step_model",
             param_model=self.model,
         )
         self.go_token_id = go_token_id
@@ -62,20 +59,20 @@ class BeamSearchForwardOnly:
             self.hypo_t_prev,
             self.attention_t_prev,
         ) = self.step_model.net.AddExternalInputs(
-            'timestep',
-            'scores_t_prev',
-            'tokens_t_prev',
-            'hypo_t_prev',
-            'attention_t_prev',
+            "timestep",
+            "scores_t_prev",
+            "tokens_t_prev",
+            "hypo_t_prev",
+            "attention_t_prev",
         )
         tokens_t_prev_int32 = self.step_model.net.Cast(
             self.tokens_t_prev,
-            'tokens_t_prev_int32',
+            "tokens_t_prev_int32",
             to=core.DataType.INT32,
         )
         self.tokens_t_prev_int32_flattened, _ = self.step_model.net.Reshape(
             [tokens_t_prev_int32],
-            [tokens_t_prev_int32, 'input_t_int32_old_shape'],
+            [tokens_t_prev_int32, "input_t_int32_old_shape"],
             shape=[1, -1],
         )
 
@@ -106,71 +103,71 @@ class BeamSearchForwardOnly:
     ):
         ZERO = self.model.param_init_net.ConstantFill(
             [],
-            'ZERO',
+            "ZERO",
             shape=[1],
             value=0,
             dtype=core.DataType.INT32,
         )
         on_initial_step = self.step_model.net.EQ(
             [ZERO, self.timestep],
-            'on_initial_step',
+            "on_initial_step",
         )
 
         if self.post_eos_penalty is not None:
             eos_token = self.model.param_init_net.ConstantFill(
                 [],
-                'eos_token',
+                "eos_token",
                 shape=[self.beam_size],
                 value=self.eos_token_id,
                 dtype=core.DataType.INT32,
             )
             finished_penalty = self.model.param_init_net.ConstantFill(
                 [],
-                'finished_penalty',
+                "finished_penalty",
                 shape=[1],
                 value=float(self.post_eos_penalty),
                 dtype=core.DataType.FLOAT,
             )
             ZERO_FLOAT = self.model.param_init_net.ConstantFill(
                 [],
-                'ZERO_FLOAT',
+                "ZERO_FLOAT",
                 shape=[1],
                 value=0.0,
                 dtype=core.DataType.FLOAT,
             )
             finished_penalty = self.step_model.net.Conditional(
                 [on_initial_step, ZERO_FLOAT, finished_penalty],
-                'possible_finished_penalty',
+                "possible_finished_penalty",
             )
 
             tokens_t_flat = self.step_model.net.FlattenToVec(
                 self.tokens_t_prev,
-                'tokens_t_flat',
+                "tokens_t_flat",
             )
             tokens_t_flat_int = self.step_model.net.Cast(
                 tokens_t_flat,
-                'tokens_t_flat_int',
+                "tokens_t_flat_int",
                 to=core.DataType.INT32,
             )
 
             predecessor_is_eos = self.step_model.net.EQ(
                 [tokens_t_flat_int, eos_token],
-                'predecessor_is_eos',
+                "predecessor_is_eos",
             )
             predecessor_is_eos_float = self.step_model.net.Cast(
                 predecessor_is_eos,
-                'predecessor_is_eos_float',
+                "predecessor_is_eos_float",
                 to=core.DataType.FLOAT,
             )
             predecessor_is_eos_penalty = self.step_model.net.Mul(
                 [predecessor_is_eos_float, finished_penalty],
-                'predecessor_is_eos_penalty',
+                "predecessor_is_eos_penalty",
                 broadcast=1,
             )
 
             log_probs = self.step_model.net.Add(
                 [log_probs, predecessor_is_eos_penalty],
-                'log_probs_penalized',
+                "log_probs_penalized",
                 broadcast=1,
                 axis=0,
             )
@@ -178,26 +175,26 @@ class BeamSearchForwardOnly:
         # [beam_size, beam_size]
         best_scores_per_hypo, best_tokens_per_hypo = self.step_model.net.TopK(
             log_probs,
-            ['best_scores_per_hypo', 'best_tokens_per_hypo_indices'],
+            ["best_scores_per_hypo", "best_tokens_per_hypo_indices"],
             k=self.beam_size,
         )
         if possible_translation_tokens:
             # [beam_size, beam_size]
             best_tokens_per_hypo = self.step_model.net.Gather(
                 [possible_translation_tokens, best_tokens_per_hypo],
-                ['best_tokens_per_hypo']
+                ["best_tokens_per_hypo"],
             )
 
         # [beam_size]
         scores_t_prev_squeezed, _ = self.step_model.net.Reshape(
             self.scores_t_prev,
-            ['scores_t_prev_squeezed', 'scores_t_prev_old_shape'],
+            ["scores_t_prev_squeezed", "scores_t_prev_old_shape"],
             shape=[self.beam_size],
         )
         # [beam_size, beam_size]
         output_scores = self.step_model.net.Add(
             [best_scores_per_hypo, scores_t_prev_squeezed],
-            'output_scores',
+            "output_scores",
             broadcast=1,
             axis=0,
         )
@@ -205,29 +202,29 @@ class BeamSearchForwardOnly:
             # [beam_size, beam_size]
             word_rewards_for_best_tokens_per_hypo = self.step_model.net.Gather(
                 [word_rewards, best_tokens_per_hypo],
-                'word_rewards_for_best_tokens_per_hypo',
+                "word_rewards_for_best_tokens_per_hypo",
             )
             # [beam_size, beam_size]
             output_scores = self.step_model.net.Add(
                 [output_scores, word_rewards_for_best_tokens_per_hypo],
-                'output_scores',
+                "output_scores",
             )
         # [beam_size * beam_size]
         output_scores_flattened, _ = self.step_model.net.Reshape(
             [output_scores],
-            [output_scores, 'output_scores_old_shape'],
+            [output_scores, "output_scores_old_shape"],
             shape=[-1],
         )
         MINUS_ONE_INT32 = self.model.param_init_net.ConstantFill(
             [],
-            'MINUS_ONE_INT32',
+            "MINUS_ONE_INT32",
             value=-1,
             shape=[1],
             dtype=core.DataType.INT32,
         )
         BEAM_SIZE = self.model.param_init_net.ConstantFill(
             [],
-            'beam_size',
+            "beam_size",
             shape=[1],
             value=self.beam_size,
             dtype=core.DataType.INT32,
@@ -239,73 +236,73 @@ class BeamSearchForwardOnly:
         # scores)
         slice_end = self.step_model.net.Conditional(
             [on_initial_step, BEAM_SIZE, MINUS_ONE_INT32],
-            ['slice_end'],
+            ["slice_end"],
         )
 
         # [current_beam_size * beam_size]
         output_scores_flattened_slice = self.step_model.net.Slice(
             [output_scores_flattened, ZERO, slice_end],
-            'output_scores_flattened_slice',
+            "output_scores_flattened_slice",
         )
         # [1, current_beam_size * beam_size]
         output_scores_flattened_slice, _ = self.step_model.net.Reshape(
             output_scores_flattened_slice,
             [
                 output_scores_flattened_slice,
-                'output_scores_flattened_slice_old_shape',
+                "output_scores_flattened_slice_old_shape",
             ],
             shape=[1, -1],
         )
         # [1, beam_size]
         scores_t, best_indices = self.step_model.net.TopK(
             output_scores_flattened_slice,
-            ['scores_t', 'best_indices'],
+            ["scores_t", "best_indices"],
             k=self.beam_size,
         )
         BEAM_SIZE_64 = self.model.param_init_net.Cast(
             BEAM_SIZE,
-            'BEAM_SIZE_64',
+            "BEAM_SIZE_64",
             to=core.DataType.INT64,
         )
         # [1, beam_size]
         hypo_t_int32 = self.step_model.net.Div(
             [best_indices, BEAM_SIZE_64],
-            'hypo_t_int32',
+            "hypo_t_int32",
             broadcast=1,
         )
         hypo_t = self.step_model.net.Cast(
             hypo_t_int32,
-            'hypo_t',
+            "hypo_t",
             to=core.DataType.FLOAT,
         )
 
         # [beam_size, encoder_length, 1]
         attention_t = self.step_model.net.Gather(
             [attentions, hypo_t_int32],
-            'attention_t',
+            "attention_t",
         )
         # [1, beam_size, encoder_length]
         attention_t, _ = self.step_model.net.Reshape(
             attention_t,
-            [attention_t, 'attention_t_old_shape'],
+            [attention_t, "attention_t_old_shape"],
             shape=[1, self.beam_size, -1],
         )
         # [beam_size * beam_size]
         best_tokens_per_hypo_flatten, _ = self.step_model.net.Reshape(
             best_tokens_per_hypo,
             [
-                'best_tokens_per_hypo_flatten',
-                'best_tokens_per_hypo_old_shape',
+                "best_tokens_per_hypo_flatten",
+                "best_tokens_per_hypo_old_shape",
             ],
             shape=[-1],
         )
         tokens_t_int32 = self.step_model.net.Gather(
             [best_tokens_per_hypo_flatten, best_indices],
-            'tokens_t_int32',
+            "tokens_t_int32",
         )
         tokens_t = self.step_model.net.Cast(
             tokens_t_int32,
-            'tokens_t',
+            "tokens_t",
             to=core.DataType.FLOAT,
         )
 
@@ -314,13 +311,13 @@ class BeamSearchForwardOnly:
                 state_config.state_link.blob,
                 [
                     state_config.state_link.blob,
-                    state_config.state_link.blob + '_old_shape',
+                    state_config.state_link.blob + "_old_shape",
                 ],
                 shape=[self.beam_size, -1],
             )
             state_chosen_per_hypo = self.step_model.net.Gather(
                 [state_flattened, hypo_t_int32],
-                str(state_config.state_link.blob) + '_chosen_per_hypo',
+                str(state_config.state_link.blob) + "_chosen_per_hypo",
             )
             return self.StateConfig(
                 initial_value=state_config.initial_value,
@@ -329,12 +326,13 @@ class BeamSearchForwardOnly:
                     blob=state_chosen_per_hypo,
                     offset=state_config.state_link.offset,
                     window=state_config.state_link.window,
-                )
+                ),
             )
+
         state_configs = [choose_state_per_hypo(c) for c in state_configs]
         initial_scores = self.model.param_init_net.ConstantFill(
             [],
-            'initial_scores',
+            "initial_scores",
             shape=[1],
             value=0.0,
             dtype=core.DataType.FLOAT,
@@ -342,12 +340,12 @@ class BeamSearchForwardOnly:
         if go_token_id:
             initial_tokens = self.model.net.Copy(
                 [go_token_id],
-                'initial_tokens',
+                "initial_tokens",
             )
         else:
             initial_tokens = self.model.param_init_net.ConstantFill(
                 [],
-                'initial_tokens',
+                "initial_tokens",
                 shape=[1],
                 value=float(self.go_token_id),
                 dtype=core.DataType.FLOAT,
@@ -355,19 +353,19 @@ class BeamSearchForwardOnly:
 
         initial_hypo = self.model.param_init_net.ConstantFill(
             [],
-            'initial_hypo',
+            "initial_hypo",
             shape=[1],
             value=0.0,
             dtype=core.DataType.FLOAT,
         )
         encoder_inputs_flattened, _ = self.model.net.Reshape(
             inputs,
-            ['encoder_inputs_flattened', 'encoder_inputs_old_shape'],
+            ["encoder_inputs_flattened", "encoder_inputs_old_shape"],
             shape=[-1],
         )
         init_attention = self.model.net.ConstantFill(
             encoder_inputs_flattened,
-            'init_attention',
+            "init_attention",
             value=0.0,
             dtype=core.DataType.FLOAT,
         )
@@ -395,48 +393,49 @@ class BeamSearchForwardOnly:
         ]
         fake_input = self.model.net.ConstantFill(
             length,
-            'beam_search_fake_input',
+            "beam_search_fake_input",
             input_as_shape=True,
             extra_shape=[self.beam_size, 1],
             value=0.0,
             dtype=core.DataType.FLOAT,
         )
         all_inputs = (
-            [fake_input] +
-            self.step_model.params +
-            [state_config.initial_value for state_config in state_configs] +
-            data_dependencies
+            [fake_input]
+            + self.step_model.params
+            + [state_config.initial_value for state_config in state_configs]
+            + data_dependencies
         )
         forward_links = []
         recurrent_states = []
         for state_config in state_configs:
-            state_name = str(state_config.state_prev_link.blob) + '_states'
+            state_name = str(state_config.state_prev_link.blob) + "_states"
             recurrent_states.append(state_name)
-            forward_links.append((
-                state_config.state_prev_link.blob,
-                state_name,
-                state_config.state_prev_link.offset,
-                state_config.state_prev_link.window,
-            ))
-            forward_links.append((
-                state_config.state_link.blob,
-                state_name,
-                state_config.state_link.offset,
-                state_config.state_link.window,
-            ))
-        link_internal, link_external, link_offset, link_window = (
-            zip(*forward_links)
-        )
+            forward_links.append(
+                (
+                    state_config.state_prev_link.blob,
+                    state_name,
+                    state_config.state_prev_link.offset,
+                    state_config.state_prev_link.window,
+                )
+            )
+            forward_links.append(
+                (
+                    state_config.state_link.blob,
+                    state_name,
+                    state_config.state_link.offset,
+                    state_config.state_link.window,
+                )
+            )
+        link_internal, link_external, link_offset, link_window = zip(*forward_links)
         all_outputs = [
-            str(s) + '_all'
-            for s in [scores_t, tokens_t, hypo_t, attention_t]
+            str(s) + "_all" for s in [scores_t, tokens_t, hypo_t, attention_t]
         ]
         results = self.model.net.RecurrentNetwork(
             all_inputs,
-            all_outputs + ['step_workspaces'],
+            all_outputs + ["step_workspaces"],
             param=[all_inputs.index(p) for p in self.step_model.params],
             alias_src=[
-                str(s) + '_states'
+                str(s) + "_states"
                 for s in [
                     self.scores_t_prev,
                     self.tokens_t_prev,
@@ -462,27 +461,27 @@ class BeamSearchForwardOnly:
             timestep=str(self.timestep),
             outputs_with_grads=[],
             enable_rnn_executor=1,
-            rnn_executor_debug=0
+            rnn_executor_debug=0,
         )
         score_t_all, tokens_t_all, hypo_t_all, attention_t_all = results[:4]
 
         output_token_beam_list = self.model.net.Cast(
             tokens_t_all,
-            'output_token_beam_list',
+            "output_token_beam_list",
             to=core.DataType.INT32,
         )
         output_prev_index_beam_list = self.model.net.Cast(
             hypo_t_all,
-            'output_prev_index_beam_list',
+            "output_prev_index_beam_list",
             to=core.DataType.INT32,
         )
         output_score_beam_list = self.model.net.Alias(
             score_t_all,
-            'output_score_beam_list',
+            "output_score_beam_list",
         )
         output_attention_weights_beam_list = self.model.net.Alias(
             attention_t_all,
-            'output_attention_weights_beam_list',
+            "output_attention_weights_beam_list",
         )
 
         return (

@@ -29,29 +29,36 @@ class MiniDBEntry(NamedTuple):
 # Inherit from this test instead. If you add a test here,
 # each derived class will inherit it as well and cause test duplication
 class TestLoadSaveBase(test_util.TestCase):
-
-    def __init__(self, methodName, db_type='minidb'):
+    def __init__(self, methodName, db_type="minidb"):
         super().__init__(methodName)
         self._db_type = db_type
 
     @settings(deadline=None)
-    @given(src_device_type=st.sampled_from(DEVICES),
-           src_gpu_id=st.integers(min_value=0, max_value=max_gpuid),
-           dst_device_type=st.sampled_from(DEVICES),
-           dst_gpu_id=st.integers(min_value=0, max_value=max_gpuid))
-    def load_save(self, src_device_type, src_gpu_id,
-                  dst_device_type, dst_gpu_id):
+    @given(
+        src_device_type=st.sampled_from(DEVICES),
+        src_gpu_id=st.integers(min_value=0, max_value=max_gpuid),
+        dst_device_type=st.sampled_from(DEVICES),
+        dst_gpu_id=st.integers(min_value=0, max_value=max_gpuid),
+    )
+    def load_save(self, src_device_type, src_gpu_id, dst_device_type, dst_gpu_id):
         workspace.ResetWorkspace()
-        dtypes = [np.float16, np.float32, np.float64, np.bool, np.int8,
-                  np.int16, np.int32, np.int64, np.uint8, np.uint16]
-        arrays = [np.random.permutation(6).reshape(2, 3).astype(T)
-                  for T in dtypes]
+        dtypes = [
+            np.float16,
+            np.float32,
+            np.float64,
+            np.bool,
+            np.int8,
+            np.int16,
+            np.int32,
+            np.int64,
+            np.uint8,
+            np.uint16,
+        ]
+        arrays = [np.random.permutation(6).reshape(2, 3).astype(T) for T in dtypes]
         assume(core.IsGPUDeviceType(src_device_type) or src_gpu_id == 0)
         assume(core.IsGPUDeviceType(dst_device_type) or dst_gpu_id == 0)
-        src_device_option = core.DeviceOption(
-            src_device_type, src_gpu_id)
-        dst_device_option = core.DeviceOption(
-            dst_device_type, dst_gpu_id)
+        src_device_option = core.DeviceOption(src_device_type, src_gpu_id)
+        dst_device_option = core.DeviceOption(dst_device_type, dst_gpu_id)
 
         for i, arr in enumerate(arrays):
             self.assertTrue(workspace.FeedBlob(str(i), arr, src_device_option))
@@ -61,9 +68,12 @@ class TestLoadSaveBase(test_util.TestCase):
         tmp_folder = self.make_tempdir()
         op = core.CreateOperator(
             "Save",
-            [str(i) for i in range(len(arrays))], [],
+            [str(i) for i in range(len(arrays))],
+            [],
             absolute_path=1,
-            db=str(tmp_folder / "db"), db_type=self._db_type)
+            db=str(tmp_folder / "db"),
+            db_type=self._db_type,
+        )
         self.assertTrue(workspace.RunOperatorOnce(op))
 
         # Reset the workspace so that anything we load is surely loaded
@@ -75,27 +85,27 @@ class TestLoadSaveBase(test_util.TestCase):
             """A helper subfunction to test keep and not keep."""
             op = core.CreateOperator(
                 "Load",
-                [], blobs,
+                [],
+                blobs,
                 absolute_path=1,
-                db=str(tmp_folder / "db"), db_type=self._db_type,
+                db=str(tmp_folder / "db"),
+                db_type=self._db_type,
                 device_option=dst_device_option,
                 keep_device=keep_device,
-                load_all=loadAll)
+                load_all=loadAll,
+            )
             self.assertTrue(workspace.RunOperatorOnce(op))
             for i, arr in enumerate(arrays):
                 self.assertTrue(workspace.HasBlob(str(i)))
                 fetched = workspace.FetchBlob(str(i))
                 self.assertEqual(fetched.dtype, arr.dtype)
-                np.testing.assert_array_equal(
-                    workspace.FetchBlob(str(i)), arr)
+                np.testing.assert_array_equal(workspace.FetchBlob(str(i)), arr)
                 proto = caffe2_pb2.BlobProto()
                 proto.ParseFromString(workspace.SerializeBlob(str(i)))
-                self.assertTrue(proto.HasField('tensor'))
-                self.assertEqual(proto.tensor.device_detail.device_type,
-                                 device_type)
+                self.assertTrue(proto.HasField("tensor"))
+                self.assertEqual(proto.tensor.device_detail.device_type, device_type)
                 if core.IsGPUDeviceType(device_type):
-                    self.assertEqual(proto.tensor.device_detail.device_id,
-                                     gpu_id)
+                    self.assertEqual(proto.tensor.device_detail.device_id, gpu_id)
 
         blobs = [str(i) for i in range(len(arrays))]
         # Load using device option stored in the proto, i.e.
@@ -127,10 +137,19 @@ class TestLoadSaveBase(test_util.TestCase):
     def saveFile(
         self, tmp_folder: Path, db_name: str, db_type: str, start_blob_id: int
     ) -> Tuple[str, List[np.ndarray]]:
-        dtypes = [np.float16, np.float32, np.float64, np.bool, np.int8,
-                  np.int16, np.int32, np.int64, np.uint8, np.uint16]
-        arrays = [np.random.permutation(6).reshape(2, 3).astype(T)
-                  for T in dtypes]
+        dtypes = [
+            np.float16,
+            np.float32,
+            np.float64,
+            np.bool,
+            np.int8,
+            np.int16,
+            np.int32,
+            np.int64,
+            np.uint8,
+            np.uint16,
+        ]
+        arrays = [np.random.permutation(6).reshape(2, 3).astype(T) for T in dtypes]
 
         for i, arr in enumerate(arrays):
             self.assertTrue(workspace.FeedBlob(str(i + start_blob_id), arr))
@@ -140,23 +159,34 @@ class TestLoadSaveBase(test_util.TestCase):
         tmp_file = str(tmp_folder / db_name)
         op = core.CreateOperator(
             "Save",
-            [str(i + start_blob_id) for i in range(len(arrays))], [],
+            [str(i + start_blob_id) for i in range(len(arrays))],
+            [],
             absolute_path=1,
-            db=tmp_file, db_type=db_type)
+            db=tmp_file,
+            db_type=db_type,
+        )
         workspace.RunOperatorOnce(op)
         return tmp_file, arrays
 
 
 class TestLoadSave(TestLoadSaveBase):
-
     def testLoadSave(self):
         self.load_save()
 
     def testRepeatedArgs(self):
-        dtypes = [np.float16, np.float32, np.float64, np.bool, np.int8,
-                  np.int16, np.int32, np.int64, np.uint8, np.uint16]
-        arrays = [np.random.permutation(6).reshape(2, 3).astype(T)
-                  for T in dtypes]
+        dtypes = [
+            np.float16,
+            np.float32,
+            np.float64,
+            np.bool,
+            np.int8,
+            np.int16,
+            np.int32,
+            np.int64,
+            np.uint8,
+            np.uint16,
+        ]
+        arrays = [np.random.permutation(6).reshape(2, 3).astype(T) for T in dtypes]
 
         for i, arr in enumerate(arrays):
             self.assertTrue(workspace.FeedBlob(str(i), arr))
@@ -166,9 +196,12 @@ class TestLoadSave(TestLoadSaveBase):
         tmp_folder = self.make_tempdir()
         op = core.CreateOperator(
             "Save",
-            [str(i) for i in range(len(arrays))] * 2, [],
+            [str(i) for i in range(len(arrays))] * 2,
+            [],
             absolute_path=1,
-            db=str(tmp_folder / "db"), db_type=self._db_type)
+            db=str(tmp_folder / "db"),
+            db_type=self._db_type,
+        )
         with self.assertRaises(RuntimeError):
             workspace.RunOperatorOnce(op)
 
@@ -178,29 +211,38 @@ class TestLoadSave(TestLoadSaveBase):
 
         op = core.CreateOperator(
             "Load",
-            [], [str(i) for i in range(len(arrays))] * 2,
+            [],
+            [str(i) for i in range(len(arrays))] * 2,
             absolute_path=1,
-            db=tmp_file, db_type=self._db_type,
-            load_all=False)
+            db=tmp_file,
+            db_type=self._db_type,
+            load_all=False,
+        )
         with self.assertRaises(RuntimeError):
             workspace.RunOperatorOnce(op)
 
         op = core.CreateOperator(
             "Load",
-            [], [str(len(arrays) + i) for i in [-1, 0]],
+            [],
+            [str(len(arrays) + i) for i in [-1, 0]],
             absolute_path=1,
-            db=tmp_file, db_type=self._db_type,
-            load_all=True)
+            db=tmp_file,
+            db_type=self._db_type,
+            load_all=True,
+        )
         with self.assertRaises(RuntimeError):
             workspace.ResetWorkspace()
             workspace.RunOperatorOnce(op)
 
         op = core.CreateOperator(
             "Load",
-            [], [str(len(arrays) + i) for i in range(2)],
+            [],
+            [str(len(arrays) + i) for i in range(2)],
             absolute_path=1,
-            db=tmp_file, db_type=self._db_type,
-            load_all=True)
+            db=tmp_file,
+            db_type=self._db_type,
+            load_all=True,
+        )
         with self.assertRaises(RuntimeError):
             workspace.ResetWorkspace()
             workspace.RunOperatorOnce(op)
@@ -209,31 +251,37 @@ class TestLoadSave(TestLoadSaveBase):
         tmp_folder = self.make_tempdir()
         tmp_file, arrays = self.saveFile(tmp_folder, "db", self._db_type, 0)
 
-        with open(tmp_file, 'wb+') as fdest:
+        with open(tmp_file, "wb+") as fdest:
             fdest.seek(20, os.SEEK_END)
             fdest.truncate()
 
         op = core.CreateOperator(
             "Load",
-            [], [str(i) for i in range(len(arrays))],
+            [],
+            [str(i) for i in range(len(arrays))],
             absolute_path=1,
-            db=tmp_file, db_type=self._db_type,
-            load_all=False)
+            db=tmp_file,
+            db_type=self._db_type,
+            load_all=False,
+        )
         with self.assertRaises(RuntimeError):
             workspace.RunOperatorOnce(op)
 
         op = core.CreateOperator(
             "Load",
-            [], [],
+            [],
+            [],
             absolute_path=1,
-            db=tmp_file, db_type=self._db_type,
-            load_all=True)
+            db=tmp_file,
+            db_type=self._db_type,
+            load_all=True,
+        )
         with self.assertRaises(RuntimeError):
             workspace.RunOperatorOnce(op)
 
     def testBlobNameOverrides(self):
-        original_names = ['blob_a', 'blob_b', 'blob_c']
-        new_names = ['x', 'y', 'z']
+        original_names = ["blob_a", "blob_b", "blob_c"]
+        new_names = ["x", "y", "z"]
         blobs = [np.random.permutation(6) for i in range(3)]
         for i, blob in enumerate(blobs):
             self.assertTrue(workspace.FeedBlob(original_names[i], blob))
@@ -245,22 +293,26 @@ class TestLoadSave(TestLoadSaveBase):
         with self.assertRaises(RuntimeError):
             workspace.RunOperatorOnce(
                 core.CreateOperator(
-                    "Save", original_names, [],
+                    "Save",
+                    original_names,
+                    [],
                     absolute_path=1,
-                    strip_prefix='.temp',
+                    strip_prefix=".temp",
                     blob_name_overrides=new_names,
                     db=str(tmp_folder / "db"),
-                    db_type=self._db_type
+                    db_type=self._db_type,
                 )
             )
         self.assertTrue(
             workspace.RunOperatorOnce(
                 core.CreateOperator(
-                    "Save", original_names, [],
+                    "Save",
+                    original_names,
+                    [],
                     absolute_path=1,
                     blob_name_overrides=new_names,
                     db=str(tmp_folder / "db"),
-                    db_type=self._db_type
+                    db_type=self._db_type,
                 )
             )
         )
@@ -269,11 +321,13 @@ class TestLoadSave(TestLoadSaveBase):
         self.assertTrue(
             workspace.RunOperatorOnce(
                 core.CreateOperator(
-                    "Load", [], [],
+                    "Load",
+                    [],
+                    [],
                     absolute_path=1,
                     db=str(tmp_folder / "db"),
                     db_type=self._db_type,
-                    load_all=1
+                    load_all=1,
                 )
             )
         )
@@ -282,16 +336,18 @@ class TestLoadSave(TestLoadSaveBase):
             self.assertTrue(workspace.HasBlob(name))
             self.assertTrue((workspace.FetchBlob(name) == blobs[i]).all())
         # moved here per @cxj's suggestion
-        load_new_names = ['blob_x', 'blob_y', 'blob_z']
+        load_new_names = ["blob_x", "blob_y", "blob_z"]
         # load 'x' into 'blob_x'
         self.assertTrue(
             workspace.RunOperatorOnce(
                 core.CreateOperator(
-                    "Load", [], load_new_names[0:1],
+                    "Load",
+                    [],
+                    load_new_names[0:1],
                     absolute_path=1,
                     db=str(tmp_folder / "db"),
                     db_type=self._db_type,
-                    source_blob_names=new_names[0:1]
+                    source_blob_names=new_names[0:1],
                 )
             )
         )
@@ -303,11 +359,13 @@ class TestLoadSave(TestLoadSaveBase):
         self.assertTrue(
             workspace.RunOperatorOnce(
                 core.CreateOperator(
-                    "Load", [], load_new_names[0:3],
+                    "Load",
+                    [],
+                    load_new_names[0:3],
                     absolute_path=1,
                     db=str(tmp_folder / "db"),
                     db_type=self._db_type,
-                    source_blob_names=new_names[0:3]
+                    source_blob_names=new_names[0:3],
                 )
             )
         )
@@ -323,10 +381,13 @@ class TestLoadSave(TestLoadSaveBase):
 
         op = core.CreateOperator(
             "Load",
-            [], [],
+            [],
+            [],
             absolute_path=1,
-            db=str(tmp_file), db_type=self._db_type,
-            load_all=True)
+            db=str(tmp_file),
+            db_type=self._db_type,
+            load_all=True,
+        )
         with self.assertRaises(RuntimeError):
             try:
                 workspace.RunOperatorOnce(op)
@@ -349,18 +410,18 @@ class TestLoadSave(TestLoadSaveBase):
             workspace.RunOperatorOnce(
                 core.CreateOperator(
                     "Load",
-                    [], blobs_names,
+                    [],
+                    blobs_names,
                     absolute_path=1,
-                    dbs=db_files, db_type=self._db_type,
-                    source_blob_names=blobs_names
+                    dbs=db_files,
+                    db_type=self._db_type,
+                    source_blob_names=blobs_names,
                 )
             )
         )
         self.assertEqual(len(workspace.Blobs()), len(blobs_names))
         for i in range(len(arrays_1)):
-            np.testing.assert_array_equal(
-                workspace.FetchBlob(str(i)), arrays_1[i]
-            )
+            np.testing.assert_array_equal(workspace.FetchBlob(str(i)), arrays_1[i])
         for i in range(len(arrays_2)):
             np.testing.assert_array_equal(
                 workspace.FetchBlob(str(i + len(arrays_1))), arrays_2[i]
@@ -380,18 +441,18 @@ class TestLoadSave(TestLoadSaveBase):
             workspace.RunOperatorOnce(
                 core.CreateOperator(
                     "Load",
-                    [], [],
+                    [],
+                    [],
                     absolute_path=1,
-                    dbs=db_files, db_type=self._db_type,
-                    load_all=True
+                    dbs=db_files,
+                    db_type=self._db_type,
+                    load_all=True,
                 )
             )
         )
         self.assertEqual(len(workspace.Blobs()), len(arrays_1) + len(arrays_2))
         for i in range(len(arrays_1)):
-            np.testing.assert_array_equal(
-                workspace.FetchBlob(str(i)), arrays_1[i]
-            )
+            np.testing.assert_array_equal(workspace.FetchBlob(str(i)), arrays_1[i])
         for i in range(len(arrays_2)):
             np.testing.assert_array_equal(
                 workspace.FetchBlob(str(i + len(arrays_1))), arrays_2[i]
@@ -407,10 +468,13 @@ class TestLoadSave(TestLoadSaveBase):
         self.assertEqual(len(workspace.Blobs()), 0)
         op = core.CreateOperator(
             "Load",
-            [], [],
+            [],
+            [],
             absolute_path=1,
-            dbs=db_files, db_type=self._db_type,
-            load_all=True)
+            dbs=db_files,
+            db_type=self._db_type,
+            load_all=True,
+        )
         with self.assertRaises(RuntimeError):
             workspace.RunOperatorOnce(op)
 
@@ -423,10 +487,13 @@ class TestLoadSave(TestLoadSaveBase):
         self.assertEqual(len(workspace.Blobs()), 0)
         op = core.CreateOperator(
             "Load",
-            [], [str(i) for i in range(len(arrays))],
+            [],
+            [str(i) for i in range(len(arrays))],
             absolute_path=1,
-            dbs=db_files, db_type=self._db_type,
-            load_all=False)
+            dbs=db_files,
+            db_type=self._db_type,
+            load_all=False,
+        )
         with self.assertRaises(RuntimeError):
             workspace.RunOperatorOnce(op)
 
@@ -441,9 +508,11 @@ class TestLoadSave(TestLoadSaveBase):
         db_options = b"test_db_options"
         op = core.CreateOperator(
             "Load",
-            [], [str(i) for i in range(len(arrays))],
+            [],
+            [str(i) for i in range(len(arrays))],
             absolute_path=1,
-            dbs=db_files, db_type=self._db_type,
+            dbs=db_files,
+            db_type=self._db_type,
             load_all=False,
             db_options=db_options,
         )
@@ -479,10 +548,7 @@ class TestLoadSave(TestLoadSaveBase):
         return blobs
 
     def load_blobs(
-        self,
-        blob_names: List[str],
-        dbs: List[str],
-        db_type: Optional[str] = None
+        self, blob_names: List[str], dbs: List[str], db_type: Optional[str] = None
     ) -> None:
         workspace.ResetWorkspace()
         self.assertEqual(len(workspace.Blobs()), 0)
@@ -501,17 +567,14 @@ class TestLoadSave(TestLoadSaveBase):
         self,
         blobs: List[Tuple[str, np.ndarray]],
         dbs: List[str],
-        db_type: Optional[str] = None
+        db_type: Optional[str] = None,
     ) -> None:
         self.load_blobs([name for name, data in blobs], dbs, db_type)
         for name, data in blobs:
             np.testing.assert_array_equal(workspace.FetchBlob(name), data)
 
-    def _read_minidb_entries(
-        self, path: Path
-    ) -> Generator[MiniDBEntry, None, None]:
-        """Read the entry information out of a minidb file.
-        """
+    def _read_minidb_entries(self, path: Path) -> Generator[MiniDBEntry, None, None]:
+        """Read the entry information out of a minidb file."""
         header = struct.Struct("=ii")
         with path.open("rb") as f:
             while True:
@@ -522,9 +585,7 @@ class TestLoadSave(TestLoadSaveBase):
                     raise Exception("early EOF in minidb header")
                 (key_len, value_len) = header.unpack(buf)
                 if key_len < 0 or value_len < 0:
-                    raise Exception(
-                        f"invalid minidb header: ({key_len}, {value_len})"
-                    )
+                    raise Exception(f"invalid minidb header: ({key_len}, {value_len})")
                 key = f.read(key_len)
                 if len(key) < key_len:
                     raise Exception("early EOF in minidb key")
@@ -550,7 +611,10 @@ class TestLoadSave(TestLoadSaveBase):
         return results
 
     def _test_save_with_chunk_size(
-        self, num_elems: int, chunk_size: int, expected_num_chunks: int,
+        self,
+        num_elems: int,
+        chunk_size: int,
+        expected_num_chunks: int,
     ) -> None:
         tmp_folder = self.make_tempdir()
         tmp_file = str(tmp_folder / "save.output")
@@ -642,24 +706,15 @@ class TestLoadSave(TestLoadSaveBase):
 
         blob_chunks = self._read_chunk_info(Path(tmp_file))
         # We explicitly set a chunk_size of 10 for int16_data
-        self.assertEqual(
-            len(blob_chunks["int16_data"]), math.ceil(num_elems / 10)
-        )
+        self.assertEqual(len(blob_chunks["int16_data"]), math.ceil(num_elems / 10))
         # uint16_data should match the .*16_data pattern, and get a size of 20
-        self.assertEqual(
-            len(blob_chunks["uint16_data"]), math.ceil(num_elems / 20)
-        )
+        self.assertEqual(len(blob_chunks["uint16_data"]), math.ceil(num_elems / 20))
         # float16_data should also match the .*16_data pattern, and get a size
         # of 20.  The explicitly float16_data rule came after the .*16_data
         # pattern, so it has lower precedence and will be ignored.
-        self.assertEqual(
-            len(blob_chunks["float16_data"]), math.ceil(num_elems / 20)
-        )
+        self.assertEqual(len(blob_chunks["float16_data"]), math.ceil(num_elems / 20))
         # int64_data will get the default chunk_size of 40
-        self.assertEqual(
-            len(blob_chunks["int64_data"]), math.ceil(num_elems / 40)
-        )
-
+        self.assertEqual(len(blob_chunks["int64_data"]), math.ceil(num_elems / 40))
 
     def testSaveWithDBOptions(self) -> None:
         num_elems = 1234
@@ -728,7 +783,7 @@ class TestLoadSave(TestLoadSaveBase):
             self.assertEqual(len(blob_chunks["float2"]), 1, blob_chunks["float2"])
             self.assertLess(
                 blob_chunks["float1"][0].value_size,
-                0.6 * blob_chunks["float2"][0].value_size
+                0.6 * blob_chunks["float2"][0].value_size,
             )
 
         self.load_blobs(blob_names, [tmp_file])
@@ -745,11 +800,9 @@ class TestLoadSave(TestLoadSaveBase):
         float_data = np.random.random_sample(4000).astype(np.float32)
         workspace.FeedBlob("float1", float_data)
         workspace.FeedBlob("float2", float_data)
+        workspace.FeedBlob("float3", np.random.random_sample(2).astype(np.float32))
         workspace.FeedBlob(
-            "float3", np.random.random_sample(2).astype(np.float32)
-        )
-        workspace.FeedBlob(
-            "ui16", np.random.randint(0, 0xffff, size=1024, dtype=np.uint16)
+            "ui16", np.random.randint(0, 0xFFFF, size=1024, dtype=np.uint16)
         )
 
         # Estimate the serialized size of the data.
@@ -780,8 +833,12 @@ class TestLoadSave(TestLoadSaveBase):
 
         # Note that the output blob list will include our output blob names.
         expected_blobs = [
-            "float1", "float2", "float3", "ui16",
-            "blob_names", "blob_sizes"
+            "float1",
+            "float2",
+            "float3",
+            "ui16",
+            "blob_names",
+            "blob_sizes",
         ]
         self.assertEqual(set(sizes_by_name.keys()), set(expected_blobs))
 
@@ -792,14 +849,11 @@ class TestLoadSave(TestLoadSaveBase):
             # account for the extra space required for other fixed TensorProto
             # message fields.
             per_chunk_overhead = 50
-            expected_size = (
-                (num_chunks * (len(name) + per_chunk_overhead))
-                + (num_elems * elem_size)
+            expected_size = (num_chunks * (len(name) + per_chunk_overhead)) + (
+                num_elems * elem_size
             )
             self.assertEqual(
-                sizes_by_name[name],
-                expected_size,
-                f"expected size mismatch for {name}"
+                sizes_by_name[name], expected_size, f"expected size mismatch for {name}"
             )
 
         check_expected_blob_size("ui16", 1024, 3)
@@ -864,5 +918,5 @@ class TestLoadSave(TestLoadSaveBase):
                 self.assertLess(error_pct, 25.0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

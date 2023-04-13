@@ -2,11 +2,7 @@
 # Module caffe2.python.parallel_workers
 
 
-
-
-
-
-'''
+"""
 This module provides a python-land multithreaded mechanism for executing work.
 
 Basic usage is as follows:
@@ -31,7 +27,7 @@ threads start, and has call signature:
 Note that for data_parallel_models, init_workers will be called
 for each GPU. Note that the 'coordinator' returned by the function is same
 each time.
-'''
+"""
 
 import logging
 import threading
@@ -60,22 +56,22 @@ def init_workers(
     metrics = Metrics(external_loggers)
 
     worker_ids = [
-        global_coordinator.get_new_worker_id()
-        for i in range(num_worker_threads)
+        global_coordinator.get_new_worker_id() for i in range(num_worker_threads)
     ]
 
     # Create coordinator object
     coordinator = WorkerCoordinator(
-        worker_name, worker_ids, init_fun, shutdown_fun=shutdown_fun)
+        worker_name, worker_ids, init_fun, shutdown_fun=shutdown_fun
+    )
 
     # Launch fetch worker threads
     workers = [
         threading.Thread(
             target=run_worker,
             name="parallel_workers worker id {}".format(worker_id),
-            args=[coordinator,
-                  Worker(coordinator, worker_id, worker_fun, metrics)],
-        ) for worker_id in worker_ids
+            args=[coordinator, Worker(coordinator, worker_id, worker_fun, metrics)],
+        )
+        for worker_id in worker_ids
     ]
 
     coordinator._workers = workers
@@ -104,11 +100,11 @@ class Metrics:
     def put_metric(self, key, value, count=True):
         self._metrics[key] += value
         if count:
-            count_key = '{}_count'.format(key)
+            count_key = "{}_count".format(key)
             self._metrics[count_key] += 1
 
 
-class State():
+class State:
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -126,8 +122,7 @@ class State():
 
 class WorkerCoordinator:
     def __init__(
-        self, worker_name, worker_ids, init_fun,
-        state=None, shutdown_fun=None
+        self, worker_name, worker_ids, init_fun, state=None, shutdown_fun=None
     ):
         self._active = True
         self._started = False
@@ -229,16 +224,15 @@ class GlobalWorkerCoordinator:
         return all_success
 
     def stop_coordinator(self, worker_name):
-        '''
+        """
         Stop a specific coordinator
-        '''
+        """
         for c in self._coordinators:
             if c._worker_name == worker_name:
                 c._stop()
                 c._wait_finish()
         self._coordinators = [
-            c for c in self._coordinators
-            if c._worker_name != worker_name
+            c for c in self._coordinators if c._worker_name != worker_name
         ]
 
     def register_shutdown_handler(self):
@@ -249,13 +243,7 @@ class GlobalWorkerCoordinator:
 
 
 class Worker:
-    def __init__(
-        self,
-        coordinator,
-        worker_id,
-        worker_fun=None,
-        metrics=None
-    ):
+    def __init__(self, coordinator, worker_id, worker_fun=None, metrics=None):
         self._coordinator = coordinator
         self._worker_id = worker_id
         self._worker_fun = worker_fun
@@ -270,13 +258,10 @@ class Worker:
     def handle_exception(self, e):
         traceback.print_exc()
         logging.exception("Exception in worker", e)
-        self._coordinator._stop("Exception in worker {}: {}".format(
-            self._worker_id, e
-        ))
+        self._coordinator._stop("Exception in worker {}: {}".format(self._worker_id, e))
 
     def finish(self):
-        self._metrics.put_metric(
-            'worker_time', time.time() - self._start_time)
+        self._metrics.put_metric("worker_time", time.time() - self._start_time)
         self._metrics.log_metrics()
 
 

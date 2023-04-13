@@ -20,7 +20,7 @@ from torch.ao.quantization.fx.quantize_handler import (
     CopyNodeQuantizeHandler,
     CustomModuleQuantizeHandler,
     GeneralTensorShapeOpQuantizeHandler,
-    StandaloneModuleQuantizeHandler
+    StandaloneModuleQuantizeHandler,
 )
 
 QuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_patterns"
@@ -32,8 +32,16 @@ BatchNormQuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_pat
 EmbeddingQuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_patterns"
 RNNDynamicQuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_patterns"
 DefaultNodeQuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_patterns"
-FixedQParamsOpQuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_patterns"
+FixedQParamsOpQuantizeHandler.__module__ = (
+    "torch.ao.quantization.fx.quantization_patterns"
+)
 CopyNodeQuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_patterns"
-CustomModuleQuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_patterns"
-GeneralTensorShapeOpQuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_patterns"
-StandaloneModuleQuantizeHandler.__module__ = "torch.ao.quantization.fx.quantization_patterns"
+CustomModuleQuantizeHandler.__module__ = (
+    "torch.ao.quantization.fx.quantization_patterns"
+)
+GeneralTensorShapeOpQuantizeHandler.__module__ = (
+    "torch.ao.quantization.fx.quantization_patterns"
+)
+StandaloneModuleQuantizeHandler.__module__ = (
+    "torch.ao.quantization.fx.quantization_patterns"
+)

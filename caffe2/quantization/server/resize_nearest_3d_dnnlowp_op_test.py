@@ -1,5 +1,3 @@
-
-
 import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 import numpy as np
@@ -21,7 +19,7 @@ class DNNLowPResizeNearest3DOpTest(hu.HypothesisTestCase):
         scale_t=st.floats(0.25, 4.0) | st.just(2.0),
         scale_w=st.floats(0.25, 4.0) | st.just(2.0),
         scale_h=st.floats(0.25, 4.0) | st.just(2.0),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(max_examples=5, deadline=None)
     def test_resize_nearest(self, N, T, H, W, C, scale_t, scale_w, scale_h, gc, dc):

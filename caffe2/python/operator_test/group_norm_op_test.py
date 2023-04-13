@@ -1,7 +1,3 @@
-
-
-
-
 from caffe2.python import core
 import caffe2.python.hypothesis_test_util as hu
 import caffe2.python.serialized_test.serialized_test_util as serial
@@ -43,12 +39,16 @@ class TestGroupNormOp(serial.SerializedTestCase):
         return [Y.reshape(dims), mu.reshape(N, G), (1.0 / std).reshape(N, G)]
 
     @serial.given(
-        N=st.integers(1, 5), G=st.integers(1, 5), D=st.integers(1, 5),
-        H=st.integers(2, 5), W=st.integers(2, 5),
+        N=st.integers(1, 5),
+        G=st.integers(1, 5),
+        D=st.integers(1, 5),
+        H=st.integers(2, 5),
+        W=st.integers(2, 5),
         epsilon=st.floats(min_value=1e-5, max_value=1e-4),
-        order=st.sampled_from(["NCHW", "NHWC"]), **hu.gcs)
-    def test_group_norm_2d(
-            self, N, G, D, H, W, epsilon, order, gc, dc):
+        order=st.sampled_from(["NCHW", "NHWC"]),
+        **hu.gcs,
+    )
+    def test_group_norm_2d(self, N, G, D, H, W, epsilon, order, gc, dc):
         op = core.CreateOperator(
             "GroupNorm",
             ["X", "gamma", "beta"],
@@ -72,6 +72,7 @@ class TestGroupNormOp(serial.SerializedTestCase):
                 return self.group_norm_nchw_ref(X, gamma, beta, G, epsilon)
             else:
                 return self.group_norm_nhwc_ref(X, gamma, beta, G, epsilon)
+
         self.assertReferenceChecks(
             device_option=gc,
             op=op,
@@ -81,12 +82,18 @@ class TestGroupNormOp(serial.SerializedTestCase):
         )
         self.assertDeviceChecks(dc, op, inputs, [0, 1, 2])
 
-    @given(N=st.integers(1, 5), G=st.integers(1, 3), D=st.integers(2, 3),
-           T=st.integers(2, 4), H=st.integers(2, 4), W=st.integers(2, 4),
-           epsilon=st.floats(min_value=1e-5, max_value=1e-4),
-           order=st.sampled_from(["NCHW", "NHWC"]), **hu.gcs)
-    def test_group_norm_3d(
-            self, N, G, D, T, H, W, epsilon, order, gc, dc):
+    @given(
+        N=st.integers(1, 5),
+        G=st.integers(1, 3),
+        D=st.integers(2, 3),
+        T=st.integers(2, 4),
+        H=st.integers(2, 4),
+        W=st.integers(2, 4),
+        epsilon=st.floats(min_value=1e-5, max_value=1e-4),
+        order=st.sampled_from(["NCHW", "NHWC"]),
+        **hu.gcs,
+    )
+    def test_group_norm_3d(self, N, G, D, T, H, W, epsilon, order, gc, dc):
         op = core.CreateOperator(
             "GroupNorm",
             ["X", "gamma", "beta"],
@@ -110,6 +117,7 @@ class TestGroupNormOp(serial.SerializedTestCase):
                 return self.group_norm_nchw_ref(X, gamma, beta, G, epsilon)
             else:
                 return self.group_norm_nhwc_ref(X, gamma, beta, G, epsilon)
+
         self.assertReferenceChecks(
             device_option=gc,
             op=op,
@@ -119,13 +127,18 @@ class TestGroupNormOp(serial.SerializedTestCase):
         )
         self.assertDeviceChecks(dc, op, inputs, [0, 1, 2])
 
-    @given(N=st.integers(1, 5), G=st.integers(1, 5), D=st.integers(2, 2),
-           H=st.integers(2, 5), W=st.integers(2, 5),
-           epsilon=st.floats(min_value=1e-5, max_value=1e-4),
-           order=st.sampled_from(["NCHW", "NHWC"]), **hu.gcs)
+    @given(
+        N=st.integers(1, 5),
+        G=st.integers(1, 5),
+        D=st.integers(2, 2),
+        H=st.integers(2, 5),
+        W=st.integers(2, 5),
+        epsilon=st.floats(min_value=1e-5, max_value=1e-4),
+        order=st.sampled_from(["NCHW", "NHWC"]),
+        **hu.gcs,
+    )
     @settings(deadline=10000)
-    def test_group_norm_grad(
-            self, N, G, D, H, W, epsilon, order, gc, dc):
+    def test_group_norm_grad(self, N, G, D, H, W, epsilon, order, gc, dc):
         op = core.CreateOperator(
             "GroupNorm",
             ["X", "gamma", "beta"],

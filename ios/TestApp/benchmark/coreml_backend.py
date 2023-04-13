@@ -7,6 +7,7 @@ from torch.backends._coreml.preprocess import (
     CoreMLComputeUnit,
 )
 
+
 def mobilenetv2_spec():
     return {
         "forward": CompileSpec(

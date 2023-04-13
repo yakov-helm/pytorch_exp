@@ -81,12 +81,9 @@ def _is_nested_tensor(val: torch.Tensor) -> bool:
         if type(val.local_shards()[0].tensor) is ShardedTensor:
             return True
         if type(val.local_shards()[0].tensor) is DTensor:
-            raise ValueError(
-                "Cannot handle DTensor nested insided ShardedTensor"
-            )
+            raise ValueError("Cannot handle DTensor nested insided ShardedTensor")
     elif type(val) is DTensor and (
-        type(val._local_tensor) is DTensor
-        or type(val._local_tensor) is ShardedTensor
+        type(val._local_tensor) is DTensor or type(val._local_tensor) is ShardedTensor
     ):
         raise ValueError("Cannot handle nested DTensor")
     return False
@@ -171,9 +168,7 @@ class _ReaderWithOffset(DefaultLoadPlanner):
             local_chunks = [
                 ChunkStorageMetadata(
                     offsets=torch.Size(
-                        _element_wise_add(
-                            original_shard.metadata.shard_offsets, offset
-                        )
+                        _element_wise_add(original_shard.metadata.shard_offsets, offset)
                     ),
                     sizes=torch.Size(original_shard.metadata.shard_sizes),
                 )
@@ -186,9 +181,7 @@ class _ReaderWithOffset(DefaultLoadPlanner):
             # TODO: we should change _create_sharded_read_items to have more ergonomic API
             for ri in reqs:
                 assert ri.dest_index.offset is not None
-                original_offset = _element_wise_sub(
-                    ri.dest_index.offset, offset
-                )
+                original_offset = _element_wise_sub(ri.dest_index.offset, offset)
                 original_index = dataclasses.replace(
                     ri.dest_index, offset=torch.Size(original_offset)
                 )
@@ -297,16 +290,11 @@ def load_sharded_optimizer_state_dict(
             local_shards = []
             current_rank = dist.get_rank(dp_pg)
             for shard_md in st_md.shards_metadata:
-                if (
-                    cast(_remote_device, shard_md.placement).rank()
-                    != current_rank
-                ):
+                if cast(_remote_device, shard_md.placement).rank() != current_rank:
                     continue
                 local_shards.append(
                     Shard(
-                        tensor=_alloc_tensor(
-                            value.properties, shard_md.shard_sizes
-                        ),
+                        tensor=_alloc_tensor(value.properties, shard_md.shard_sizes),
                         metadata=shard_md,
                     )
                 )
@@ -315,13 +303,8 @@ def load_sharded_optimizer_state_dict(
                 local_shards, st_md, process_group=dp_pg
             )
 
-            if (
-                spec_key in layout_specs
-                and layout_specs[spec_key][0] is not None
-            ):
-                fqn_to_offset[key] = cast(
-                    Sequence[int], layout_specs[spec_key][0]
-                )
+            if spec_key in layout_specs and layout_specs[spec_key][0] is not None:
+                fqn_to_offset[key] = cast(Sequence[int], layout_specs[spec_key][0])
 
             state_dict[key] = st
 

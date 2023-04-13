@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.proto import caffe2_pb2
 from caffe2.python import core, workspace
 import caffe2.python.hypothesis_test_util as hu
@@ -53,7 +48,7 @@ class TestMomentumSGD(serial.SerializedTestCase):
             device_option=gc,
             op=op,
             inputs=[grad, param_momentum, lr, param],
-            reference=momentum_sgd
+            reference=momentum_sgd,
         )
 
         op_noparam = core.CreateOperator(
@@ -68,7 +63,7 @@ class TestMomentumSGD(serial.SerializedTestCase):
             device_option=gc,
             op=op_noparam,
             inputs=[grad, param_momentum, lr],
-            reference=momentum_sgd
+            reference=momentum_sgd,
         )
 
     @given(
@@ -77,7 +72,7 @@ class TestMomentumSGD(serial.SerializedTestCase):
         nesterov=st.booleans(),
         lr=st.floats(min_value=0.1, max_value=0.9),
         data_strategy=st.data(),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=10000)
     def test_sparse_momentum_sgd(
@@ -97,10 +92,7 @@ class TestMomentumSGD(serial.SerializedTestCase):
         )
 
         # Verify that the generated indices are unique
-        assume(
-            np.array_equal(
-                np.unique(indices.flatten()),
-                np.sort(indices.flatten())))
+        assume(np.array_equal(np.unique(indices.flatten()), np.sort(indices.flatten())))
 
         # Sparsify grad
         grad = grad[indices]
@@ -112,11 +104,12 @@ class TestMomentumSGD(serial.SerializedTestCase):
         lr = np.asarray([lr], dtype=np.float32)
 
         op = core.CreateOperator(
-            "SparseMomentumSGDUpdate", ["grad", "m", "lr", "param", "indices"],
+            "SparseMomentumSGDUpdate",
+            ["grad", "m", "lr", "param", "indices"],
             ["adjusted_grad", "m", "param"],
             momentum=momentum,
             nesterov=int(nesterov),
-            device_option=gc
+            device_option=gc,
         )
 
         # Reference
@@ -135,11 +128,7 @@ class TestMomentumSGD(serial.SerializedTestCase):
             param[i] -= grad_new
             return (grad_new, m, param)
 
-        self.assertReferenceChecks(
-            gc,
-            op,
-            [grad, m, lr, w, indices],
-            sparse)
+        self.assertReferenceChecks(gc, op, [grad, m, lr, w, indices], sparse)
 
     @unittest.skip("Test is flaky, see https://github.com/pytorch/pytorch/issues/31368")
     @unittest.skipIf(not workspace.has_gpu_support, "No gpu support.")
@@ -183,7 +172,7 @@ class TestMomentumSGD(serial.SerializedTestCase):
             op=op,
             inputs=[grad, param_momentum, lr, param],
             reference=momentum_sgd,
-            threshold=threshold
+            threshold=threshold,
         )
 
 

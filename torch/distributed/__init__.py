@@ -4,6 +4,7 @@ from enum import Enum
 
 import torch
 
+
 def is_available() -> bool:
     """
     Returns ``True`` if the distributed package is available. Otherwise,
@@ -89,4 +90,5 @@ else:
 
     class _ProcessGroupStub:
         pass
+
     sys.modules["torch.distributed"].ProcessGroup = _ProcessGroupStub  # type: ignore[attr-defined]

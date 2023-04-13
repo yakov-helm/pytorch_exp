@@ -1,8 +1,3 @@
-
-
-
-
-
 import numpy as np
 
 from hypothesis import given, settings
@@ -15,9 +10,11 @@ import caffe2.python.serialized_test.serialized_test_util as serial
 
 
 class TestNumpyTile(serial.SerializedTestCase):
-    @given(ndim=st.integers(min_value=1, max_value=4),
-           seed=st.integers(min_value=0, max_value=65536),
-           **hu.gcs_cpu_only)
+    @given(
+        ndim=st.integers(min_value=1, max_value=4),
+        seed=st.integers(min_value=0, max_value=65536),
+        **hu.gcs_cpu_only,
+    )
     @settings(deadline=10000)
     def test_numpy_tile(self, ndim, seed, gc, dc):
         np.random.seed(seed)
@@ -27,7 +24,9 @@ class TestNumpyTile(serial.SerializedTestCase):
         repeats = np.random.randint(1, 5, size=ndim)
 
         op = core.CreateOperator(
-            'NumpyTile', ['input', 'repeats'], 'out',
+            "NumpyTile",
+            ["input", "repeats"],
+            "out",
         )
 
         def tile_ref(input, repeats):
@@ -35,12 +34,13 @@ class TestNumpyTile(serial.SerializedTestCase):
             return (tiled_data,)
 
         # Check against numpy reference
-        self.assertReferenceChecks(gc, op, [input, repeats],
-                                   tile_ref)
+        self.assertReferenceChecks(gc, op, [input, repeats], tile_ref)
 
-    @given(ndim=st.integers(min_value=1, max_value=4),
-           seed=st.integers(min_value=0, max_value=65536),
-           **hu.gcs_cpu_only)
+    @given(
+        ndim=st.integers(min_value=1, max_value=4),
+        seed=st.integers(min_value=0, max_value=65536),
+        **hu.gcs_cpu_only,
+    )
     @settings(deadline=10000)
     def test_numpy_tile_zero_dim(self, ndim, seed, gc, dc):
         np.random.seed(seed)
@@ -50,7 +50,9 @@ class TestNumpyTile(serial.SerializedTestCase):
         repeats = np.random.randint(0, 5, size=ndim)
 
         op = core.CreateOperator(
-            'NumpyTile', ['input', 'repeats'], 'out',
+            "NumpyTile",
+            ["input", "repeats"],
+            "out",
         )
 
         def tile_ref(input, repeats):
@@ -58,8 +60,7 @@ class TestNumpyTile(serial.SerializedTestCase):
             return (tiled_data,)
 
         # Check against numpy reference
-        self.assertReferenceChecks(gc, op, [input, repeats],
-                                   tile_ref)
+        self.assertReferenceChecks(gc, op, [input, repeats], tile_ref)
 
 
 if __name__ == "__main__":

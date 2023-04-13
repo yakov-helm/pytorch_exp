@@ -1,8 +1,3 @@
-
-
-
-
-
 import unittest
 
 from hypothesis import given, assume, settings
@@ -18,7 +13,6 @@ import caffe2.python.serialized_test.serialized_test_util as serial
 
 # TODO(jiayq): make them hypothesis tests for better coverage.
 class TestElementwiseBroadcast(serial.SerializedTestCase):
-
     def __generate_test_cases(self, allow_broadcast_fastpath: bool):
         """
         generates a set of test cases
@@ -41,19 +35,25 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
         # broadcasting intermediate dimensions
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(3, 4).astype(np.float32)
-        args = dict(broadcast=1, axis=1, allow_broadcast_fastpath=allow_broadcast_fastpath)
+        args = dict(
+            broadcast=1, axis=1, allow_broadcast_fastpath=allow_broadcast_fastpath
+        )
         yield X, Y, args, X, Y[:, :, np.newaxis]
 
         # broadcasting the first dimension
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(2).astype(np.float32)
-        args = dict(broadcast=1, axis=0, allow_broadcast_fastpath=allow_broadcast_fastpath)
+        args = dict(
+            broadcast=1, axis=0, allow_broadcast_fastpath=allow_broadcast_fastpath
+        )
         yield X, Y, args, X, Y[:, np.newaxis, np.newaxis, np.newaxis]
 
         # broadcasting with single elem dimensions at both ends
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(1, 4, 1).astype(np.float32)
-        args = dict(broadcast=1, axis=1, allow_broadcast_fastpath=allow_broadcast_fastpath)
+        args = dict(
+            broadcast=1, axis=1, allow_broadcast_fastpath=allow_broadcast_fastpath
+        )
         yield X, Y, args, X, Y
 
     def __test_binary_op(
@@ -67,7 +67,9 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
             where checkpoint files are stored.
         """
 
-        for X, Y, op_args, X_out, Y_out in self.__generate_test_cases(allow_broadcast_fastpath):
+        for X, Y, op_args, X_out, Y_out in self.__generate_test_cases(
+            allow_broadcast_fastpath
+        ):
             op = core.CreateOperator(caffe2_op, ["X", "Y"], "out", **op_args)
             workspace.FeedBlob("X", X)
             workspace.FeedBlob("Y", Y)
@@ -81,21 +83,33 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
     @settings(deadline=None)
     def test_broadcast_Add(self, allow_broadcast_fastpath: bool, gc, dc):
         self.__test_binary_op(
-            gc, dc, "Add", operator.add, allow_broadcast_fastpath=allow_broadcast_fastpath
+            gc,
+            dc,
+            "Add",
+            operator.add,
+            allow_broadcast_fastpath=allow_broadcast_fastpath,
         )
 
     @given(allow_broadcast_fastpath=st.booleans(), **hu.gcs)
     @settings(deadline=None)
     def test_broadcast_Mul(self, allow_broadcast_fastpath: bool, gc, dc):
         self.__test_binary_op(
-            gc, dc, "Mul", operator.mul, allow_broadcast_fastpath=allow_broadcast_fastpath
+            gc,
+            dc,
+            "Mul",
+            operator.mul,
+            allow_broadcast_fastpath=allow_broadcast_fastpath,
         )
 
     @given(allow_broadcast_fastpath=st.booleans(), **hu.gcs)
     @settings(deadline=None)
     def test_broadcast_Sub(self, allow_broadcast_fastpath: bool, gc, dc):
         self.__test_binary_op(
-            gc, dc, "Sub", operator.sub, allow_broadcast_fastpath=allow_broadcast_fastpath
+            gc,
+            dc,
+            "Sub",
+            operator.sub,
+            allow_broadcast_fastpath=allow_broadcast_fastpath,
         )
 
     @given(**hu.gcs)
@@ -103,105 +117,112 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
     def test_broadcast_powt(self, gc, dc):
         np.random.seed(101)
 
-        #operator
+        # operator
         def powt_op(X, Y):
             return [np.power(X, Y)]
 
-        #two gradients Y*X^(Y-1) and X^Y * ln(X)
+        # two gradients Y*X^(Y-1) and X^Y * ln(X)
         def powt_grad(g_out, outputs, fwd_inputs):
             [X, Y] = fwd_inputs
             Z = outputs[0]
-            return ([Y * np.power(X, Y - 1), Z * np.log(X)] * g_out)
+            return [Y * np.power(X, Y - 1), Z * np.log(X)] * g_out
 
-        #1. Set broadcast and no axis, i.e. broadcasting last dimensions.
+        # 1. Set broadcast and no axis, i.e. broadcasting last dimensions.
         X = np.random.rand(2, 3, 4, 5).astype(np.float32) + 1.0
         Y = np.random.rand(4, 5).astype(np.float32) + 2.0
 
-        #two gradients Y*X^(Y-1) and X^Y * ln(X)
-        #latter gradient is summed over 1 and 0 dims to account for broadcast
+        # two gradients Y*X^(Y-1) and X^Y * ln(X)
+        # latter gradient is summed over 1 and 0 dims to account for broadcast
         def powt_grad_broadcast(g_out, outputs, fwd_inputs):
             [GX, GY] = powt_grad(g_out, outputs, fwd_inputs)
-            return ([GX, np.sum(np.sum(GY, 1), 0)])
+            return [GX, np.sum(np.sum(GY, 1), 0)]
 
         op = core.CreateOperator("Pow", ["X", "Y"], "Z", broadcast=1)
-        self.assertReferenceChecks(device_option=gc,
-                                   op=op,
-                                   inputs=[X, Y],
-                                   reference=powt_op,
-                                   output_to_grad="Z",
-                                   grad_reference=powt_grad_broadcast)
+        self.assertReferenceChecks(
+            device_option=gc,
+            op=op,
+            inputs=[X, Y],
+            reference=powt_op,
+            output_to_grad="Z",
+            grad_reference=powt_grad_broadcast,
+        )
 
-        #2. broadcasting intermediate dimensions
+        # 2. broadcasting intermediate dimensions
         X = np.random.rand(2, 3, 4, 5).astype(np.float32) + 1.0
         Y = np.random.rand(3, 4).astype(np.float32) + 2.0
 
-        #pow op with the latter array increased by one dim
+        # pow op with the latter array increased by one dim
         def powt_op_axis1(X, Y):
             return powt_op(X, Y[:, :, np.newaxis])
 
-        #two gradients Y*X^(Y-1) and X^Y * ln(X)
-        #latter gradient is summed over 3 and 0 dims to account for broadcast
+        # two gradients Y*X^(Y-1) and X^Y * ln(X)
+        # latter gradient is summed over 3 and 0 dims to account for broadcast
         def powt_grad_axis1(g_out, outputs, fwd_inputs):
             [X, Y] = fwd_inputs
             [GX, GY] = powt_grad(g_out, outputs, [X, Y[:, :, np.newaxis]])
-            return ([GX, np.sum(np.sum(GY, 3), 0)])
+            return [GX, np.sum(np.sum(GY, 3), 0)]
 
         op = core.CreateOperator("Pow", ["X", "Y"], "Z", broadcast=1, axis=1)
-        self.assertReferenceChecks(device_option=gc,
-                                   op=op,
-                                   inputs=[X, Y],
-                                   reference=powt_op_axis1,
-                                   output_to_grad="Z",
-                                   grad_reference=powt_grad_axis1)
+        self.assertReferenceChecks(
+            device_option=gc,
+            op=op,
+            inputs=[X, Y],
+            reference=powt_op_axis1,
+            output_to_grad="Z",
+            grad_reference=powt_grad_axis1,
+        )
 
-        #3. broadcasting the first dimension
+        # 3. broadcasting the first dimension
         X = np.random.rand(2, 3, 4, 5).astype(np.float32) + 1.0
         Y = np.random.rand(2).astype(np.float32) + 2.0
 
-        #pow op with the latter array increased by one dim
+        # pow op with the latter array increased by one dim
         def powt_op_axis0(X, Y):
             return powt_op(X, Y[:, np.newaxis, np.newaxis, np.newaxis])
 
-        #two gradients Y*X^(Y-1) and X^Y * ln(X)
-        #latter gradient is summed over 3, 2 and 1 dims to account for broadcast
+        # two gradients Y*X^(Y-1) and X^Y * ln(X)
+        # latter gradient is summed over 3, 2 and 1 dims to account for broadcast
         def powt_grad_axis0(g_out, outputs, fwd_inputs):
             [X, Y] = fwd_inputs
-            [GX, GY] = powt_grad(g_out,
-                                 outputs,
-                                 [X, Y[:, np.newaxis, np.newaxis, np.newaxis]])
-            return ([GX, np.sum(np.sum(np.sum(GY, 3), 2), 1)])
+            [GX, GY] = powt_grad(
+                g_out, outputs, [X, Y[:, np.newaxis, np.newaxis, np.newaxis]]
+            )
+            return [GX, np.sum(np.sum(np.sum(GY, 3), 2), 1)]
 
         op = core.CreateOperator("Pow", ["X", "Y"], "Z", broadcast=1, axis=0)
-        self.assertReferenceChecks(device_option=gc,
-                                   op=op,
-                                   inputs=[X, Y],
-                                   reference=powt_op_axis0,
-                                   output_to_grad="Z",
-                                   grad_reference=powt_grad_axis0)
+        self.assertReferenceChecks(
+            device_option=gc,
+            op=op,
+            inputs=[X, Y],
+            reference=powt_op_axis0,
+            output_to_grad="Z",
+            grad_reference=powt_grad_axis0,
+        )
 
-        #4. broadcasting with single elem dimensions at both ends
+        # 4. broadcasting with single elem dimensions at both ends
         X = np.random.rand(2, 3, 4, 5).astype(np.float32) + 1.0
         Y = np.random.rand(1, 4, 1).astype(np.float32) + 2.0
 
-        #pow op with the latter array increased by one dim
+        # pow op with the latter array increased by one dim
         def powt_op_mixed(X, Y):
             return powt_op(X, Y[np.newaxis, :, :, :])
 
-        #two gradients Y*X^(Y-1) and X^Y * ln(X)
-        #latter gradient is summed over 0 and 1 dims to account for broadcast
+        # two gradients Y*X^(Y-1) and X^Y * ln(X)
+        # latter gradient is summed over 0 and 1 dims to account for broadcast
         def powt_grad_mixed(g_out, outputs, fwd_inputs):
             [X, Y] = fwd_inputs
             [GX, GY] = powt_grad(g_out, outputs, [X, Y[np.newaxis, :, :, :]])
-            return ([GX, np.reshape(np.sum(np.sum(np.sum(GY, 3), 1), 0),
-                                    (1, 4, 1))])
+            return [GX, np.reshape(np.sum(np.sum(np.sum(GY, 3), 1), 0), (1, 4, 1))]
 
         op = core.CreateOperator("Pow", ["X", "Y"], "Z", broadcast=1, axis=1)
-        self.assertReferenceChecks(device_option=gc,
-                                   op=op,
-                                   inputs=[X, Y],
-                                   reference=powt_op_mixed,
-                                   output_to_grad="Z",
-                                   grad_reference=powt_grad_mixed)
+        self.assertReferenceChecks(
+            device_option=gc,
+            op=op,
+            inputs=[X, Y],
+            reference=powt_op_mixed,
+            output_to_grad="Z",
+            grad_reference=powt_grad_mixed,
+        )
 
     @given(allow_broadcast_fastpath=st.booleans(), **hu.gcs)
     def test_broadcast_scalar(self, allow_broadcast_fastpath: bool, gc, dc):
@@ -209,28 +230,34 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(1).astype(np.float32)
         op = core.CreateOperator(
-            "Add", ["X", "Y"], "out", broadcast=1, allow_broadcast_fastpath=allow_broadcast_fastpath
+            "Add",
+            ["X", "Y"],
+            "out",
+            broadcast=1,
+            allow_broadcast_fastpath=allow_broadcast_fastpath,
         )
         workspace.FeedBlob("X", X)
         workspace.FeedBlob("Y", Y)
         workspace.RunOperatorOnce(op)
         out = workspace.FetchBlob("out")
-        np.testing.assert_array_almost_equal(
-            out, X + Y)
+        np.testing.assert_array_almost_equal(out, X + Y)
         self.assertDeviceChecks(dc, op, [X, Y], [0])
 
         # broadcasting scalar
         X = np.random.rand(1).astype(np.float32)
         Y = np.random.rand(1).astype(np.float32).reshape([])
         op = core.CreateOperator(
-            "Add", ["X", "Y"], "out", broadcast=1, allow_broadcast_fastpath=allow_broadcast_fastpath
+            "Add",
+            ["X", "Y"],
+            "out",
+            broadcast=1,
+            allow_broadcast_fastpath=allow_broadcast_fastpath,
         )
         workspace.FeedBlob("X", X)
         workspace.FeedBlob("Y", Y)
         workspace.RunOperatorOnce(op)
         out = workspace.FetchBlob("out")
-        np.testing.assert_array_almost_equal(
-            out, X + Y)
+        np.testing.assert_array_almost_equal(out, X + Y)
         self.assertDeviceChecks(dc, op, [X, Y], [0])
 
     @given(allow_broadcast_fastpath=st.booleans(), **hu.gcs)
@@ -239,22 +266,32 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(3).astype(np.float32)
         op = core.CreateOperator(
-            "Add", ["X", "Y"], "out", broadcast=1, axis_str="C",
-            allow_broadcast_fastpath=allow_broadcast_fastpath)
+            "Add",
+            ["X", "Y"],
+            "out",
+            broadcast=1,
+            axis_str="C",
+            allow_broadcast_fastpath=allow_broadcast_fastpath,
+        )
         workspace.FeedBlob("X", X)
         workspace.FeedBlob("Y", Y)
         workspace.RunOperatorOnce(op)
         out = workspace.FetchBlob("out")
-        np.testing.assert_array_almost_equal(
-            out, X + Y[:, np.newaxis, np.newaxis])
+        np.testing.assert_array_almost_equal(out, X + Y[:, np.newaxis, np.newaxis])
         self.assertDeviceChecks(dc, op, [X, Y], [0])
 
         # NHWC
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(5).astype(np.float32)
         op = core.CreateOperator(
-            "Add", ["X", "Y"], "out", broadcast=1, axis_str="C", order="NHWC",
-            allow_broadcast_fastpath=allow_broadcast_fastpath)
+            "Add",
+            ["X", "Y"],
+            "out",
+            broadcast=1,
+            axis_str="C",
+            order="NHWC",
+            allow_broadcast_fastpath=allow_broadcast_fastpath,
+        )
         workspace.FeedBlob("X", X)
         workspace.FeedBlob("Y", Y)
         workspace.RunOperatorOnce(op)
@@ -264,7 +301,7 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
 
     @given(**hu.gcs)
     def test_sum_reduce_empty_blob(self, gc, dc):
-        net = core.Net('test')
+        net = core.Net("test")
 
         with core.DeviceScope(gc):
             net.GivenTensorFill([], ["X"], values=[], shape=[2, 0, 5])
@@ -277,8 +314,7 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
         # Set broadcast and no axis, i.e. broadcasting last dimensions.
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(4, 5).astype(np.float32)
-        op = core.CreateOperator(
-            "SumReduceLike", ["X", "Y"], "out", broadcast=1)
+        op = core.CreateOperator("SumReduceLike", ["X", "Y"], "out", broadcast=1)
         workspace.FeedBlob("X", X)
         workspace.FeedBlob("Y", Y)
         workspace.RunOperatorOnce(op)
@@ -292,7 +328,8 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(2, 3).astype(np.float32)
         op = core.CreateOperator(
-            "SumReduceLike", ["X", "Y"], "out", broadcast=1, axis=0)
+            "SumReduceLike", ["X", "Y"], "out", broadcast=1, axis=0
+        )
         workspace.FeedBlob("X", X)
         workspace.FeedBlob("Y", Y)
         workspace.RunOperatorOnce(op)
@@ -306,7 +343,8 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(3, 4).astype(np.float32)
         op = core.CreateOperator(
-            "SumReduceLike", ["X", "Y"], "out", broadcast=1, axis=1)
+            "SumReduceLike", ["X", "Y"], "out", broadcast=1, axis=1
+        )
         workspace.FeedBlob("X", X)
         workspace.FeedBlob("Y", Y)
         workspace.RunOperatorOnce(op)
@@ -319,8 +357,7 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
         # broadcasting intermediate dimensions
         X = np.random.rand(2, 3, 4, 500).astype(np.float64)
         Y = np.random.rand(1).astype(np.float64)
-        op = core.CreateOperator(
-            "SumReduceLike", ["X", "Y"], "out", broadcast=1)
+        op = core.CreateOperator("SumReduceLike", ["X", "Y"], "out", broadcast=1)
         workspace.FeedBlob("X", X)
         workspace.FeedBlob("Y", Y)
         workspace.RunOperatorOnce(op)
@@ -331,8 +368,7 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
         # broadcasting with single elem dimensions at both ends
         X = np.random.rand(2, 3, 4, 5).astype(np.float32)
         Y = np.random.rand(1, 3, 4, 1).astype(np.float32)
-        op = core.CreateOperator(
-            "SumReduceLike", ["X", "Y"], "out", broadcast=1)
+        op = core.CreateOperator("SumReduceLike", ["X", "Y"], "out", broadcast=1)
         workspace.FeedBlob("X", X)
         workspace.FeedBlob("Y", Y)
         workspace.RunOperatorOnce(op)
@@ -355,7 +391,8 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
         X = np.random.rand(2, 3, 4, 5).astype(np.float16)
         Y = np.random.rand(4, 5).astype(np.float16)
         op = core.CreateOperator(
-            "SumReduceLike", ["X", "Y"], "out", broadcast=1, device_option=gc)
+            "SumReduceLike", ["X", "Y"], "out", broadcast=1, device_option=gc
+        )
 
         def ref_op(X, Y):
             res = np.sum(X, axis=0)
@@ -363,17 +400,15 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
             return [res]
 
         self.assertReferenceChecks(
-            device_option=gc,
-            op=op,
-            inputs=[X, Y],
-            reference=ref_op,
-            threshold=1e-3)
+            device_option=gc, op=op, inputs=[X, Y], reference=ref_op, threshold=1e-3
+        )
 
         # Set broadcast and no axis, i.e. broadcasting last dimensions.
         X = np.random.rand(2, 3, 4, 5).astype(np.float16)
         Y = np.random.rand(2, 3).astype(np.float16)
         op = core.CreateOperator(
-            "SumReduceLike", ["X", "Y"], "out", broadcast=1, axis=0)
+            "SumReduceLike", ["X", "Y"], "out", broadcast=1, axis=0
+        )
 
         def ref_op(X, Y):
             res = np.sum(X, axis=3)
@@ -381,17 +416,15 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
             return [res]
 
         self.assertReferenceChecks(
-            device_option=gc,
-            op=op,
-            inputs=[X, Y],
-            reference=ref_op,
-            threshold=1e-3)
+            device_option=gc, op=op, inputs=[X, Y], reference=ref_op, threshold=1e-3
+        )
 
         # broadcasting intermediate dimensions
         X = np.random.rand(2, 3, 4, 5).astype(np.float16)
         Y = np.random.rand(3, 4).astype(np.float16)
         op = core.CreateOperator(
-            "SumReduceLike", ["X", "Y"], "out", broadcast=1, axis=1)
+            "SumReduceLike", ["X", "Y"], "out", broadcast=1, axis=1
+        )
 
         def ref_op(X, Y):
             res = np.sum(X, axis=0)
@@ -399,17 +432,13 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
             return [res]
 
         self.assertReferenceChecks(
-            device_option=gc,
-            op=op,
-            inputs=[X, Y],
-            reference=ref_op,
-            threshold=1e-3)
+            device_option=gc, op=op, inputs=[X, Y], reference=ref_op, threshold=1e-3
+        )
 
         # broadcasting with single elem dimensions at both ends
         X = np.random.rand(2, 3, 4, 5).astype(np.float16)
         Y = np.random.rand(1, 3, 4, 1).astype(np.float16)
-        op = core.CreateOperator(
-            "SumReduceLike", ["X", "Y"], "out", broadcast=1)
+        op = core.CreateOperator("SumReduceLike", ["X", "Y"], "out", broadcast=1)
 
         def ref_op(X, Y):
             res = np.sum(X, axis=0)
@@ -417,11 +446,9 @@ class TestElementwiseBroadcast(serial.SerializedTestCase):
             return [res.reshape(Y.shape)]
 
         self.assertReferenceChecks(
-            device_option=gc,
-            op=op,
-            inputs=[X, Y],
-            reference=ref_op,
-            threshold=1e-3)
+            device_option=gc, op=op, inputs=[X, Y], reference=ref_op, threshold=1e-3
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

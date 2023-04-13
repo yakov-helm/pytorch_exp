@@ -1,9 +1,6 @@
-
-
-
-
 # make sure we use cpp implementation of protobuf
 import os
+
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "cpp"
 # then import protobuf
 from caffe2.proto import caffe2_pb2, metanet_pb2

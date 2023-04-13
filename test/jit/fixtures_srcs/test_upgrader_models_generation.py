@@ -14,7 +14,9 @@ class TestUpgraderModelGeneration(TestCase):
                 f"The module {module_name} "
                 f"is not a torch.nn.module instance. "
                 f"Please ensure it's a subclass of torch.nn.module in fixtures_src.py"
-                f"and it's registered as an instance in ALL_MODULES in generated_models.py")
+                f"and it's registered as an instance in ALL_MODULES in generated_models.py",
+            )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_tests()

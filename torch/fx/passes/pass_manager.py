@@ -35,6 +35,7 @@ def inplace_wrapper(fn: Callable) -> Callable:
 
     return wrapped_fn
 
+
 def log_hook(fn: Callable, level=logging.INFO) -> Callable:
     """
     Logs callable output.
@@ -66,14 +67,17 @@ def log_hook(fn: Callable, level=logging.INFO) -> Callable:
     Returns:
         wrapped_fn (Callable[Type1, Type2])
     """
+
     @wraps(fn)
     def wrapped_fn(gm):
         val = fn(gm)
-        logger.log(level, f"Ran pass {fn}\t Return value: {val}",)
+        logger.log(
+            level,
+            f"Ran pass {fn}\t Return value: {val}",
+        )
         return val
 
     return wrapped_fn
-
 
 
 def loop_pass(base_pass: Callable, n_iter: int = None, predicate: Callable = None):

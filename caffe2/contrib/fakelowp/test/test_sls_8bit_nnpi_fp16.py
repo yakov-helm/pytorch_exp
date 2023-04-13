@@ -42,7 +42,7 @@ class SparseLengthsSum8BitFakeNNPIFp16Test(serial.SerializedTestCase):
         fp16_c2_net = core.Net("test_fp16_c2")
         fp16_c2_net.SparseLengthsSumFakeFP16AccFP16(["D", "I", "L"], "fp16_out")
 
-        input_dict : Dict[Any, Any] = {}
+        input_dict: Dict[Any, Any] = {}
 
         pred_net = caffe2_pb2.NetDef()
         pred_net.name = "pred"
@@ -208,7 +208,9 @@ class SparseLengthsSum8BitFakeNNPIFp16Test(serial.SerializedTestCase):
         max_weight=st.integers(0, 100),
     )
     @settings(deadline=datetime.timedelta(seconds=10))
-    def test_slws_fused_8bit_rowwise(self, seed, num_rows, embedding_dim, batch_size, max_weight):
+    def test_slws_fused_8bit_rowwise(
+        self, seed, num_rows, embedding_dim, batch_size, max_weight
+    ):
         np.random.seed(seed)
         workspace.ResetWorkspace()
 
@@ -220,13 +222,11 @@ class SparseLengthsSum8BitFakeNNPIFp16Test(serial.SerializedTestCase):
             _indices.extend(np.random.choice(np.arange(1, num_rows), length))
         indices = np.asarray(_indices).astype(np.int64)
 
-        weights = np.random.uniform(
-            low=0,
-            high=max_weight,
-            size=[len(indices)]
-        ).astype(np.float32)
+        weights = np.random.uniform(low=0, high=max_weight, size=[len(indices)]).astype(
+            np.float32
+        )
 
-        assert(len(weights) < 64000)
+        assert len(weights) < 64000
 
         pred_net = caffe2_pb2.NetDef()
         pred_net.name = "pred"
@@ -272,7 +272,8 @@ class SparseLengthsSum8BitFakeNNPIFp16Test(serial.SerializedTestCase):
             use_onnx=False,
         )
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in onnxified_net.op)
+            1 if o.type == "Onnxifi" else 0 for o in onnxified_net.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
 
         workspace.FeedBlob("indices", indices)
@@ -375,7 +376,8 @@ class SparseLengthsSum8BitFakeNNPIFp16Test(serial.SerializedTestCase):
             use_onnx=False,
         )
         num_onnxified_ops = sum(
-            1 if o.type == "Onnxifi" else 0 for o in onnxified_net.op)
+            1 if o.type == "Onnxifi" else 0 for o in onnxified_net.op
+        )
         np.testing.assert_equal(num_onnxified_ops, 1)
 
         workspace.FeedBlob("indices", indices)
@@ -483,7 +485,7 @@ class SparseLengthsSum8BitFakeNNPIFp16Test(serial.SerializedTestCase):
                 ["Y_norm", "Y_mean", "Y_std"],
                 epsilon=1e-4,
                 axis=1,
-                elementwise_affine=False
+                elementwise_affine=False,
             )
         )
 
@@ -562,5 +564,5 @@ class SparseLengthsSum8BitFakeNNPIFp16Test(serial.SerializedTestCase):
             assert 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

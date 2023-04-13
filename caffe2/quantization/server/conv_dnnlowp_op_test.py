@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -37,7 +35,7 @@ class DNNLowPOpConvTest(hu.HypothesisTestCase):
         share_col_buffer=st.booleans(),
         preserve_activation_sparsity=st.booleans(),
         preserve_weight_sparsity=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(max_examples=10, deadline=None)
     def test_dnnlowp_conv_int(
@@ -120,7 +118,10 @@ class DNNLowPOpConvTest(hu.HypothesisTestCase):
                 X_min, X_max, preserve_activation_sparsity
             )
             if do_quantize_weight:
-                int8_given_tensor_fill, w_q_param = dnnlowp_utils.create_int8_given_tensor_fill(
+                (
+                    int8_given_tensor_fill,
+                    w_q_param,
+                ) = dnnlowp_utils.create_int8_given_tensor_fill(
                     W, "W_q", preserve_weight_sparsity
                 )
                 init_net.Proto().op.extend([int8_given_tensor_fill])
@@ -207,7 +208,7 @@ class DNNLowPOpConvTest(hu.HypothesisTestCase):
         batch_size=st.integers(0, 3),
         order=st.sampled_from(["NCHW", "NHWC"]),
         share_col_buffer=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(max_examples=10, deadline=None)
     def test_dnnlowp_conv_relu_int(
@@ -227,7 +228,11 @@ class DNNLowPOpConvTest(hu.HypothesisTestCase):
         dc,
     ):
         assume(group == 1 or dilation == 1)
-        assume(order == "NHWC" or input_channels_per_group <= 8 and output_channels_per_group <= 8)
+        assume(
+            order == "NHWC"
+            or input_channels_per_group <= 8
+            and output_channels_per_group <= 8
+        )
 
         X, W, b = generate_conv_inputs(
             stride,
@@ -370,9 +375,10 @@ class DNNLowPOpConvTest(hu.HypothesisTestCase):
             X_max = 0 if X.size == 0 else X.max()
             x_q_param = dnnlowp_utils.choose_quantization_params(X_min, X_max)
             if do_quantize_weight:
-                int8_given_tensor_fill, w_q_param = dnnlowp_utils.create_int8_given_tensor_fill(
-                    W, "W_q"
-                )
+                (
+                    int8_given_tensor_fill,
+                    w_q_param,
+                ) = dnnlowp_utils.create_int8_given_tensor_fill(W, "W_q")
                 init_net.Proto().op.extend([int8_given_tensor_fill])
 
                 # Bias
@@ -452,7 +458,7 @@ class DNNLowPOpConvTest(hu.HypothesisTestCase):
         batch_size=st.integers(0, 2),
         order=st.sampled_from(["NCHW", "NHWC"]),
         prepack_weight=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(deadline=None, max_examples=50)
     def test_dnnlowp_conv3d_int(
@@ -500,7 +506,7 @@ class DNNLowPOpConvTest(hu.HypothesisTestCase):
         batch_size=st.integers(0, 2),
         order=st.sampled_from(["NCHW", "NHWC"]),
         prepack_weight=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_dnnlowp_conv1d_int(
         self,

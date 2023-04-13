@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -21,7 +19,7 @@ class DNNLowPAddOpTest(hu.HypothesisTestCase):
         in_quantized=st.booleans(),
         out_quantized=st.booleans(),
         in_place=st.sampled_from([(False, False), (True, False), (False, True)]),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_dnnlowp_elementwise_add_int(
         self, N, is_empty, in_quantized, out_quantized, in_place, gc, dc

@@ -31,15 +31,18 @@ from torch.testing._internal.common_distributed import (
 import torch._dynamo.logging
 from torch._dynamo.comptime import comptime
 
+
 def reset_rng_state():
     torch.manual_seed(1337)
     random.seed(1337)
     np.random.seed(1337)
 
+
 def init_weights(m):
     if isinstance(m, nn.Linear):
         nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
+
 
 class ToyModel(nn.Module):
     def __init__(self, in_feat=10, hidden_feat=5000, out_feat=5):
@@ -54,12 +57,14 @@ class ToyModel(nn.Module):
     def forward(self, inputs):
         return self.net(inputs)
 
+
 def get_model(device, bsz=20, in_feat=10, hidden_feat=5000, out_feat=5):
     m = ToyModel(in_feat=in_feat, hidden_feat=hidden_feat, out_feat=out_feat).to(device)
     m.apply(init_weights)
     inputs = torch.rand(bsz, in_feat).to(device)
     outputs = m(inputs)
     return m, inputs, outputs
+
 
 def get_custom_model(device):
     class MyCustomLinear(torch.nn.Module):
@@ -106,6 +111,7 @@ def get_custom_model(device):
     correct_outputs = m(*inputs)
     return m, inputs, correct_outputs
 
+
 def get_hf_bert(rank):
     # Note: use @import_transformers_or_skip on your test case if you use this
     # in a multiprocessing test
@@ -117,10 +123,13 @@ def get_hf_bert(rank):
     batch_size, max_length, config, device = 4, 512, BertConfig(), f"cuda:{rank}"
     model = AutoModelForMaskedLM.from_config(config).to(device)
     input_ids = torch.randint(0, config.vocab_size, (batch_size, max_length)).to(device)
-    decoder_ids = torch.randint(0, config.vocab_size, (batch_size, max_length)).to(device)
-    inputs = {'input_ids': input_ids, 'labels': decoder_ids}
+    decoder_ids = torch.randint(0, config.vocab_size, (batch_size, max_length)).to(
+        device
+    )
+    inputs = {"input_ids": input_ids, "labels": decoder_ids}
     model.train()
     return model, inputs
+
 
 class CheckSplitsCompiler:
     def __init__(self):
@@ -157,6 +166,7 @@ class FakeDDP(nn.Module):
         with self._inside_ddp_forward():
             return self.module.forward(*inputs, **kwargs)
 
+
 def run_hf_bert_ddp(self, model, inputs, backend):
     reset_rng_state()
     correct_outputs = model(**inputs)
@@ -170,9 +180,12 @@ def run_hf_bert_ddp(self, model, inputs, backend):
     opt_loss.backward()
 
     inputs_flat = [inputs[k] for k in inputs]
-    correct_results = collect_results(model, correct_outputs.logits, correct_loss, inputs_flat)
+    correct_results = collect_results(
+        model, correct_outputs.logits, correct_loss, inputs_flat
+    )
     opt_results = collect_results(opt_model, opt_outputs.logits, opt_loss, inputs_flat)
     self.assertTrue(same(correct_results, opt_results))
+
 
 class TestFakeDistributedSingleProc(torch._dynamo.test_case.TestCase):
     @unittest.skipIf(not has_triton(), "Inductor+gpu needs triton and recent GPU arch")
@@ -212,6 +225,7 @@ class TestMultiProc(DynamoDistributedMultiProcTestCase):
     Prefer MultiThreadedTestCase for most tests. Perhaps use this one
     sparingly for integration tests.
     """
+
     @skip_if_lt_x_gpu(2)
     @patch.object(config, "optimize_ddp", False)
     def test_ddp_baseline_aot_eager_multiprocess(self):
@@ -259,9 +273,9 @@ class TestMultiProc(DynamoDistributedMultiProcTestCase):
             fsdp_m = FSDP(
                 m,
                 auto_wrap_policy=functools.partial(
-                    transformer_auto_wrap_policy, transformer_layer_cls=(nn.Linear, )
+                    transformer_auto_wrap_policy, transformer_layer_cls=(nn.Linear,)
                 ),
-                use_orig_params=True
+                use_orig_params=True,
             )
             fsdp_m = torch._dynamo.optimize("aot_eager")(fsdp_m)
             outputs = fsdp_m(inputs)
@@ -283,9 +297,9 @@ class TestMultiProc(DynamoDistributedMultiProcTestCase):
             fsdp_m = FSDP(
                 m,
                 auto_wrap_policy=functools.partial(
-                    transformer_auto_wrap_policy, transformer_layer_cls=(nn.Linear, )
+                    transformer_auto_wrap_policy, transformer_layer_cls=(nn.Linear,)
                 ),
-                use_orig_params=True
+                use_orig_params=True,
             )
             fsdp_m = torch._dynamo.optimize("inductor")(fsdp_m)
             outputs = fsdp_m(inputs)
@@ -301,24 +315,19 @@ class TestMultiProc(DynamoDistributedMultiProcTestCase):
 
         def apply_fsdp(model, wrap_policy):
             model = FSDP(
-                copy.deepcopy(model),
-                auto_wrap_policy=wrap_policy,
-                use_orig_params=True
+                copy.deepcopy(model), auto_wrap_policy=wrap_policy, use_orig_params=True
             )
             return model
 
         with _dynamo_dist_per_rank_init(self.rank, self.world_size):
             for (wrap_policy, test_instance) in (
-                (
-                    None,
-                    "FSDP without recursive wrapping"
-                ),
+                (None, "FSDP without recursive wrapping"),
                 (
                     functools.partial(
-                        transformer_auto_wrap_policy, transformer_layer_cls=(BertLayer, )
+                        transformer_auto_wrap_policy, transformer_layer_cls=(BertLayer,)
                     ),
-                    "FSDP with recursive wrapping BertLayer instances"
-                )
+                    "FSDP with recursive wrapping BertLayer instances",
+                ),
             ):
                 print(f"Running hf_bert test for {test_instance}")
                 model, inputs = get_hf_bert(self.rank)
@@ -337,8 +346,12 @@ class TestMultiProc(DynamoDistributedMultiProcTestCase):
                 opt_loss.backward()
 
                 inputs_flat = [inputs[k] for k in inputs]
-                correct_results = collect_results(eager_model, correct_outputs.logits, correct_loss, inputs_flat)
-                opt_results = collect_results(opt_model, opt_outputs.logits, opt_loss, inputs_flat)
+                correct_results = collect_results(
+                    eager_model, correct_outputs.logits, correct_loss, inputs_flat
+                )
+                opt_results = collect_results(
+                    opt_model, opt_outputs.logits, opt_loss, inputs_flat
+                )
                 self.assertTrue(same(correct_results, opt_results))
 
 
@@ -352,7 +365,9 @@ class TestSingleProc(DynamoDistributedSingleProcTestCase):
     """
 
     def get_model(self, bsz=20, in_feat=10, hidden_feat=5000, out_feat=5):
-        m = ToyModel(in_feat=in_feat, hidden_feat=hidden_feat, out_feat=out_feat).to(self.device)
+        m = ToyModel(in_feat=in_feat, hidden_feat=hidden_feat, out_feat=out_feat).to(
+            self.device
+        )
         m.apply(init_weights)
         inputs = torch.rand(bsz, in_feat).to(self.device)
         outputs = m(inputs)
@@ -507,14 +522,13 @@ class TestSingleProc(DynamoDistributedSingleProcTestCase):
         DDP._set_params_and_buffers_to_ignore_for_model(m, parameters_to_ignore)
         ddp_m = DDP(m, device_ids=self.device_ids, bucket_cap_mb=25)
         parameter_ids_to_ignore = [
-            id(ddp_m.module.get_parameter(p))
-            for p in ddp_m.parameters_to_ignore
+            id(ddp_m.module.get_parameter(p)) for p in ddp_m.parameters_to_ignore
         ]
 
         check_splits_compiler = CheckSplitsCompiler()
         ddp_optimizer = DDPOptimizer(
             bucket_bytes_cap=ddp_m.bucket_bytes_cap,
-            backend_compile_fn=check_splits_compiler.compile_fn
+            backend_compile_fn=check_splits_compiler.compile_fn,
         )
 
         @torch._dynamo.optimize(ddp_optimizer.compile_fn)
@@ -533,7 +547,12 @@ class TestSingleProc(DynamoDistributedSingleProcTestCase):
         m, inputs, correct_outputs = get_model(f"cuda:{self.rank}")
         fsdp_m = FSDP(m, use_orig_params=False)
         fsdp_m = torch._dynamo.optimize()(fsdp_m)
-        self.assertRaisesRegex(AssertionError, "Dynamo only supports FSDP with use_orig_params=True", fsdp_m, inputs)
+        self.assertRaisesRegex(
+            AssertionError,
+            "Dynamo only supports FSDP with use_orig_params=True",
+            fsdp_m,
+            inputs,
+        )
 
     def test_fsdp_skip_guards(self):
         """
@@ -553,7 +572,7 @@ class TestSingleProc(DynamoDistributedSingleProcTestCase):
 
         for skip_guards, expected_guard_source in (
             (True, "local_fsdp_module"),
-            (False, "local")
+            (False, "local"),
         ):
             torch._dynamo.reset()
             torch._dynamo.config.skip_fsdp_guards = skip_guards
@@ -576,8 +595,13 @@ class TestSingleProc(DynamoDistributedSingleProcTestCase):
                         ctx.print_guards(file=GUARDS_FILE)
 
                     return out
+
             device = f"cuda:{self.rank}"
-            m = ToyModel(in_feat=10, hidden_feat=5000, out_feat=5,).to(device)
+            m = ToyModel(
+                in_feat=10,
+                hidden_feat=5000,
+                out_feat=5,
+            ).to(device)
             inputs = torch.rand(20, 10).to(device)
             m.apply(init_weights)
             correct_outputs = m(inputs)
@@ -586,14 +610,17 @@ class TestSingleProc(DynamoDistributedSingleProcTestCase):
             outputs = opt_m(inputs)
 
             # far from an exhaustive check of all the expected guards, just check a couple of them.
-            FileCheck() \
-                .check("""local "L['self']" TYPE_MATCH""") \
-                .check("""local "L['self']" ID_MATCH""") \
-                .check(f"""{expected_guard_source} "L['self'].net" TYPE_MATCH""") \
-                .check(f"""{expected_guard_source} "L['self'].net" ID_MATCH""") \
-                .check(f"""{expected_guard_source} "L['self'].net[0]" TYPE_MATCH""") \
-                .check(f"""{expected_guard_source} "L['self'].net[0]" ID_MATCH""") \
-                .run(GUARDS_FILE.getvalue())
+            FileCheck().check("""local "L['self']" TYPE_MATCH""").check(
+                """local "L['self']" ID_MATCH"""
+            ).check(f"""{expected_guard_source} "L['self'].net" TYPE_MATCH""").check(
+                f"""{expected_guard_source} "L['self'].net" ID_MATCH"""
+            ).check(
+                f"""{expected_guard_source} "L['self'].net[0]" TYPE_MATCH"""
+            ).check(
+                f"""{expected_guard_source} "L['self'].net[0]" ID_MATCH"""
+            ).run(
+                GUARDS_FILE.getvalue()
+            )
             self.assertTrue(same(correct_outputs, outputs))
 
     def test_fsdp_dup_tensors_same_source(self):
@@ -602,6 +629,7 @@ class TestSingleProc(DynamoDistributedSingleProcTestCase):
         source are de-duplicated, meaning that they are each only passed once
         as a graph input.
         """
+
         class DuplicateModule(nn.Module):
             def __init__(self) -> None:
                 super().__init__()
@@ -632,6 +660,7 @@ class TestSingleProc(DynamoDistributedSingleProcTestCase):
         ``a is b``, where ``a`` and ``b`` are certainly not the same. We check
         this by checking for per-invocation recompiles.
         """
+
         class BufModule(nn.Module):
             def __init__(self) -> None:
                 super().__init__()

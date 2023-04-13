@@ -1,19 +1,28 @@
 import torch
 from torch import Tensor
 
-from .optimizer import (Optimizer, _use_grad_for_differentiable, _get_value, _default_to_fused_or_foreach,
-                        _differentiable_doc, _foreach_doc, _maximize_doc)
+from .optimizer import (
+    Optimizer,
+    _use_grad_for_differentiable,
+    _get_value,
+    _default_to_fused_or_foreach,
+    _differentiable_doc,
+    _foreach_doc,
+    _maximize_doc,
+)
 from torch._utils import is_compiling
 from torch.utils._foreach_utils import _group_tensors_by_device_and_dtype
 from typing import List, Optional
 
 __all__ = ["ASGD", "asgd"]
 
+
 def _to_tensor(x):
     if not isinstance(x, torch.Tensor):
         return torch.tensor(x)
 
     return x
+
 
 class ASGD(Optimizer):
     def __init__(
@@ -115,7 +124,9 @@ class ASGD(Optimizer):
             etas = []
             state_steps = []
 
-            self._init_group(group, params_with_grad, grads, mus, axs, etas, state_steps)
+            self._init_group(
+                group, params_with_grad, grads, mus, axs, etas, state_steps
+            )
 
             asgd(
                 params_with_grad,
@@ -157,7 +168,9 @@ ASGD.__doc__ = r"""Implements Averaged Stochastic Gradient Descent.
     .. _Acceleration of stochastic approximation by averaging:
         https://dl.acm.org/citation.cfm?id=131098
 
-    """.format(foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc)
+    """.format(
+    foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc
+)
 
 
 def asgd(
@@ -185,7 +198,9 @@ def asgd(
     """
 
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
+        _, foreach = _default_to_fused_or_foreach(
+            params, differentiable, use_fused=False
+        )
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")
@@ -294,9 +309,17 @@ def _multi_tensor_asgd(
 
     assert not differentiable, "_foreach ops don't support autograd"
 
-    grouped_tensors = _group_tensors_by_device_and_dtype([params, grads, axs, mus, etas, state_steps])
-    for (grouped_params, grouped_grads, grouped_axs, grouped_mus,
-         grouped_etas, grouped_state_steps) in grouped_tensors.values():
+    grouped_tensors = _group_tensors_by_device_and_dtype(
+        [params, grads, axs, mus, etas, state_steps]
+    )
+    for (
+        grouped_params,
+        grouped_grads,
+        grouped_axs,
+        grouped_mus,
+        grouped_etas,
+        grouped_state_steps,
+    ) in grouped_tensors.values():
         if maximize:
             grouped_grads = torch._foreach_neg(grouped_grads)
 
@@ -313,7 +336,9 @@ def _multi_tensor_asgd(
         torch._foreach_add_(grouped_state_steps, 1)
 
         if weight_decay != 0:
-            grouped_grads = torch._foreach_add(grouped_grads, grouped_params, alpha=weight_decay)
+            grouped_grads = torch._foreach_add(
+                grouped_grads, grouped_params, alpha=weight_decay
+            )
 
         # decay term
         eta = _get_value(grouped_etas[0])
@@ -325,7 +350,9 @@ def _multi_tensor_asgd(
         # averaging
         for i in range(len(grouped_axs)):
             if is_compiling() or grouped_mus[i].item() != 1:
-                grouped_axs[i].add_(grouped_params[i].sub(grouped_axs[i]).mul(grouped_mus[i]))
+                grouped_axs[i].add_(
+                    grouped_params[i].sub(grouped_axs[i]).mul(grouped_mus[i])
+                )
             else:
                 grouped_axs[i].copy_(grouped_params[i])
 

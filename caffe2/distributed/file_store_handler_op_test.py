@@ -1,8 +1,3 @@
-
-
-
-
-
 import errno
 import os
 import tempfile
@@ -47,10 +42,9 @@ class TestFileStoreHandlerOp(TestCase):
         store_handler = "store_handler"
         workspace.RunOperatorOnce(
             core.CreateOperator(
-                "FileStoreHandlerCreate",
-                [],
-                [store_handler],
-                path=path))
+                "FileStoreHandlerCreate", [], [store_handler], path=path
+            )
+        )
 
         return store_handler
 

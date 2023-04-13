@@ -6,7 +6,8 @@ from torch import _weight_norm, norm_except_dim
 from typing import Any, TypeVar
 from ..modules import Module
 
-__all__ = ['WeightNorm', 'weight_norm', 'remove_weight_norm']
+__all__ = ["WeightNorm", "weight_norm", "remove_weight_norm"]
+
 
 class WeightNorm:
     name: str
@@ -20,16 +21,18 @@ class WeightNorm:
 
     # TODO Make return type more specific
     def compute_weight(self, module: Module) -> Any:
-        g = getattr(module, self.name + '_g')
-        v = getattr(module, self.name + '_v')
+        g = getattr(module, self.name + "_g")
+        v = getattr(module, self.name + "_v")
         return _weight_norm(v, g, self.dim)
 
     @staticmethod
-    def apply(module, name: str, dim: int) -> 'WeightNorm':
+    def apply(module, name: str, dim: int) -> "WeightNorm":
         for k, hook in module._forward_pre_hooks.items():
             if isinstance(hook, WeightNorm) and hook.name == name:
-                raise RuntimeError("Cannot register two weight_norm hooks on "
-                                   "the same parameter {}".format(name))
+                raise RuntimeError(
+                    "Cannot register two weight_norm hooks on "
+                    "the same parameter {}".format(name)
+                )
 
         if dim is None:
             dim = -1
@@ -39,14 +42,17 @@ class WeightNorm:
         weight = getattr(module, name)
         if isinstance(weight, UninitializedParameter):
             raise ValueError(
-                'The module passed to `WeightNorm` can\'t have uninitialized parameters. '
-                'Make sure to run the dummy forward before applying weight normalization')
+                "The module passed to `WeightNorm` can't have uninitialized parameters. "
+                "Make sure to run the dummy forward before applying weight normalization"
+            )
         # remove w from parameter list
         del module._parameters[name]
 
         # add g and v as new parameters and express w as g/||v|| * v
-        module.register_parameter(name + '_g', Parameter(norm_except_dim(weight, 2, dim).data))
-        module.register_parameter(name + '_v', Parameter(weight.data))
+        module.register_parameter(
+            name + "_g", Parameter(norm_except_dim(weight, 2, dim).data)
+        )
+        module.register_parameter(name + "_v", Parameter(weight.data))
         setattr(module, name, fn.compute_weight(module))
 
         # recompute weight before every forward()
@@ -57,17 +63,18 @@ class WeightNorm:
     def remove(self, module: Module) -> None:
         weight = self.compute_weight(module)
         delattr(module, self.name)
-        del module._parameters[self.name + '_g']
-        del module._parameters[self.name + '_v']
+        del module._parameters[self.name + "_g"]
+        del module._parameters[self.name + "_v"]
         setattr(module, self.name, Parameter(weight.data))
 
     def __call__(self, module: Module, inputs: Any) -> None:
         setattr(module, self.name, self.compute_weight(module))
 
 
-T_module = TypeVar('T_module', bound=Module)
+T_module = TypeVar("T_module", bound=Module)
 
-def weight_norm(module: T_module, name: str = 'weight', dim: int = 0) -> T_module:
+
+def weight_norm(module: T_module, name: str = "weight", dim: int = 0) -> T_module:
     r"""Applies weight normalization to a parameter in the given module.
 
     .. math::
@@ -110,7 +117,7 @@ def weight_norm(module: T_module, name: str = 'weight', dim: int = 0) -> T_modul
     return module
 
 
-def remove_weight_norm(module: T_module, name: str = 'weight') -> T_module:
+def remove_weight_norm(module: T_module, name: str = "weight") -> T_module:
     r"""Removes the weight normalization reparameterization from a module.
 
     Args:
@@ -127,5 +134,4 @@ def remove_weight_norm(module: T_module, name: str = 'weight') -> T_module:
             del module._forward_pre_hooks[k]
             return module
 
-    raise ValueError("weight_norm of '{}' not found in {}"
-                     .format(name, module))
+    raise ValueError("weight_norm of '{}' not found in {}".format(name, module))

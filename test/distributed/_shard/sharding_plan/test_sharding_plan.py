@@ -1,4 +1,3 @@
-
 # Owner(s): ["oncall: distributed"]
 import sys
 
@@ -65,9 +64,7 @@ class TestShardingPlan(ShardedTensorTestBase):
             plan={
                 "fc1.weight": torch.randn(3, 4),
             },
-            output_plan={
-                "": rowwise_sharding_spec
-            },
+            output_plan={"": rowwise_sharding_spec},
         )
 
         megatron_lm = SimpleMegatronLM([[17, 12], [12, 29]]).cuda(self.rank)
@@ -82,9 +79,7 @@ class TestShardingPlan(ShardedTensorTestBase):
             plan={
                 "fc1.weight": rowwise_sharding_spec,
             },
-            output_plan={
-                "": torch.randn(3, 4)
-            },
+            output_plan={"": torch.randn(3, 4)},
         )
 
         with self.assertRaisesRegex(
@@ -98,9 +93,7 @@ class TestShardingPlan(ShardedTensorTestBase):
                 "fc3.weight": rowwise_sharding_spec,
             },
         )
-        with self.assertRaisesRegex(
-            AttributeError, "has no attribute"
-        ):
+        with self.assertRaisesRegex(AttributeError, "has no attribute"):
             # shard the module with the provided sharding plan
             shard_module(megatron_lm, sharding_plan_wrong_module_path)
 
@@ -109,9 +102,7 @@ class TestShardingPlan(ShardedTensorTestBase):
                 "fc1.biass": rowwise_sharding_spec,
             },
         )
-        with self.assertRaisesRegex(
-            AttributeError, "has no attribute"
-        ):
+        with self.assertRaisesRegex(AttributeError, "has no attribute"):
             # shard the module with the provided sharding plan
             shard_module(megatron_lm, sharding_plan_wrong_param_path)
 
@@ -155,7 +146,7 @@ class TestShardingPlan(ShardedTensorTestBase):
         sharding_plan = ShardingPlan(
             plan={
                 "fc1.weight": colwise_sharding_spec,
-                "fc2.weight": rowwise_sharding_spec
+                "fc2.weight": rowwise_sharding_spec,
             }
         )
 
@@ -163,6 +154,7 @@ class TestShardingPlan(ShardedTensorTestBase):
 
         if self.rank >= 2:
             shard_module(megatron_lm, sharding_plan, process_group=pg)
+
 
 if __name__ == "__main__":
     run_tests()

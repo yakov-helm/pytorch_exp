@@ -23,6 +23,7 @@ workspace.GlobalInit(
     ]
 )
 
+
 class Fusions(serial.SerializedTestCase):
     def _get_scale_zp(self, tensor):
         tensor_max = np.max(tensor)
@@ -49,8 +50,9 @@ class Fusions(serial.SerializedTestCase):
         workspace.ResetWorkspace()
 
         # Y = W_T * X + b
-        X_fp32 = np.random.uniform(-1, 1, size=(m, k)).astype(np.float16) \
-            .astype(np.float32)
+        X_fp32 = (
+            np.random.uniform(-1, 1, size=(m, k)).astype(np.float16).astype(np.float32)
+        )
 
         W_fp32 = np.random.uniform(-1, 1, size=(n, k)).astype(np.float32)
         b_fp32 = np.zeros((n,), dtype=np.float32)
@@ -74,10 +76,7 @@ class Fusions(serial.SerializedTestCase):
 
         ref_net = core.Net("net")
         ref_net.Int8QuantizeNNPI(
-            ["X"],
-            ["X_int8"],
-            Y_scale=X_scale,
-            Y_zero_point=X_zero_point
+            ["X"], ["X_int8"], Y_scale=X_scale, Y_zero_point=X_zero_point
         )
         ref_net.Int8FCFakeAcc32NNPI(
             ["X_int8", "W_int8", "b"],
@@ -91,10 +90,7 @@ class Fusions(serial.SerializedTestCase):
             Y_zero_point=X_zero_point,
             Y_scale=X_scale,
         )
-        ref_net.Int8DequantizeNNPI(
-            ["Y_relu"],
-            ["Y"]
-        )
+        ref_net.Int8DequantizeNNPI(["Y_relu"], ["Y"])
         ref_net.Proto().external_output.append("Y")
 
         # run ref_net

@@ -34,6 +34,7 @@ TensorAndID = Tuple["TensorKey", int]
 
 log = logging.getLogger(__name__)
 
+
 class Category(enum.Enum):
     INPUT = enum.auto()
     TEMPORARY = enum.auto()
@@ -42,6 +43,7 @@ class Category(enum.Enum):
     AUTOGRAD_DETAIL = enum.auto()
     PARAMETER = enum.auto()
     OPTIMIZER_STATE = enum.auto()
+
 
 _CATEGORY_TO_COLORS = {
     Category.PARAMETER: "darkgreen",
@@ -55,6 +57,7 @@ _CATEGORY_TO_COLORS = {
 }
 
 _CATEGORY_TO_INDEX = {c: i for i, c in enumerate(_CATEGORY_TO_COLORS)}
+
 
 class Action(enum.Enum):
     PREEXISTING = enum.auto()
@@ -938,6 +941,7 @@ class MemoryProfile:
                             key, version, Category.AUTOGRAD_DETAIL
                         )
 
+
 class MemoryProfileTimeline:
     def __init__(self, memory_profile):
         """The minimum representation of the memory profile timeline
@@ -1013,5 +1017,6 @@ class MemoryProfileTimeline:
         times, sizes = self._coalesce_timeline(device)
         # TODO: Write a faster serialize (orjson not available in CI)
         import json
-        with open(path, 'w') as f:
+
+        with open(path, "w") as f:
             json.dump([times, sizes], f)

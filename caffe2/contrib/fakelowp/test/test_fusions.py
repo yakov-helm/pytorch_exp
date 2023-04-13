@@ -19,6 +19,7 @@ workspace.GlobalInit(
     ]
 )
 
+
 class Fusions(serial.SerializedTestCase):
     @given(
         scale=st.floats(1e-4, 1e2),
@@ -37,11 +38,7 @@ class Fusions(serial.SerializedTestCase):
         pred_net.external_input.append("X")
         pred_net.external_output.append("Y_q")
 
-        pred_net.op.add().CopyFrom(
-            core.CreateOperator(
-                "Tanh", ["X"], ["Y"]
-            )
-        )
+        pred_net.op.add().CopyFrom(core.CreateOperator("Tanh", ["X"], ["Y"]))
 
         pred_net.op.add().CopyFrom(
             core.CreateOperator(
@@ -82,9 +79,11 @@ class Fusions(serial.SerializedTestCase):
         workspace.RunNet(ref_net.name)
         Y_ref = workspace.FetchInt8Blob("Y_q")
 
-        if not np.array_equal(Y_ref.data, Y_glow.data) or \
-           not Y_ref.scale == Y_glow.scale or \
-           not Y_ref.zero_point == Y_glow.zero_point:
+        if (
+            not np.array_equal(Y_ref.data, Y_glow.data)
+            or not Y_ref.scale == Y_glow.scale
+            or not Y_ref.zero_point == Y_glow.zero_point
+        ):
             print_test_debug_info(
                 "tanhfusion",
                 {
@@ -94,6 +93,6 @@ class Fusions(serial.SerializedTestCase):
                     "ideal nonquant": np.tanh(X),
                     "Y_glow": Y_glow,
                     "Y_c2": Y_ref,
-                }
+                },
             )
-            assert(0)
+            assert 0

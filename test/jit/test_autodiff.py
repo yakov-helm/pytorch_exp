@@ -119,7 +119,6 @@ class TestAutodiffJit(JitTestCase):
             self.assertEqual(y_s.requires_grad, y.requires_grad)
             self.assertEqual(z_s.requires_grad, z.requires_grad)
 
-
     def test_autodiff_requires_grad_nograd(self):
         @torch.jit.ignore
         def python_fn(x):

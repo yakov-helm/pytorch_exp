@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core, workspace
 from hypothesis import given, settings
 import caffe2.python.hypothesis_test_util as hu
@@ -14,11 +9,12 @@ import unittest
 
 
 class TestSoftmaxOps(serial.SerializedTestCase):
-
-    @serial.given(n=st.sampled_from([0, 2, 4, 71, 103]),
-                  D=st.sampled_from([0, 4, 8, 64, 79, 256, 333]),
-                  engine=st.sampled_from([None, 'CUDNN']),
-                  **hu.gcs)
+    @serial.given(
+        n=st.sampled_from([0, 2, 4, 71, 103]),
+        D=st.sampled_from([0, 4, 8, 64, 79, 256, 333]),
+        engine=st.sampled_from([None, "CUDNN"]),
+        **hu.gcs,
+    )
     def test_softmax(self, n, D, engine, gc, dc):
         # n = number of examples, D = |labels|
         # Initialize X and add 1e-2 for numerical stability
@@ -34,21 +30,26 @@ class TestSoftmaxOps(serial.SerializedTestCase):
                 return [probs]
 
             for i in range(n):
-                rowmax[i] = max(X[i, ])
+                rowmax[i] = max(
+                    X[
+                        i,
+                    ]
+                )
                 # We need to subtract the max to avoid numerical issues
                 probs[i] = X[i] - rowmax[i]
-                exps = np.exp(probs[i, ])
+                exps = np.exp(
+                    probs[
+                        i,
+                    ]
+                )
                 norm = sum(exps)
-                probs[i, ] = exps / norm
+                probs[i,] = (
+                    exps / norm
+                )
 
             return [probs]
 
-        op = core.CreateOperator(
-            "Softmax",
-            ["X"],
-            ["probs"],
-            engine=engine
-        )
+        op = core.CreateOperator("Softmax", ["X"], ["probs"], engine=engine)
 
         self.assertReferenceChecks(
             device_option=gc,
@@ -57,10 +58,12 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             reference=label_softmax,
         )
 
-    @given(n=st.sampled_from([0, 2, 4, 71, 103, 555, 751, 1201]),
-                  D=st.sampled_from([0, 4, 8, 64, 79, 256, 333, 1000]),
-                  engine=st.sampled_from([None, 'CUDNN']),
-                  **hu.gcs)
+    @given(
+        n=st.sampled_from([0, 2, 4, 71, 103, 555, 751, 1201]),
+        D=st.sampled_from([0, 4, 8, 64, 79, 256, 333, 1000]),
+        engine=st.sampled_from([None, "CUDNN"]),
+        **hu.gcs,
+    )
     @settings(deadline=10000)
     def test_softmax_grad(self, n, D, engine, gc, dc):
         # n = number of examples, D = |labels|
@@ -77,12 +80,7 @@ class TestSoftmaxOps(serial.SerializedTestCase):
                 dX[i, :] = Y[i, :] * (dY[i, :] - d)
             return [dX]
 
-        op = core.CreateOperator(
-            "SoftmaxGradient",
-            ["Y", "dY"],
-            ["dX"],
-            engine=engine
-        )
+        op = core.CreateOperator("SoftmaxGradient", ["Y", "dY"], ["dX"], engine=engine)
 
         self.assertReferenceChecks(
             device_option=gc,
@@ -91,9 +89,11 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             reference=label_softmax_grad,
         )
 
-    @given(axis=st.integers(min_value=1, max_value=4),
-           engine=st.sampled_from([None, 'CUDNN']),
-           **hu.gcs)
+    @given(
+        axis=st.integers(min_value=1, max_value=4),
+        engine=st.sampled_from([None, "CUDNN"]),
+        **hu.gcs,
+    )
     def test_softmax_axis(self, axis, engine, gc, dc):
         np.random.seed(1)
         X = np.random.randn(1, 2, 3, 2, 1).astype(np.float32)
@@ -114,12 +114,22 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             probs = np.zeros((N, D))
             rowmax = np.zeros(N)
             for i in range(N):
-                rowmax[i] = max(X_[i, ])
+                rowmax[i] = max(
+                    X_[
+                        i,
+                    ]
+                )
                 # We need to subtract the max to avoid numerical issues
                 probs[i] = X_[i] - rowmax[i]
-                exps = np.exp(probs[i, ])
+                exps = np.exp(
+                    probs[
+                        i,
+                    ]
+                )
                 norm = sum(exps)
-                probs[i, ] = exps / norm
+                probs[i,] = (
+                    exps / norm
+                )
 
             return [probs.reshape(*X.shape)]
 
@@ -138,11 +148,11 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             reference=label_softmax,
         )
 
-        self.assertGradientChecks(
-            gc, op, [X], 0, [0], stepsize=1e-4, threshold=1e-2)
+        self.assertGradientChecks(gc, op, [X], 0, [0], stepsize=1e-4, threshold=1e-2)
 
-    @given(n=st.integers(2, 10), D=st.integers(4, 16),
-           only_loss=st.booleans(), **hu.gcs)
+    @given(
+        n=st.integers(2, 10), D=st.integers(4, 16), only_loss=st.booleans(), **hu.gcs
+    )
     @settings(deadline=10000)
     def test_softmax_with_loss(self, n, D, gc, only_loss, dc):
         # n = number of examples, D = |labels|
@@ -159,15 +169,24 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             probs = np.zeros((n, D))
             rowmax = np.zeros(n)
             for i in range(n):
-                rowmax[i] = max(X[i, ])
+                rowmax[i] = max(
+                    X[
+                        i,
+                    ]
+                )
                 # We need to subtract the max to avoid numerical issues
                 probs[i] = X[i] - rowmax[i]
-                exps = np.exp(probs[i, ])
+                exps = np.exp(
+                    probs[
+                        i,
+                    ]
+                )
                 norm = sum(exps)
-                probs[i, ] = exps / norm
+                probs[i,] = (
+                    exps / norm
+                )
 
-            label_xent = [-np.log(max(probs[i][label[i]], 1e-20))
-                          for i in range(n)]
+            label_xent = [-np.log(max(probs[i][label[i]], 1e-20)) for i in range(n)]
             avgloss = np.sum(label_xent) / float(n)
             return (probs, avgloss)
 
@@ -186,20 +205,18 @@ class TestSoftmaxOps(serial.SerializedTestCase):
         )
 
         self.assertGradientChecks(
-            gc, op, [X, label], 0, [1], stepsize=1e-4, threshold=1e-2)
+            gc, op, [X, label], 0, [1], stepsize=1e-4, threshold=1e-2
+        )
 
     @given(
         n=st.integers(2, 5),
         D=st.integers(4, 16),
         only_loss=st.booleans(),
         label_prob=st.booleans(),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=10000)
-    def test_softmax_with_loss_axis_2(
-        self, n, D, only_loss, label_prob,
-        gc, dc
-    ):
+    def test_softmax_with_loss_axis_2(self, n, D, only_loss, label_prob, gc, dc):
         np.random.seed(2603)
         X = np.random.rand(n, n, D).astype(np.float32)
         X = X + 1e-2
@@ -216,20 +233,31 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             rowmax = np.zeros((n, n))
             for i in range(n):
                 for j in range(n):
-                    rowmax[i, j] = max(X[i, j, ])
+                    rowmax[i, j] = max(
+                        X[
+                            i,
+                            j,
+                        ]
+                    )
                     # We need to subtract the max to avoid numerical issues
                     probs[i, j] = X[i, j] - rowmax[i, j]
-                    exps = np.exp(probs[i, j, ])
+                    exps = np.exp(
+                        probs[
+                            i,
+                            j,
+                        ]
+                    )
                     norm = sum(exps)
-                    probs[i, j, ] = exps / norm
+                    probs[i, j,] = (
+                        exps / norm
+                    )
             label_xent = 0
             for i in range(n):
                 for j in range(n):
                     if label_prob:
                         for k in range(D):
                             label_xent += (
-                                -np.log(max(probs[i, j, k], 1e-20)) *
-                                label[i, j, k]
+                                -np.log(max(probs[i, j, k], 1e-20)) * label[i, j, k]
                             )
                     else:
                         label_xent += -np.log(max(probs[i, j, label[i, j]], 1e-20))
@@ -254,7 +282,8 @@ class TestSoftmaxOps(serial.SerializedTestCase):
         )
 
         self.assertGradientChecks(
-            gc, op, [X, label], 0, [1], stepsize=1e-4, threshold=1e-2)
+            gc, op, [X, label], 0, [1], stepsize=1e-4, threshold=1e-2
+        )
 
     @unittest.skipIf(not workspace.has_gpu_support, "No gpu support")
     @given(**hu.gcs_gpu_only)
@@ -275,22 +304,31 @@ class TestSoftmaxOps(serial.SerializedTestCase):
                     probs = np.zeros((n, D))
                     rowmax = np.zeros(n)
                     for i in range(n):
-                        rowmax[i] = max(X[i, ])
+                        rowmax[i] = max(
+                            X[
+                                i,
+                            ]
+                        )
                         # We need to subtract the max to avoid numerical issues
                         probs[i] = X[i] - rowmax[i]
-                        exps = np.exp(probs[i, ])
+                        exps = np.exp(
+                            probs[
+                                i,
+                            ]
+                        )
                         norm = sum(exps)
-                        probs[i, ] = exps / norm
+                        probs[i,] = (
+                            exps / norm
+                        )
 
-                    label_xent = [-np.log(max(probs[i][label[i]], 1e-20))
-                                  for i in range(n)]
+                    label_xent = [
+                        -np.log(max(probs[i][label[i]], 1e-20)) for i in range(n)
+                    ]
                     avgloss = np.sum(label_xent) / float(n)
                     return (probs, avgloss)
 
                 op = core.CreateOperator(
-                    "SoftmaxWithLoss",
-                    ["X", "label"],
-                    ["probs", "avgloss"]
+                    "SoftmaxWithLoss", ["X", "label"], ["probs", "avgloss"]
                 )
 
                 self.assertReferenceChecks(
@@ -321,26 +359,32 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             probs = np.zeros((n, D))
             rowmax = np.zeros(n)
             for i in range(n):
-                rowmax[i] = max(X[i, ])
+                rowmax[i] = max(
+                    X[
+                        i,
+                    ]
+                )
                 # We need to subtract the max to avoid numerical issues
                 probs[i] = X[i] - rowmax[i]
-                exps = np.exp(probs[i, ])
+                exps = np.exp(
+                    probs[
+                        i,
+                    ]
+                )
                 norm = sum(exps)
-                probs[i, ] = exps / norm
+                probs[i,] = (
+                    exps / norm
+                )
 
             label_xent = np.zeros(X.shape)
             for i in range(n):
                 for j in range(D):
-                    label_xent[i][j] = -np.log(
-                        max(probs[i, j], 1e-20)) * label[i, j]
+                    label_xent[i][j] = -np.log(max(probs[i, j], 1e-20)) * label[i, j]
             avgloss = np.sum(label_xent) / float(n)
             return (probs, avgloss)
 
         op = core.CreateOperator(
-            "SoftmaxWithLoss",
-            ["X", "label"],
-            ["probs", "avgloss"],
-            label_prob=1
+            "SoftmaxWithLoss", ["X", "label"], ["probs", "avgloss"], label_prob=1
         )
 
         self.assertReferenceChecks(
@@ -351,13 +395,12 @@ class TestSoftmaxOps(serial.SerializedTestCase):
         )
 
         self.assertGradientChecks(
-            gc, op, [X, label], 0, [1], stepsize=1e-4, threshold=1e-2)
+            gc, op, [X, label], 0, [1], stepsize=1e-4, threshold=1e-2
+        )
 
     @given(
-        n=st.integers(2, 10),
-        D=st.integers(4, 16),
-        only_loss=st.booleans(),
-        **hu.gcs)
+        n=st.integers(2, 10), D=st.integers(4, 16), only_loss=st.booleans(), **hu.gcs
+    )
     @settings(deadline=None)
     def test_softmax_with_loss_weighted(self, n, D, only_loss, gc, dc):
         # n = number of examples, D = |labels|
@@ -377,15 +420,26 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             probs = np.zeros((n, D))
             rowmax = np.zeros(n)
             for i in range(n):
-                rowmax[i] = max(X[i, ])
+                rowmax[i] = max(
+                    X[
+                        i,
+                    ]
+                )
                 # We need to subtract the max to avoid numerical issues
                 probs[i] = X[i] - rowmax[i]
-                exps = np.exp(probs[i, ])
+                exps = np.exp(
+                    probs[
+                        i,
+                    ]
+                )
                 norm = sum(exps)
-                probs[i, ] = exps / norm
+                probs[i,] = (
+                    exps / norm
+                )
 
-            label_xent = [-weights[i] * np.log(max(probs[i][label[i]], 1e-20))
-                          for i in range(n)]
+            label_xent = [
+                -weights[i] * np.log(max(probs[i][label[i]], 1e-20)) for i in range(n)
+            ]
             avgloss = np.sum(label_xent) / sum(weights)
             return (probs, avgloss)
 
@@ -404,7 +458,8 @@ class TestSoftmaxOps(serial.SerializedTestCase):
         )
 
         self.assertGradientChecks(
-            gc, op, [X, label, weights], 0, [1], stepsize=1e-4, threshold=1e-2)
+            gc, op, [X, label, weights], 0, [1], stepsize=1e-4, threshold=1e-2
+        )
 
     @given(n=st.integers(2, 10), D=st.integers(4, 16), **hu.gcs)
     @settings(deadline=None)
@@ -429,18 +484,29 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             probs = np.zeros((n, D))
             rowmax = np.zeros(n)
             for i in range(n):
-                rowmax[i] = max(X[i, ])
+                rowmax[i] = max(
+                    X[
+                        i,
+                    ]
+                )
                 # We need to subtract the max to avoid numerical issues
                 probs[i] = X[i] - rowmax[i]
-                exps = np.exp(probs[i, ])
+                exps = np.exp(
+                    probs[
+                        i,
+                    ]
+                )
                 norm = sum(exps)
-                probs[i, ] = exps / norm
+                probs[i,] = (
+                    exps / norm
+                )
 
             label_xent = np.zeros(X.shape)
             for i in range(n):
                 for j in range(D):
-                    label_xent[i][j] = -np.log(
-                        max(probs[i, j], 1e-20)) * label[i, j] * weights[i]
+                    label_xent[i][j] = (
+                        -np.log(max(probs[i, j], 1e-20)) * label[i, j] * weights[i]
+                    )
             avgloss = np.sum(label_xent) / sum(weights)
             return (probs, avgloss)
 
@@ -459,10 +525,10 @@ class TestSoftmaxOps(serial.SerializedTestCase):
         )
 
         self.assertGradientChecks(
-            gc, op, [X, label, weights], 0, [1], stepsize=1e-4, threshold=1e-2)
+            gc, op, [X, label, weights], 0, [1], stepsize=1e-4, threshold=1e-2
+        )
 
-    @given(n=st.integers(2, 5), D=st.integers(2, 4),
-           weighted=st.booleans(), **hu.gcs)
+    @given(n=st.integers(2, 5), D=st.integers(2, 4), weighted=st.booleans(), **hu.gcs)
     @settings(deadline=None, max_examples=50)
     def test_spatial_softmax_with_loss(self, n, D, weighted, gc, dc):
         # n = number of examples, D = |labels|
@@ -494,9 +560,10 @@ class TestSoftmaxOps(serial.SerializedTestCase):
                         exps = np.exp(probs[i, :, y, x])
                         probs[i, :, y, x] = exps / sum(exps)
 
-                        label_xent[:, y, x] = \
-                            [-np.log(max(probs[j, label[i, y, x], y, x], 1e-20))
-                             for j in range(n)]
+                        label_xent[:, y, x] = [
+                            -np.log(max(probs[j, label[i, y, x], y, x], 1e-20))
+                            for j in range(n)
+                        ]
 
             total_xent = 0.0
             total_weight = 0.0
@@ -504,10 +571,9 @@ class TestSoftmaxOps(serial.SerializedTestCase):
                 for x in range(W):
                     for i in range(n):
                         l = label[i, y, x]
-                        if (l != (-1)):
+                        if l != (-1):
                             w = 1.0 if weights is None else weights[i, y, x]
-                            total_xent += \
-                                -np.log(max(probs[i, l, y, x], 1e-20)) * w
+                            total_xent += -np.log(max(probs[i, l, y, x], 1e-20)) * w
                             total_weight += w
             print("Total weight {}".format(total_weight))
 
@@ -527,11 +593,9 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             reference=label_softmax_crossent_spatial,
         )
 
-        self.assertGradientChecks(
-            gc, op, inputs, 0, [1], stepsize=1e-4, threshold=1e-2)
+        self.assertGradientChecks(gc, op, inputs, 0, [1], stepsize=1e-4, threshold=1e-2)
 
-    @given(n=st.integers(4, 5), D=st.integers(3, 4),
-           weighted=st.booleans(), **hu.gcs)
+    @given(n=st.integers(4, 5), D=st.integers(3, 4), weighted=st.booleans(), **hu.gcs)
     def test_spatial_softmax_with_loss_allignore(self, n, D, weighted, gc, dc):
         # n = number of examples, D = |labels|
         # Initialize X and add 1e-2 for numerical stability
@@ -563,9 +627,10 @@ class TestSoftmaxOps(serial.SerializedTestCase):
                         exps = np.exp(probs[i, :, y, x])
                         probs[i, :, y, x] = exps / sum(exps)
 
-                        label_xent[:, y, x] = \
-                            [-np.log(max(probs[j, label[i, y, x], y, x], 1e-20))
-                            for j in range(n)]
+                        label_xent[:, y, x] = [
+                            -np.log(max(probs[j, label[i, y, x], y, x], 1e-20))
+                            for j in range(n)
+                        ]
 
             return (probs, 0.0)
 
@@ -583,8 +648,7 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             reference=label_softmax_crossent_spatial,
         )
 
-    @given(n=st.integers(4, 5), D=st.integers(3, 4),
-           weighted=st.booleans(), **hu.gcs)
+    @given(n=st.integers(4, 5), D=st.integers(3, 4), weighted=st.booleans(), **hu.gcs)
     def test_softmax_with_loss_zero_weight(self, n, D, weighted, gc, dc):
         # n = number of examples, D = |labels|
         # Initialize X and add 1e-2 for numerical stability
@@ -601,18 +665,26 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             probs = np.zeros((n, D))
             rowmax = np.zeros((n))
             for i in range(n):
-                rowmax[i] = max(X[i, ])
+                rowmax[i] = max(
+                    X[
+                        i,
+                    ]
+                )
                 # We need to subtract the max to avoid numerical issues
                 probs[i] = X[i] - rowmax[i]
-                exps = np.exp(probs[i, ])
+                exps = np.exp(
+                    probs[
+                        i,
+                    ]
+                )
                 norm = sum(exps)
-                probs[i, ] = exps / norm
+                probs[i,] = (
+                    exps / norm
+                )
             return (probs, 0.0)
 
         op = core.CreateOperator(
-            "SoftmaxWithLoss",
-            ["X", "label", "weights"],
-            ["probs", "avgloss"]
+            "SoftmaxWithLoss", ["X", "label", "weights"], ["probs", "avgloss"]
         )
 
         inputs = [X, label] + ([] if weights is None else [weights])
@@ -625,11 +697,11 @@ class TestSoftmaxOps(serial.SerializedTestCase):
 
     @unittest.skipIf(not workspace.has_gpu_support, "No gpu support")
     def test_compare_cpugpu(self):
-        '''
+        """
         Additional test that checks CPU and GPU returns same values
         with larger examples. This is mainly to test the more complex
         GPU implementation is correct.
-        '''
+        """
         from caffe2.proto import caffe2_pb2
 
         for _j in range(3):
@@ -637,14 +709,14 @@ class TestSoftmaxOps(serial.SerializedTestCase):
                 "SpatialSoftmaxWithLoss",
                 ["X_gpu", "label_gpu"],
                 ["probs_gpu", "avgloss_gpu"],
-                device_option=core.DeviceOption(workspace.GpuDeviceType, 0)
+                device_option=core.DeviceOption(workspace.GpuDeviceType, 0),
             )
 
             cpuop = core.CreateOperator(
                 "SpatialSoftmaxWithLoss",
                 ["X_cpu", "label_cpu"],
                 ["probs_cpu", "avgloss_cpu"],
-                device_option=core.DeviceOption(caffe2_pb2.CPU)
+                device_option=core.DeviceOption(caffe2_pb2.CPU),
             )
 
             n = 8
@@ -677,8 +749,10 @@ class TestSoftmaxOps(serial.SerializedTestCase):
             np.testing.assert_allclose(probs_gpu, probs_cpu, rtol=1e-4)
             np.testing.assert_allclose(loss_gpu, loss_cpu, rtol=1e-1)
 
+
 if __name__ == "__main__":
     import unittest
     import random
+
     random.seed(2603)
     unittest.main()

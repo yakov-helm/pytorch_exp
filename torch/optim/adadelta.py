@@ -1,8 +1,14 @@
 import torch
 from torch import Tensor
 
-from .optimizer import (Optimizer, _use_grad_for_differentiable, _default_to_fused_or_foreach,
-                        _differentiable_doc, _foreach_doc, _maximize_doc)
+from .optimizer import (
+    Optimizer,
+    _use_grad_for_differentiable,
+    _default_to_fused_or_foreach,
+    _differentiable_doc,
+    _foreach_doc,
+    _maximize_doc,
+)
 from torch.utils._foreach_utils import _group_tensors_by_device_and_dtype
 from typing import List, Optional
 
@@ -167,7 +173,9 @@ Adadelta.__doc__ = r"""Implements Adadelta algorithm.
     .. _ADADELTA\: An Adaptive Learning Rate Method:
         https://arxiv.org/abs/1212.5701
 
-    """.format(foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc)
+    """.format(
+    foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc
+)
 
 
 def adadelta(
@@ -193,7 +201,9 @@ def adadelta(
 
     # We still respect when the user inputs False for foreach.
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
+        _, foreach = _default_to_fused_or_foreach(
+            params, differentiable, use_fused=False
+        )
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")
@@ -276,16 +286,27 @@ def _multi_tensor_adadelta(
     if len(params) == 0:
         return
 
-    grouped_tensors = _group_tensors_by_device_and_dtype([params, grads, square_avgs, acc_deltas])
-    for device_params, device_grads, device_square_avgs, device_acc_deltas in grouped_tensors.values():
+    grouped_tensors = _group_tensors_by_device_and_dtype(
+        [params, grads, square_avgs, acc_deltas]
+    )
+    for (
+        device_params,
+        device_grads,
+        device_square_avgs,
+        device_acc_deltas,
+    ) in grouped_tensors.values():
         if maximize:
             device_grads = torch._foreach_neg(device_grads)
 
         if weight_decay != 0:
-            device_grads = torch._foreach_add(device_grads, device_params, alpha=weight_decay)
+            device_grads = torch._foreach_add(
+                device_grads, device_params, alpha=weight_decay
+            )
 
         torch._foreach_mul_(device_square_avgs, rho)
-        torch._foreach_addcmul_(device_square_avgs, device_grads, device_grads, value=1 - rho)
+        torch._foreach_addcmul_(
+            device_square_avgs, device_grads, device_grads, value=1 - rho
+        )
 
         std = torch._foreach_add(device_square_avgs, eps)
         torch._foreach_sqrt_(std)

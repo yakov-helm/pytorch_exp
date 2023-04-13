@@ -2,12 +2,14 @@ import torch
 from ._functions import Scatter, Gather
 import warnings
 
-__all__ = ['scatter', 'scatter_kwargs', 'gather']
+__all__ = ["scatter", "scatter_kwargs", "gather"]
+
 
 def is_namedtuple(obj):
     # Check if type was created from collections.namedtuple or a typing.NamedTuple.
     warnings.warn("is_namedtuple is deprecated, please use the python checks instead")
     return _is_namedtuple(obj)
+
 
 def _is_namedtuple(obj):
     # Check if type was created from collections.namedtuple or a typing.NamedTuple.
@@ -22,6 +24,7 @@ def scatter(inputs, target_gpus, dim=0):
     distributes them across given GPUs. Duplicates
     references to objects that are not tensors.
     """
+
     def scatter_map(obj):
         if isinstance(obj, torch.Tensor):
             return Scatter.apply(target_gpus, None, dim, obj)
@@ -65,6 +68,7 @@ def gather(outputs, target_device, dim=0):
     Gathers tensors from different GPUs on a specified device.
     Use 'cpu' for CPU to avoid a deprecation warning.
     """
+
     def gather_map(outputs):
         out = outputs[0]
         if isinstance(out, torch.Tensor):
@@ -73,9 +77,8 @@ def gather(outputs, target_device, dim=0):
             return None
         if isinstance(out, dict):
             if not all(len(out) == len(d) for d in outputs):
-                raise ValueError('All dicts must have the same number of keys')
-            return type(out)((k, gather_map([d[k] for d in outputs]))
-                             for k in out)
+                raise ValueError("All dicts must have the same number of keys")
+            return type(out)((k, gather_map([d[k] for d in outputs])) for k in out)
         if _is_namedtuple(out):
             return type(out)._make(map(gather_map, zip(*outputs)))
         return type(out)(map(gather_map, zip(*outputs)))

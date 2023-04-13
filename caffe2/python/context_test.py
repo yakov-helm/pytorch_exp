@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import context, test_util
 from threading import Thread
 
@@ -10,8 +5,10 @@ from threading import Thread
 class MyContext(context.Managed):
     pass
 
+
 class DefaultMyContext(context.DefaultManaged):
     pass
+
 
 class ChildMyContext(MyContext):
     pass

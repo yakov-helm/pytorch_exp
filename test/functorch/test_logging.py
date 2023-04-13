@@ -5,16 +5,13 @@ from torch._functorch.aot_autograd import aot_function
 from torch._functorch.compilers import nop
 import logging
 
-class TestAOTLogging(LoggingTestCase):
 
+class TestAOTLogging(LoggingTestCase):
     @make_logging_test(aot=logging.DEBUG)
     def test_logging(self, records):
         def f(x):
             return torch.sin(x)
-        compiled_f = aot_function(
-            f,
-            fw_compiler=nop,
-            bw_compiler=nop
-        )
+
+        compiled_f = aot_function(f, fw_compiler=nop, bw_compiler=nop)
         compiled_f(torch.randn(3))
         self.assertGreater(len(records), 0)

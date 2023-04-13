@@ -11,6 +11,8 @@ from torch._C._functorch import (
 from contextlib import contextmanager
 
 _enabled = False
+
+
 @contextmanager
 def _enable_layers(dims):
     global _enabled

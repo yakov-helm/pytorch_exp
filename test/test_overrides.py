@@ -32,6 +32,7 @@ Tensor = torch.Tensor
 # fake torch function allows us to verify that the dispatch rules work
 # the same for a torch function implemented in C++ or Python.
 
+
 def foo(a, b, c=None):
     """A function multiple arguments and an optional argument"""
     if has_torch_function((a, b, c)):
@@ -40,11 +41,13 @@ def foo(a, b, c=None):
         return a + b + c
     return a + b
 
+
 def bar(a):
     """A function with one argument"""
     if has_torch_function((a,)):
         return handle_torch_function(bar, (a,), a)
     return a
+
 
 def baz(a, b):
     """A function with multiple arguments"""
@@ -52,11 +55,13 @@ def baz(a, b):
         return handle_torch_function(baz, (a, b), a, b)
     return a + b
 
+
 def quux(a):
     """Used to test that errors raised in user implementations get propagated"""
     if has_torch_function((a,)):
         return handle_torch_function(quux, (a,), a)
     return a
+
 
 # HANDLED_FUNCTIONS_DIAGONAL is a dispatch table that
 # DiagonalTensor.__torch_function__ uses to determine which override
@@ -68,6 +73,7 @@ def quux(a):
 # of DiagonalTensor for usage examples.
 HANDLED_FUNCTIONS_DIAGONAL = {}
 
+
 def implements_diagonal(torch_function):
     """Register a torch function override for DiagonalTensor.
 
@@ -78,11 +84,14 @@ def implements_diagonal(torch_function):
     for the runtime dispatch implementation and the decorated functions
     immediately below DiagonalTensor for usage examples.
     """
+
     @functools.wraps(torch_function)
     def decorator(func):
         HANDLED_FUNCTIONS_DIAGONAL[torch_function] = func
         return func
+
     return decorator
+
 
 class DiagonalTensor:
     """A class with __torch_function__ and a specific diagonal representation
@@ -119,6 +128,7 @@ class DiagonalTensor:
     .. _DiagonalArray example:
         https://numpy.org/devdocs/user/basics.dispatch.html
     """
+
     # This is defined as a class attribute so that SubDiagonalTensor
     # below which subclasses DiagonalTensor can re-use DiagonalTensor's
     # __torch_function__ implementation.
@@ -154,44 +164,56 @@ class DiagonalTensor:
         else:
             return False
 
+
 @implements_diagonal(torch.mean)
 def mean(mat):
     return float(mat._i) / mat._N
+
 
 @implements_diagonal(torch.mm)
 def diagonal_mm(mat1, mat2):
     return 0
 
+
 @implements_diagonal(torch.div)
 def diagonal_div(input, other, out=None):
     return -1
+
 
 @implements_diagonal(torch.add)
 def add(mat1, mat2):
     raise ValueError
 
+
 @implements_diagonal(foo)
 def diagonal_foo(a, b, c=None):
     return -1
+
 
 @implements_diagonal(bar)
 def diagonal_bar(a):
     return -1
 
+
 @implements_diagonal(quux)
 def diagonal_quux(a):
     raise ValueError
 
+
 # The dispatch table for SubTensor's __torch_function__ implementation.
 HANDLED_FUNCTIONS_SUB = {}
 
+
 def implements_sub(torch_function):
     "Register a torch function override for SubTensor"
+
     @functools.wraps(torch_function)
     def decorator(func):
         HANDLED_FUNCTIONS_SUB[torch_function] = func
         return func
+
     return decorator
+
 
 class SubTensor(torch.Tensor):
     """A subclass of torch.Tensor use for testing __torch_function__ dispatch
@@ -213,50 +235,63 @@ class SubTensor(torch.Tensor):
     This is useful for testing that the semantics for overriding torch
     functions are working correctly.
     """
+
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
-        if(kwargs is None):
+        if kwargs is None:
             kwargs = {}
 
         if func not in HANDLED_FUNCTIONS_SUB:
             return NotImplemented
         return HANDLED_FUNCTIONS_SUB[func](*args, **kwargs)
 
+
 class SubTensor2(torch.Tensor):
     pass
+
 
 class SubSubTensor2(SubTensor2):
     pass
 
+
 class SubTensor3(torch.Tensor):
     pass
+
 
 @implements_sub(torch.mean)
 def sub_mean(mat):
     return 0
 
+
 @implements_sub(torch.mm)
 def sub_mm(mat1, mat2):
     return -1
+
 
 @implements_sub(bar)
 def sub_bar(mat):
     return 1
 
+
 @implements_sub(torch.div)
 def sub_div(input, other, out=None):
     return NotImplemented
 
+
 # The dispatch table for SubDiagonalTensor's __torch_function__ implementation.
 HANDLED_FUNCTIONS_SUB_DIAGONAL = {}
 
+
 def implements_sub_diagonal(torch_function):
     "Register a torch function override for SubDiagonalTensor"
+
     @functools.wraps(torch_function)
     def decorator(func):
         HANDLED_FUNCTIONS_SUB_DIAGONAL[torch_function] = func
         return func
+
     return decorator
+
 
 class SubDiagonalTensor(DiagonalTensor):
     """A subclass of ``DiagonalTensor`` to test custom dispatch
@@ -268,6 +303,7 @@ class SubDiagonalTensor(DiagonalTensor):
     of ``mean`` and ``mm``, scaling the mean by a factor of 10 and
     returning 1 from ``mm`` instead of 0 as ``DiagonalTensor`` does.
     """
+
     handled_functions = HANDLED_FUNCTIONS_SUB_DIAGONAL
 
     def __repr__(self):
@@ -278,21 +314,26 @@ class SubDiagonalTensor(DiagonalTensor):
 def sub_diagonal_mean(mat):
     return 10 * float(mat._i) / mat._N
 
+
 @implements_sub_diagonal(bar)
 def sub_diagonal_bar(mat):
     return 0
+
 
 @implements_sub_diagonal(torch.mm)
 def sub_diagonal_mm(mat1, mat2):
     return 1
 
+
 @implements_sub_diagonal(torch.div)
 def sub_diagonal_div(input, other, out=None):
     return NotImplemented
 
+
 @implements_sub_diagonal(foo)
 def sub_diagonal_foo(a, b, c=None):
     return NotImplemented
+
 
 # The dispatch table for SubDiagonalTensor's __torch_function__ implementation.
 HANDLED_FUNCTIONS_TENSOR_LIKE = {}
@@ -314,13 +355,17 @@ def triggered_wrapper(f):
     wrapped._triggered = False
     return wrapped
 
+
 def implements_tensor_like(torch_function):
     "Register a torch function override for TensorLike"
+
     @functools.wraps(torch_function)
     def decorator(func):
         HANDLED_FUNCTIONS_TENSOR_LIKE[torch_function] = func
         return func
+
     return decorator
+
 
 def generate_tensor_like_torch_implementations():
     torch_vars = vars(torch)
@@ -356,7 +401,9 @@ def generate_tensor_like_torch_implementations():
         else:
             implements_tensor_like(func)(wrapped)
 
+
 generate_tensor_like_torch_implementations()
+
 
 class TensorLike:
     """A class that overrides the full torch API
@@ -364,15 +411,17 @@ class TensorLike:
     This class is used to explicitly test that the full torch.tensor API
     can be overriden with a class that defines __torch_function__.
     """
+
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
-        if(kwargs is None):
+        if kwargs is None:
             kwargs = {}
 
         if func not in HANDLED_FUNCTIONS_TENSOR_LIKE:
             return NotImplemented
         # In this case _torch_function_ should override TensorLike objects
         return HANDLED_FUNCTIONS_TENSOR_LIKE[func](*args, **kwargs)
+
 
 class TestTorchFunctionOverride(TestCase):
     def test_mean_semantics(self):
@@ -612,6 +661,7 @@ def generate_tensor_like_override_tests(cls):
             # Generate an instance by using SubTensor,
             def instance_gen():
                 return SubTensor([5])
+
         else:
             # Otherwise, TensorLike.
             def instance_gen():
@@ -692,11 +742,13 @@ def generate_tensor_like_override_tests(cls):
             try:
                 func_args = inspect.getfullargspec(func)
                 # Remove annotations from argspec
-                func_args = type(func_args)(**{**func_args, 'annotations': None})
+                func_args = type(func_args)(**{**func_args, "annotations": None})
                 if func_args != args:
-                    raise RuntimeError(f"Override for {func} doesn't match its argspec.\n"
-                                       + f"Original: {inspect.signature(func)}\n"
-                                       + f"Override: {inspect.signature(override)}")
+                    raise RuntimeError(
+                        f"Override for {func} doesn't match its argspec.\n"
+                        + f"Original: {inspect.signature(func)}\n"
+                        + f"Override: {inspect.signature(override)}"
+                    )
             except TypeError:
                 pass
             nargs = len(args.args)
@@ -731,11 +783,7 @@ def generate_tensor_like_override_tests(cls):
             # In this case we get the property name in two ways:
 
             # This case for properties defined in C.
-            module = getattr(
-                func.__self__,
-                "__qualname__",
-                None
-            )
+            module = getattr(func.__self__, "__qualname__", None)
 
             # This one for properties defined in Python.
             if module is None:
@@ -748,16 +796,19 @@ def generate_tensor_like_override_tests(cls):
         else:
             module = func.__module__
         if module:
-            name = 'test_{}_{}'.format(module.replace('.', '_'), func.__name__)
+            name = "test_{}_{}".format(module.replace(".", "_"), func.__name__)
         else:
-            name = 'test_{}'.format(func.__name__)
+            name = "test_{}".format(func.__name__)
         test_method.__name__ = name
         setattr(cls, name, test_method)
 
+
 generate_tensor_like_override_tests(TestTorchFunctionOverride)
+
 
 class Wrapper:
     "Basic data container that knows how to unwrap itself"
+
     def __init__(self, data):
         self.__dict__["_data"] = data
         self.__dict__["used_attrs"] = set()
@@ -775,9 +826,13 @@ class Wrapper:
             c = getattr(type(self._data), name)
             # Don't append self to args if classmethod/staticmethod
             if c is val:
-                return lambda *a, **kw: wrap(self.__torch_function__(c, (Wrapper,), args=a, kwargs=kw))
+                return lambda *a, **kw: wrap(
+                    self.__torch_function__(c, (Wrapper,), args=a, kwargs=kw)
+                )
             # Otherwise append self to args
-            return lambda *a, **kw: wrap(self.__torch_function__(c, (Wrapper,), args=(self,) + a, kwargs=kw))
+            return lambda *a, **kw: wrap(
+                self.__torch_function__(c, (Wrapper,), args=(self,) + a, kwargs=kw)
+            )
 
         return wrap(val)
 
@@ -863,6 +918,7 @@ def unwrap(v):
 
     return v._data if isinstance(v, Wrapper) else v
 
+
 # wrap inputs if necessary
 def wrap(v):
     if type(v) in {tuple, list}:
@@ -870,23 +926,28 @@ def wrap(v):
 
     return Wrapper(v) if isinstance(v, torch.Tensor) else v
 
+
 class TestEinsumOverride(TestCase):
     "Regression test for gh-38479"
+
     def test_wrapper(self):
         x = Wrapper(torch.randn(5))
         y = Wrapper(torch.randn(4))
-        self.assertEqual(torch.einsum('i,j->ij', x, y)._data,
-                         torch.ger(x, y)._data)
+        self.assertEqual(torch.einsum("i,j->ij", x, y)._data, torch.ger(x, y)._data)
 
         # in the old einsum interface, `operands` is a list
         a = Wrapper(torch.randn(2, 3))
         b = Wrapper(torch.randn(5, 3, 7))
         c = Wrapper(torch.randn(2, 7))
-        self.assertEqual(torch.einsum('ik,jkl,il->ij', [a, b, c])._data,
-                         torch.nn.functional.bilinear(a, c, b)._data)
+        self.assertEqual(
+            torch.einsum("ik,jkl,il->ij", [a, b, c])._data,
+            torch.nn.functional.bilinear(a, c, b)._data,
+        )
+
 
 class TestGradCheckOverride(TestCase):
     "Test that wrappers work with gradcheck."
+
     def test_gradcheck(self):
         from torch.testing._internal.common_utils import gradcheck, gradgradcheck
 
@@ -897,8 +958,20 @@ class TestGradCheckOverride(TestCase):
             a.requires_grad = True
             b.requires_grad = True
 
-            gradcheck(torch.add, (a, b), raise_exception=False, check_batched_grad=False, fast_mode=fast_mode)
-            gradgradcheck(torch.add, (a, b), raise_exception=False, check_batched_grad=False, fast_mode=fast_mode)
+            gradcheck(
+                torch.add,
+                (a, b),
+                raise_exception=False,
+                check_batched_grad=False,
+                fast_mode=fast_mode,
+            )
+            gradgradcheck(
+                torch.add,
+                (a, b),
+                raise_exception=False,
+                check_batched_grad=False,
+                fast_mode=fast_mode,
+            )
 
             total_used_attrs = a.used_attrs.union(b.used_attrs)
             total_used_calls = a.used_calls.union(b.used_calls)
@@ -908,21 +981,21 @@ class TestGradCheckOverride(TestCase):
             # aim for attributes that may be commonly present on other
             # Tensor-likes.
             expected_used_attrs = {
-                'data',
-                'dtype',
-                'is_floating_point',
-                'is_sparse',
-                'layout',
-                'new_zeros',
-                'numel',
-                'requires_grad',
-                'requires_grad_',
-                'size',
-                'stride',
+                "data",
+                "dtype",
+                "is_floating_point",
+                "is_sparse",
+                "layout",
+                "new_zeros",
+                "numel",
+                "requires_grad",
+                "requires_grad_",
+                "size",
+                "stride",
             }
             if fast_mode:
-                expected_used_attrs.add('is_complex')
-                expected_used_attrs.add('device')
+                expected_used_attrs.add("is_complex")
+                expected_used_attrs.add("device")
             self.assertEqual(expected_used_attrs, total_used_attrs)
 
             expected_used_calls = {
@@ -938,11 +1011,14 @@ class TestGradCheckOverride(TestCase):
             if fast_mode:
                 expected_used_calls.add(torch.Tensor.is_complex)
             self.assertEqual(expected_used_calls, total_used_calls)
+
         run_test(fast_mode=True)
         run_test(fast_mode=False)
 
+
 class TestNamedTuple(TestCase):
-    """ Regression test for gh-47090 """
+    """Regression test for gh-47090"""
+
     def test_max(self):
         x = torch.tensor([1, 2])
         xs = x.as_subclass(SubTensor2)
@@ -951,15 +1027,19 @@ class TestNamedTuple(TestCase):
         self.assertEqual(type(r), type(rs))
         self.assertEqual(r, rs)
 
+
 class TestGradNewOnesOverride(TestCase):
-    """ Regression test for gh-47069 """
+    """Regression test for gh-47069"""
+
     def test_newones(self):
         t = torch.tensor([1, 2]).as_subclass(SubTensor2)
         n = t.new_ones((1, 2))
         self.assertEqual(type(n), SubTensor2)
 
+
 class TestPickle(TestCase):
     "Regression test for gh-47051"
+
     def test_pickle(self):
         t = torch.tensor([1]).as_subclass(SubTensor2)
         t.abcd = "e"
@@ -967,10 +1047,13 @@ class TestPickle(TestCase):
         self.assertIs(type(t2), SubTensor2)
         self.assertEqual(t2.abcd, "e")
 
+
 class TestBroadcastAllOverride(TestCase):
-    """ test for gh-37141 """
+    """test for gh-37141"""
+
     def test_broadcast_all(self):
         from torch.distributions.utils import broadcast_all
+
         a = torch.tensor([1.2, 3.4, 5.6])
         a_w = Wrapper(a)
         b = torch.tensor(5.0)
@@ -989,6 +1072,7 @@ class TestBroadcastAllOverride(TestCase):
         self.assertEqual(o_2[0]._data, a)
         self.assertEqual(o_2[1]._data, c)
 
+
 class TestWrapTorchFunction(TestCase):
     def test_wrap_torch_function(self):
         class A:
@@ -1005,8 +1089,10 @@ class TestWrapTorchFunction(TestCase):
 
         self.assertEqual(f(A()), -1)
 
+
 class TestIndexing(TestCase):
-    """ Regression tests for gh-46277 """
+    """Regression tests for gh-46277"""
+
     def test_getitem(self):
         class A:
             @classmethod
@@ -1094,7 +1180,7 @@ class TestRNN(TestCase):
 class TestDisabledTorchFunction(TestCase):
     # Regression test for gh-64687
     def test_parameter_does_not_prevent_dispatch(self):
-        class MyTensor():
+        class MyTensor:
             @classmethod
             def __torch_function__(cls, func, types, args=(), kwargs=None):
                 return "called"
@@ -1107,6 +1193,7 @@ class TestDisabledTorchFunction(TestCase):
         self.assertEqual(torch.nn.functional.linear(inp, t1, t2), "called")
         self.assertEqual(torch.nn.functional.linear(inp, t2, t1), "called")
 
+
 class TestResolveName(TestCase):
     def test_resolve_name(self):
         for cs in get_overridable_functions().values():
@@ -1114,12 +1201,13 @@ class TestResolveName(TestCase):
                 self.assertEqual(
                     eval(torch.overrides.resolve_name(c)),
                     c,
-                    msg=f"{c}, {torch.overrides.resolve_name(c)}"
+                    msg=f"{c}, {torch.overrides.resolve_name(c)}",
                 )
+
 
 class TestTorchFunctionWarning(TestCase):
     def test_warn_on_invalid_torch_function(self):
-        class Bad1():
+        class Bad1:
             def __torch_function__(self, *args, **kwargs):
                 pass
 
@@ -1129,7 +1217,9 @@ class TestTorchFunctionWarning(TestCase):
 
         a = Bad1()
         for a in (Bad1(), Bad2()):
-            with self.assertWarnsRegex(DeprecationWarning, "as a plain method is deprecated"):
+            with self.assertWarnsRegex(
+                DeprecationWarning, "as a plain method is deprecated"
+            ):
                 # Function that handles torch_function on the python side
                 torch.nn.functional.dropout(a)
 
@@ -1137,12 +1227,14 @@ class TestTorchFunctionWarning(TestCase):
                 # Function that handles torch_function in C++
                 torch.abs(a)
 
+
 @unittest.skipIf(TEST_WITH_CROSSREF, "not run with crossref")
 class TestTorchFunctionMode(TestCase):
     def test_basic(self):
         class A(TorchFunctionMode):
             def __torch_function__(self, *args, **kwargs):
                 return -1
+
         # NB: factory functions get overridden too!
         x = torch.randn(1)
         with A():
@@ -1160,8 +1252,12 @@ class TestTorchFunctionMode(TestCase):
             self.assertEqual(torch.tensor([1]), -1)
             self.assertEqual(torch.sparse_coo_tensor(1, 1, 1), -1)
             self.assertEqual(torch.sparse_csr_tensor(1, 1, 1), -1)
-            self.assertEqual(torch.sparse_coo_tensor(1, 1, (1, 1), check_invariants=False), -1)
-            self.assertEqual(torch.sparse_csr_tensor(1, 1, 1, (1, 1), check_invariants=False), -1)
+            self.assertEqual(
+                torch.sparse_coo_tensor(1, 1, (1, 1), check_invariants=False), -1
+            )
+            self.assertEqual(
+                torch.sparse_csr_tensor(1, 1, 1, (1, 1), check_invariants=False), -1
+            )
             self.assertEqual(torch.as_tensor([1]), -1)
 
     def test_modes_handle_first(self):
@@ -1187,8 +1283,8 @@ class TestTorchFunctionMode(TestCase):
             self.assertEqual(torch.mm(x, x), -1)
             self.assertEqual(bar(x), 1)
             self.assertRaisesRegex(
-                TypeError, r'SubTensor',
-                lambda: self.assertEqual(torch.max(x, x)))
+                TypeError, r"SubTensor", lambda: self.assertEqual(torch.max(x, x))
+            )
 
     def test_with_mode(self):
         class ErrorA(RuntimeError):
@@ -1259,8 +1355,10 @@ class TestTorchFunctionMode(TestCase):
             def __torch_function__(cls, func, _, args=(), kwargs=None):
                 return func(args, kwargs)
 
-        x = torch.tensor(5.)
-        with self.assertRaisesRegex(RuntimeError, "classmethod is not supported, please make it a plain method"):
+        x = torch.tensor(5.0)
+        with self.assertRaisesRegex(
+            RuntimeError, "classmethod is not supported, please make it a plain method"
+        ):
             with A():
                 x + x
 
@@ -1286,7 +1384,6 @@ class TestTorchFunctionMode(TestCase):
         with mode1:
             with A() as mode2:
                 self.assertEqual(_get_current_function_mode(), mode2)
-
 
     def test_get_mode_stack(self):
         class A(TorchFunctionMode):
@@ -1335,7 +1432,6 @@ class TestTorchFunctionMode(TestCase):
         self.assertEqual(y, x)
         self.assertEqual(called, ["B", "A"])
 
-
     def test_reentrant_mode_idiom(self):
         log = []
 
@@ -1373,7 +1469,7 @@ class TestTorchFunctionMode(TestCase):
                 return func(*args, **kwargs)
 
         with A():
-            torch._C._nn._parse_to('cpu')
+            torch._C._nn._parse_to("cpu")
 
         self.assertTrue(called)
 
@@ -1511,7 +1607,10 @@ class TestTorchFunctionMode(TestCase):
                     else:
                         return t
 
-                return func(*tree_map(get_full_matrices, args), **tree_map(get_full_matrices, kwargs))
+                return func(
+                    *tree_map(get_full_matrices, args),
+                    **tree_map(get_full_matrices, kwargs),
+                )
 
         d = torch.rand(2)
         a = DiagTensor(d)
@@ -1528,5 +1627,5 @@ class TestTorchFunctionMode(TestCase):
         s.add(DiagTensor(d))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

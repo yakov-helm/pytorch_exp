@@ -24,8 +24,10 @@ _size = Union[torch.Size, List[_int], Tuple[_int, ...]]
 _layout = torch.layout
 _dispatchkey = Union[str, torch._C.DispatchKey]
 
+
 class SymInt:
     pass
+
 
 # Meta-type for "numeric" things; matches our docs
 Number = Union[builtins.int, builtins.float, builtins.bool]
@@ -37,19 +39,22 @@ Device = Union[_device, str, _int, None]
 
 # Storage protocol implemented by ${Type}StorageBase classes
 
+
 class Storage:
     _cdata: int
     device: torch.device
     dtype: torch.dtype
     _torch_load_uninitialized: bool
 
-    def __deepcopy__(self, memo) -> 'Storage':
+    def __deepcopy__(self, memo) -> "Storage":
         ...
 
-    def _new_shared(self, int) -> 'Storage':
+    def _new_shared(self, int) -> "Storage":
         ...
 
-    def _write_file(self, f: Any, is_real_file: _bool, save_size: _bool, element_size: int) -> None:
+    def _write_file(
+        self, f: Any, is_real_file: _bool, save_size: _bool, element_size: int
+    ) -> None:
         ...
 
     def element_size(self) -> int:
@@ -58,22 +63,24 @@ class Storage:
     def is_shared(self) -> bool:
         ...
 
-    def share_memory_(self) -> 'Storage':
+    def share_memory_(self) -> "Storage":
         ...
 
     def nbytes(self) -> int:
         ...
 
-    def cpu(self) -> 'Storage':
+    def cpu(self) -> "Storage":
         ...
 
     def data_ptr(self) -> int:
         ...
 
-    def from_file(self, filename: str, shared: bool = False, nbytes: int = 0) -> 'Storage':
+    def from_file(
+        self, filename: str, shared: bool = False, nbytes: int = 0
+    ) -> "Storage":
         ...
 
-    def _new_with_file(self, f: Any, element_size: int) -> 'Storage':
+    def _new_with_file(self, f: Any, element_size: int) -> "Storage":
         ...
 
     ...

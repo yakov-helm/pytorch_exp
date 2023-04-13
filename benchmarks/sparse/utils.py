@@ -17,6 +17,7 @@ class Event:
         assert isinstance(end_event, Event)
         return end_event.time - self.time
 
+
 def gen_sparse_csr(shape, nnz):
     fill_value = 0
     total_values = functools.reduce(operator.mul, shape, 1)
@@ -28,6 +29,7 @@ def gen_sparse_csr(shape, nnz):
     dense = torch.from_numpy(dense.reshape(shape))
 
     return dense.to_sparse_csr()
+
 
 def gen_sparse_coo(shape, nnz):
     dense = np.random.randn(*shape)
@@ -41,6 +43,7 @@ def gen_sparse_coo(shape, nnz):
         values.append(dense[row, col])
 
     return torch.sparse_coo_tensor(indices, values, size=shape)
+
 
 def gen_sparse_coo_and_csr(shape, nnz):
     total_values = functools.reduce(operator.mul, shape, 1)

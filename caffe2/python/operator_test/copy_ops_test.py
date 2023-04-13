@@ -1,8 +1,3 @@
-
-
-
-
-
 import numpy as np
 
 import unittest
@@ -11,7 +6,6 @@ from caffe2.python import workspace, core, model_helper, brew, test_util
 
 
 class CopyOpsTest(test_util.TestCase):
-
     def tearDown(self):
         # Reset workspace after each test
         # Otherwise, the multi-GPU test will use previously created tensors,
@@ -28,14 +22,18 @@ class CopyOpsTest(test_util.TestCase):
             workspace.FeedBlob(x, np.random.rand(32).astype(np.float32))
             workspace.RunNetOnce(model.param_init_net)
             workspace.RunNetOnce(model.net)
-            self.assertTrue(np.array_equal(
-                workspace.FetchBlob(x),
-                workspace.FetchBlob(y),
-            ))
-            self.assertTrue(np.array_equal(
-                workspace.FetchBlob(gradient_map[x]),
-                workspace.FetchBlob(gradient_map[y]),
-            ))
+            self.assertTrue(
+                np.array_equal(
+                    workspace.FetchBlob(x),
+                    workspace.FetchBlob(y),
+                )
+            )
+            self.assertTrue(
+                np.array_equal(
+                    workspace.FetchBlob(gradient_map[x]),
+                    workspace.FetchBlob(gradient_map[y]),
+                )
+            )
 
     def test_copy_gradient_cpu(self):
         self.run_test_copy_gradient(core.DeviceOption(caffe2_pb2.CPU, 0))
@@ -63,14 +61,18 @@ class CopyOpsTest(test_util.TestCase):
         workspace.RunNetOnce(model.param_init_net)
         workspace.RunNetOnce(model.net)
 
-        self.assertTrue(np.array_equal(
-            workspace.FetchBlob("x_gpu_1"),
-            workspace.FetchBlob("x_gpu_2"),
-        ))
-        self.assertTrue(np.array_equal(
-            workspace.FetchBlob(gradient_map["x_gpu_1"]),
-            workspace.FetchBlob(gradient_map["x_gpu_2"]),
-        ))
+        self.assertTrue(
+            np.array_equal(
+                workspace.FetchBlob("x_gpu_1"),
+                workspace.FetchBlob("x_gpu_2"),
+            )
+        )
+        self.assertTrue(
+            np.array_equal(
+                workspace.FetchBlob(gradient_map["x_gpu_1"]),
+                workspace.FetchBlob(gradient_map["x_gpu_2"]),
+            )
+        )
 
         def get_op_with_output(model, output_blob_name):
             for op in model.net.Proto().op:
@@ -110,7 +112,7 @@ class CopyOpsTest(test_util.TestCase):
             )
         gradient_map = model.AddGradientOperators([loss])
         self.assertTrue("v" in gradient_map)
-        self.assertTrue(isinstance(gradient_map['v'], core.GradientSlice))
+        self.assertTrue(isinstance(gradient_map["v"], core.GradientSlice))
 
     @unittest.skipIf(workspace.NumGpuDevices() < 1, "Need at least 1 GPU.")
     def test_cpu2gpu_gpu2cpu_gradients(self):
@@ -122,7 +124,7 @@ class CopyOpsTest(test_util.TestCase):
 
         with core.NameScope("cpu"):
             with core.DeviceScope(cpu_opt):
-                x_cpu = brew.fc(model, 'data', 'x_cpu', 16, 8)
+                x_cpu = brew.fc(model, "data", "x_cpu", 16, 8)
 
         with core.NameScope("gpu_0"):
             with core.DeviceScope(gpu_opt):
@@ -143,7 +145,7 @@ class CopyOpsTest(test_util.TestCase):
         init_net = model.param_init_net
         with core.DeviceScope(cpu_opt):
             with core.NameScope("cpu"):
-                ONE = init_net.ConstantFill([], "ONE", shape=[1], value=1.)
+                ONE = init_net.ConstantFill([], "ONE", shape=[1], value=1.0)
                 LR = init_net.ConstantFill([], "LR", shape=[1], value=-2.0)
                 for param in model.GetParams():
                     model.WeightedSum(
@@ -153,7 +155,7 @@ class CopyOpsTest(test_util.TestCase):
 
         with core.NameScope("gpu_0"):
             with core.DeviceScope(gpu_opt):
-                ONE = init_net.ConstantFill([], "ONE", shape=[1], value=1.)
+                ONE = init_net.ConstantFill([], "ONE", shape=[1], value=1.0)
                 LR = init_net.ConstantFill([], "LR", shape=[1], value=-2.0)
                 for param in model.GetParams():
                     model.WeightedSum(
@@ -163,11 +165,11 @@ class CopyOpsTest(test_util.TestCase):
 
         with core.DeviceScope(cpu_opt):
             workspace.FeedBlob(
-                'cpu/data',
+                "cpu/data",
                 np.random.rand(batch, 16).astype(np.float32),
             )
             workspace.FeedBlob(
-                'cpu/label',
+                "cpu/label",
                 np.random.randint(4, size=batch).astype(np.int32),
             )
 

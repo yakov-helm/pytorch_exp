@@ -12,6 +12,7 @@ import unittest
 
 try:
     import torchvision
+
     HAS_TORCHVISION = True
 except ImportError:
     HAS_TORCHVISION = False
@@ -22,10 +23,12 @@ pytorch_test_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(pytorch_test_dir)
 from torch.testing._internal.jit_utils import JitTestCase
 
-if __name__ == '__main__':
-    raise RuntimeError("This test file is not meant to be run directly, use:\n\n"
-                       "\tpython test/test_jit.py TESTNAME\n\n"
-                       "instead.")
+if __name__ == "__main__":
+    raise RuntimeError(
+        "This test file is not meant to be run directly, use:\n\n"
+        "\tpython test/test_jit.py TESTNAME\n\n"
+        "instead."
+    )
 
 activations = [
     F.celu,
@@ -40,6 +43,7 @@ activations = [
     F.selu,
     F.silu,
 ]
+
 
 class TestFunctionalToInplaceActivation(JitTestCase):
     def test_check_no_type_promotion(self):
@@ -67,6 +71,7 @@ class TestFunctionalToInplaceActivation(JitTestCase):
 
     def test_functional_to_inplace_activation(self):
         for activation in activations:
+
             def test_basic(x):
                 y = x + 1
                 z = activation(y)
@@ -76,7 +81,7 @@ class TestFunctionalToInplaceActivation(JitTestCase):
             self.run_pass("inline", fn.graph)
             self.run_pass("constant_propagation", fn.graph)
             FileCheck().check(f"aten::{activation.__name__}(").run(fn.graph)
-            self.run_pass('functional_to_inplace_activation', fn.graph)
+            self.run_pass("functional_to_inplace_activation", fn.graph)
             FileCheck().check_not(f"aten::{activation.__name__}(").run(fn.graph)
             FileCheck().check(f"aten::{activation.__name__}_").run(fn.graph)
             inp = torch.rand([2, 2])
@@ -91,7 +96,7 @@ class TestFunctionalToInplaceActivation(JitTestCase):
             return z
 
         fn = torch.jit.script(test1)
-        self.run_pass('functional_to_inplace_activation', fn.graph)
+        self.run_pass("functional_to_inplace_activation", fn.graph)
         FileCheck().check_not("aten::sigmoid_").run(fn.graph)
 
         # inplace conversion should not happen because y is alias
@@ -102,7 +107,7 @@ class TestFunctionalToInplaceActivation(JitTestCase):
             return z
 
         fn = torch.jit.script(test2)
-        self.run_pass('functional_to_inplace_activation', fn.graph)
+        self.run_pass("functional_to_inplace_activation", fn.graph)
         FileCheck().check_not("aten::relu_").run(fn.graph)
 
         # inplace conversion should not happen because self.x is
@@ -117,22 +122,28 @@ class TestFunctionalToInplaceActivation(JitTestCase):
                 return y
 
         fn = torch.jit.script(Test3(torch.rand([2, 2])).eval())
-        self.run_pass('functional_to_inplace_activation', fn.graph)
+        self.run_pass("functional_to_inplace_activation", fn.graph)
         FileCheck().check_not("aten::relu_").run(fn.graph)
 
     @skipIfNoTorchVision
     def test_resnet18_correctness(self):
         model = torchvision.models.resnet18()
         frozen_model = torch.jit.freeze(torch.jit.script(model.eval()))
-        N, C, H, W, = 10, 3, 224, 224
+        N, C, H, W, = (
+            10,
+            3,
+            224,
+            224,
+        )
         inp = torch.randn(N, C, H, W)
-        self.run_pass('functional_to_inplace_activation', frozen_model.graph)
+        self.run_pass("functional_to_inplace_activation", frozen_model.graph)
         self.assertEqual(model(inp), frozen_model(inp))
 
 
 class TestInplaceToFunctionalActivation(JitTestCase):
     def test_inplace_to_functional_activation(self):
         for activation in activations:
+
             def test_basic(x):
                 y = x + 1
                 activation(y, inplace=True)
@@ -142,7 +153,7 @@ class TestInplaceToFunctionalActivation(JitTestCase):
             self.run_pass("inline", fn.graph)
             self.run_pass("constant_propagation", fn.graph)
             FileCheck().check(f"aten::{activation.__name__}_").run(fn.graph)
-            self.run_pass('inplace_to_functional_activation', fn.graph)
+            self.run_pass("inplace_to_functional_activation", fn.graph)
             FileCheck().check_not(f"aten::{activation.__name__}_").run(fn.graph)
             FileCheck().check(f"aten::{activation.__name__}(").run(fn.graph)
 
@@ -151,6 +162,7 @@ class TestInplaceToFunctionalActivation(JitTestCase):
             torch.sigmoid_,
             torch.tanh_,
         ]:
+
             def test_basic(x):
                 y = x + 1
                 activation(y)
@@ -160,7 +172,7 @@ class TestInplaceToFunctionalActivation(JitTestCase):
             self.run_pass("inline", fn.graph)
             self.run_pass("constant_propagation", fn.graph)
             FileCheck().check(f"aten::{activation.__name__}").run(fn.graph)
-            self.run_pass('inplace_to_functional_activation', fn.graph)
+            self.run_pass("inplace_to_functional_activation", fn.graph)
             FileCheck().check_not(f"aten::{activation.__name__}").run(fn.graph)
             FileCheck().check(f"aten::{activation.__name__[:-1]}(").run(fn.graph)
 
@@ -171,7 +183,12 @@ class TestInplaceToFunctionalActivation(JitTestCase):
     def test_resnet18_correctness(self):
         model = torchvision.models.resnet18()
         frozen_model = torch.jit.freeze(torch.jit.script(model.eval()))
-        N, C, H, W, = 10, 3, 224, 224
+        N, C, H, W, = (
+            10,
+            3,
+            224,
+            224,
+        )
         inp = torch.randn(N, C, H, W)
-        self.run_pass('inplace_to_functional_activation', frozen_model.graph)
+        self.run_pass("inplace_to_functional_activation", frozen_model.graph)
         self.assertEqual(model(inp), frozen_model(inp))

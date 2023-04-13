@@ -2,10 +2,6 @@
 # Module caffe2.python.onnx.tests.helper_test
 
 
-
-
-
-
 import unittest
 
 from caffe2.python.onnx.tests.test_utils import TestCase
@@ -30,5 +26,5 @@ class TestCaffe2Basic(TestCase):
         self.assertFalse(set(names_1) & set(names_4))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

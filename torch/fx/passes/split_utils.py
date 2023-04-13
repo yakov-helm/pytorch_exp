@@ -7,7 +7,8 @@ from .tools_common import NodeList
 from torch.fx._compatibility import compatibility
 from torch.fx.passes.utils import lift_subgraph_as_module, HolderModule
 
-__all__ = ['getattr_recursive', 'setattr_recursive', 'Component', 'split_by_tags']
+__all__ = ["getattr_recursive", "setattr_recursive", "Component", "split_by_tags"]
+
 
 @compatibility(is_backward_compatible=False)
 def getattr_recursive(obj, name):

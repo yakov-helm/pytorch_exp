@@ -20,7 +20,7 @@ from torch.testing._internal.common_utils import (
     IS_MACOS,
     TEST_WITH_DEV_DBG_ASAN,
     TEST_WITH_TSAN,
-    TestCase
+    TestCase,
 )
 
 

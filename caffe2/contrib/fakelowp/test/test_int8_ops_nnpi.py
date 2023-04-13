@@ -7,12 +7,15 @@ from caffe2.python.fakelowp.test_utils import print_test_debug_info
 import caffe2.python.serialized_test.serialized_test_util as serial
 import datetime
 
-core.GlobalInit(["caffe2",
-                 "--caffe2_log_level=-3",
-                 "--glow_global_fp16=1",
-                 "--glow_clip_quant_range_to_fp16=1",
-                 "--glow_global_fp16_constants=1"
-                 ])
+core.GlobalInit(
+    [
+        "caffe2",
+        "--caffe2_log_level=-3",
+        "--glow_global_fp16=1",
+        "--glow_clip_quant_range_to_fp16=1",
+        "--glow_global_fp16_constants=1",
+    ]
+)
 
 
 class Int8OpsTest(serial.SerializedTestCase):
@@ -29,7 +32,7 @@ class Int8OpsTest(serial.SerializedTestCase):
     @given(
         n=st.integers(2, 1024),
         rand_seed=st.integers(0, 65534),
-        non_zero_offset=st.booleans()
+        non_zero_offset=st.booleans(),
     )
     @settings(deadline=datetime.timedelta(seconds=50))
     def test_int8_quantize(self, n, rand_seed, non_zero_offset):
@@ -38,8 +41,11 @@ class Int8OpsTest(serial.SerializedTestCase):
         workspace.ResetWorkspace()
 
         if non_zero_offset:
-            X_fp32 = np.random.uniform(-1, 1, size=(n, n)).astype(np.float16) \
+            X_fp32 = (
+                np.random.uniform(-1, 1, size=(n, n))
+                .astype(np.float16)
                 .astype(np.float32)
+            )
         else:
             X_fp32 = np.random.rand(n, n).astype(np.float16).astype(np.float32)
 
@@ -65,10 +71,7 @@ class Int8OpsTest(serial.SerializedTestCase):
 
         ref_net = core.Net("net")
         ref_net.Int8QuantizeNNPI(
-            ["X"],
-            ["X_int8"],
-            Y_scale=X_scale,
-            Y_zero_point=X_zero_point
+            ["X"], ["X_int8"], Y_scale=X_scale, Y_zero_point=X_zero_point
         )
         ref_net.Int8FCFakeAcc32NNPI(
             ["X_int8", "W_int8", "b"],
@@ -76,10 +79,7 @@ class Int8OpsTest(serial.SerializedTestCase):
             Y_scale=X_scale,
             Y_zero_point=X_zero_point,
         )
-        ref_net.Int8DequantizeNNPI(
-            ["Y_int8"],
-            ["Y"]
-        )
+        ref_net.Int8DequantizeNNPI(["Y_int8"], ["Y"])
         ref_net.Proto().external_output.append("Y")
 
         # run ref_net
@@ -133,9 +133,7 @@ class Int8OpsTest(serial.SerializedTestCase):
         quantize_bias=st.sampled_from([False]),
     )
     @settings(deadline=datetime.timedelta(seconds=50))
-    def test_int8_fc(
-        self, n, m, k, rand_seed, quantize_bias, f
-    ):
+    def test_int8_fc(self, n, m, k, rand_seed, quantize_bias, f):
         print(
             f"n={n}, m={m}, k={k}, rand_seed={rand_seed}, quantize_bias={quantize_bias}"
         )
@@ -168,10 +166,7 @@ class Int8OpsTest(serial.SerializedTestCase):
 
         ref_net = core.Net("net")
         ref_net.Int8QuantizeNNPI(
-            ["X"],
-            ["X_int8"],
-            Y_scale=X_scale,
-            Y_zero_point=X_zero_point
+            ["X"], ["X_int8"], Y_scale=X_scale, Y_zero_point=X_zero_point
         )
         ref_net.Int8FCFakeAcc32NNPI(
             ["X_int8", "W_int8", "b_int32" if quantize_bias else "b"],
@@ -179,10 +174,7 @@ class Int8OpsTest(serial.SerializedTestCase):
             Y_scale=Y_scale,
             Y_zero_point=Y_zero_point,
         )
-        ref_net.Int8DequantizeNNPI(
-            ["Y_int8"],
-            ["Y"]
-        )
+        ref_net.Int8DequantizeNNPI(["Y_int8"], ["Y"])
         ref_net.Proto().external_output.append("Y")
 
         # run ref_net
@@ -229,10 +221,7 @@ class Int8OpsTest(serial.SerializedTestCase):
             )
             assert 0
 
-    @given(
-        n=st.integers(1, 4),
-        rand_seed=st.integers(0, 65534)
-    )
+    @given(n=st.integers(1, 4), rand_seed=st.integers(0, 65534))
     @settings(deadline=datetime.timedelta(seconds=10))
     def test_int8_small_input(self, n, rand_seed):
         print("n={}, rand_seed={}".format(n, rand_seed))
@@ -262,10 +251,7 @@ class Int8OpsTest(serial.SerializedTestCase):
 
         ref_net = core.Net("net")
         ref_net.Int8QuantizeNNPI(
-            ["X"],
-            ["X_int8"],
-            Y_scale=X_scale,
-            Y_zero_point=X_zero_point
+            ["X"], ["X_int8"], Y_scale=X_scale, Y_zero_point=X_zero_point
         )
         ref_net.Int8FCFakeAcc32NNPI(
             ["X_int8", "W_int8", "b"],
@@ -273,10 +259,7 @@ class Int8OpsTest(serial.SerializedTestCase):
             Y_scale=X_scale,
             Y_zero_point=X_zero_point,
         )
-        ref_net.Int8DequantizeNNPI(
-            ["Y_int8"],
-            ["Y"]
-        )
+        ref_net.Int8DequantizeNNPI(["Y_int8"], ["Y"])
         ref_net.Proto().external_output.append("Y")
 
         # run ref_net

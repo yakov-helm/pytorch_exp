@@ -2,10 +2,6 @@
 # Module caffe2.python.onnx.backend_rep_cpp
 
 
-
-
-
-
 from onnx.backend.base import BackendRep, namedtupledict
 
 # This is a wrapper around C++ Caffe2BackendRep,
@@ -36,11 +32,14 @@ class Caffe2CppRep(BackendRep):
             output_values = self.__core.run(inputs)
         elif isinstance(inputs, list) or isinstance(inputs, tuple):
             if len(inputs) != len(self.__uninitialized_inputs):
-                raise RuntimeError('Expected {} values for uninitialized '
-                                   'graph inputs ({}), but got {}.'.format(
-                                        len(self.__uninitialized_inputs),
-                                        ', '.join(self.__uninitialized_inputs),
-                                        len(inputs)))
+                raise RuntimeError(
+                    "Expected {} values for uninitialized "
+                    "graph inputs ({}), but got {}.".format(
+                        len(self.__uninitialized_inputs),
+                        ", ".join(self.__uninitialized_inputs),
+                        len(inputs),
+                    )
+                )
             input_map = {}
             for k, v in zip(self.__uninitialized_inputs, inputs):
                 input_map[k] = v
@@ -48,4 +47,4 @@ class Caffe2CppRep(BackendRep):
         else:
             # single input
             output_values = self.__core.run([inputs])
-        return namedtupledict('Outputs', self.__external_outputs)(*output_values)
+        return namedtupledict("Outputs", self.__external_outputs)(*output_values)

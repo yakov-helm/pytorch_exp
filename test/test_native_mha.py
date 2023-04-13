@@ -12,6 +12,7 @@ from torch.testing._internal.common_device_type import (
 )
 from torch.testing._internal.common_utils import parametrize, run_tests, TestCase
 
+
 class TestMHADeviceType(TestCase):
     @torch.no_grad()
     def _test_transform_bias_rescale_qkv_impl(
@@ -41,7 +42,9 @@ class TestMHADeviceType(TestCase):
                     if use_padding:
                         xs[0] = xs[0][:-1]
                     x = torch.nested.nested_tensor(xs, device=device, dtype=dtype)
-                qkv = torch.nn.Linear(embed_dim, 3 * embed_dim, device=device, dtype=dtype)
+                qkv = torch.nn.Linear(
+                    embed_dim, 3 * embed_dim, device=device, dtype=dtype
+                )
 
                 # We have to use inference_mode here because q/k/v are
                 # all views of the same Tensor, which autograd doesn't
@@ -63,12 +66,13 @@ class TestMHADeviceType(TestCase):
                             t = t + (8 - t % 8) % 8
                             newsize = (b, t, d)
                             new_x = torch.zeros(newsize, device=device, dtype=dtype)
-                            new_x[:x.size()[0], :x.size()[1], :x.size()[2]] = x
+                            new_x[: x.size()[0], : x.size()[1], : x.size()[2]] = x
                             return new_x
+
                         return tuple(
-                            embiggen(x).reshape(
-                                (bs, -1, num_heads, embed_dim // num_heads)
-                            ).transpose(2, 1)
+                            embiggen(x)
+                            .reshape((bs, -1, num_heads, embed_dim // num_heads))
+                            .transpose(2, 1)
                             for x in (
                                 (q + q_bias) / math.sqrt(embed_dim // num_heads),
                                 (k + k_bias),
@@ -110,7 +114,15 @@ class TestMHADeviceType(TestCase):
                 )
 
     def _test_multihead_attention_impl(
-        self, device, dtype, mode, use_nt, need_weights, average_attn_weights, use_padding=False, pad_all=False
+        self,
+        device,
+        dtype,
+        mode,
+        use_nt,
+        need_weights,
+        average_attn_weights,
+        use_padding=False,
+        pad_all=False,
     ):
         embed_dim = 64
         num_heads = 4
@@ -121,27 +133,42 @@ class TestMHADeviceType(TestCase):
         if use_padding:
             if pad_all:
                 for q_i in q:
-                    q_i[-1] = torch.zeros_like(q[0][-1], device=device, dtype=torch.float32)
+                    q_i[-1] = torch.zeros_like(
+                        q[0][-1], device=device, dtype=torch.float32
+                    )
                 mask = torch.zeros(q.shape[:-1], device=device, dtype=torch.bool)
                 for mask_i in mask:
                     mask_i[-1] = True
             else:
-                q[0][-1] = torch.zeros_like(q[0][-1], device=device, dtype=torch.float32)
+                q[0][-1] = torch.zeros_like(
+                    q[0][-1], device=device, dtype=torch.float32
+                )
                 mask = torch.zeros(q.shape[:-1], device=device, dtype=torch.bool)
                 mask[0][-1] = True
         if mode == "self":
             k = q
             v = q
         elif mode == "encdec":
-            k = 6 * torch.rand(bs, sl, embed_dim, device=device, dtype=torch.float32) - 3
+            k = (
+                6 * torch.rand(bs, sl, embed_dim, device=device, dtype=torch.float32)
+                - 3
+            )
             v = k
         elif mode == "generic":
-            k = 6 * torch.rand(bs, sl, embed_dim, device=device, dtype=torch.float32) - 3
-            v = 6 * torch.rand(bs, sl, embed_dim, device=device, dtype=torch.float32) - 3
+            k = (
+                6 * torch.rand(bs, sl, embed_dim, device=device, dtype=torch.float32)
+                - 3
+            )
+            v = (
+                6 * torch.rand(bs, sl, embed_dim, device=device, dtype=torch.float32)
+                - 3
+            )
         else:
             self.fail(f"invalid mode `{mode}`!")
 
-        qkv = torch.nn.Linear(embed_dim, 3 * embed_dim, device=device, dtype=torch.float32)
+        qkv = torch.nn.Linear(
+            embed_dim, 3 * embed_dim, device=device, dtype=torch.float32
+        )
         native_qkv = copy.deepcopy(qkv).to(dtype=dtype)
 
         proj = torch.nn.Linear(embed_dim, embed_dim, device=device, dtype=torch.float32)
@@ -178,7 +205,7 @@ class TestMHADeviceType(TestCase):
                     key_padding_mask,
                     need_weights=need_weights,
                     average_attn_weights=average_attn_weights,
-                    mask_type=1,   # mask_type = 1 => src_key_padding_mask, mask_type = 0 => src_mask
+                    mask_type=1,  # mask_type = 1 => src_key_padding_mask, mask_type = 0 => src_mask
                 )
 
         npt = NativeMHA(
@@ -208,24 +235,33 @@ class TestMHADeviceType(TestCase):
             if mode == "self":
                 k = v = q
             elif mode == "encdec":
-                k = torch.nested.nested_tensor(torch.unbind(k), device=device, dtype=dtype)
+                k = torch.nested.nested_tensor(
+                    torch.unbind(k), device=device, dtype=dtype
+                )
                 v = k
             else:
-                k = torch.nested.nested_tensor(torch.unbind(k), device=device, dtype=dtype)
-                v = torch.nested.nested_tensor(torch.unbind(v), device=device, dtype=dtype)
+                k = torch.nested.nested_tensor(
+                    torch.unbind(k), device=device, dtype=dtype
+                )
+                v = torch.nested.nested_tensor(
+                    torch.unbind(v), device=device, dtype=dtype
+                )
 
         native_q = q.to(dtype=dtype)
         native_k = k.to(dtype=dtype)
         native_v = v.to(dtype=dtype)
 
         ynpt, weight_npt = npt(
-            native_q, native_k, native_v, key_padding_mask=mask if use_padding and not use_nt else None
+            native_q,
+            native_k,
+            native_v,
+            key_padding_mask=mask if use_padding and not use_nt else None,
         )
         if use_nt:
             ynpt = ynpt.to_padded_tensor(0)
             if pad_all:
                 ynpt_final = torch.zeros_like(ypt)
-                ynpt_final[:, :ynpt.shape[1], :] = ynpt
+                ynpt_final[:, : ynpt.shape[1], :] = ynpt
                 ynpt = ynpt_final
 
         def do_pad_all(tensors):
@@ -243,17 +279,27 @@ class TestMHADeviceType(TestCase):
             # Zero the last row of each TxT weight matrix
             if need_weights:
                 if average_attn_weights:
-                    weight_pt[0][-1] = torch.zeros_like(weight_pt[0][-1], device=device, dtype=dtype)
-                    weight_npt[0][-1] = torch.zeros_like(weight_npt[0][-1], device=device, dtype=dtype)
+                    weight_pt[0][-1] = torch.zeros_like(
+                        weight_pt[0][-1], device=device, dtype=dtype
+                    )
+                    weight_npt[0][-1] = torch.zeros_like(
+                        weight_npt[0][-1], device=device, dtype=dtype
+                    )
                     if pad_all:
                         do_pad_all((weight_pt, weight_npt))
                 else:
                     for nh in range(num_heads):
-                        weight_pt[0][nh][-1] = torch.zeros_like(weight_pt[0][nh][-1], device=device, dtype=dtype)
-                        weight_npt[0][nh][-1] = torch.zeros_like(weight_npt[0][nh][-1], device=device, dtype=dtype)
+                        weight_pt[0][nh][-1] = torch.zeros_like(
+                            weight_pt[0][nh][-1], device=device, dtype=dtype
+                        )
+                        weight_npt[0][nh][-1] = torch.zeros_like(
+                            weight_npt[0][nh][-1], device=device, dtype=dtype
+                        )
 
         if dtype == torch.half:
-            torch.testing.assert_close(ypt, ynpt.to(torch.float32), atol=1e-3, rtol=1e-3)
+            torch.testing.assert_close(
+                ypt, ynpt.to(torch.float32), atol=1e-3, rtol=1e-3
+            )
         else:
             # High rtol seems necessary for
             # test_native_multihead_attention_cpu_float32 on Windows,
@@ -261,7 +307,9 @@ class TestMHADeviceType(TestCase):
             torch.testing.assert_close(ypt, ynpt, atol=2e-5, rtol=2e-3)
 
         if need_weights:
-            torch.testing.assert_close(weight_pt, weight_npt.to(torch.float32), atol=5e-4, rtol=5e-4)
+            torch.testing.assert_close(
+                weight_pt, weight_npt.to(torch.float32), atol=5e-4, rtol=5e-4
+            )
         else:
             self.assertEqual(weight_pt, weight_npt)
 
@@ -274,16 +322,29 @@ class TestMHADeviceType(TestCase):
     @parametrize("average_attn_weights", [False, True])
     @parametrize("fused", [False, True])
     @torch.no_grad()
-    def test_native_multihead_self_attention(self, device, dtype, use_nt,
-                                             need_weights, average_attn_weights, use_padding, pad_all, fused):
+    def test_native_multihead_self_attention(
+        self,
+        device,
+        dtype,
+        use_nt,
+        need_weights,
+        average_attn_weights,
+        use_padding,
+        pad_all,
+        fused,
+    ):
         for need_weights in (False, not pad_all):
-            with self.subTest(use_padding=use_padding, pad_all=pad_all,
-                              use_nt=use_nt, need_weights=need_weights,
-                              average_attn_weights=average_attn_weights):
+            with self.subTest(
+                use_padding=use_padding,
+                pad_all=pad_all,
+                use_nt=use_nt,
+                need_weights=need_weights,
+                average_attn_weights=average_attn_weights,
+            ):
                 with torch.backends.cuda.sdp_kernel(
-                        enable_flash=False, enable_mem_efficient=False
+                    enable_flash=False, enable_mem_efficient=False
                 ) if not fused else torch.backends.cuda.sdp_kernel(
-                        enable_flash=True, enable_mem_efficient=True
+                    enable_flash=True, enable_mem_efficient=True
                 ):
                     self._test_multihead_attention_impl(
                         device,

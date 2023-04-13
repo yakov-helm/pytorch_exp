@@ -15,7 +15,11 @@ from torch.utils.cpp_extension import CUDA_HOME, ROCM_HOME
 
 TEST_CUDA = torch.cuda.is_available() and CUDA_HOME is not None
 TEST_CUDNN = False
-TEST_ROCM = torch.cuda.is_available() and torch.version.hip is not None and ROCM_HOME is not None
+TEST_ROCM = (
+    torch.cuda.is_available()
+    and torch.version.hip is not None
+    and ROCM_HOME is not None
+)
 if TEST_CUDA and torch.version.cuda is not None:  # the skip CUDNN test for ROCm
     CUDNN_HEADER_EXISTS = os.path.isfile(os.path.join(CUDA_HOME, "include/cudnn.h"))
     TEST_CUDNN = (
@@ -33,25 +37,26 @@ def remove_build_path():
 
 
 class DummyModule(object):
-
     @staticmethod
     def device_count() -> int:
         return 1
 
     @staticmethod
-    def get_rng_state(device: Union[int, str, torch.device] = 'foo') -> torch.Tensor:
+    def get_rng_state(device: Union[int, str, torch.device] = "foo") -> torch.Tensor:
         # create a tensor using our custom device object.
         return torch.empty(4, 4, device="foo")
 
     @staticmethod
-    def set_rng_state(new_state: torch.Tensor, device: Union[int, str, torch.device] = 'foo') -> None:
+    def set_rng_state(
+        new_state: torch.Tensor, device: Union[int, str, torch.device] = "foo"
+    ) -> None:
         pass
 
 
 @unittest.skipIf(IS_ARM64, "Does not work on arm")
 class TestCppExtensionOpenRgistration(common.TestCase):
-    """Tests Open Device Registration with C++ extensions.
-    """
+    """Tests Open Device Registration with C++ extensions."""
+
     module = None
 
     def setUp(self):
@@ -105,7 +110,7 @@ class TestCppExtensionOpenRgistration(common.TestCase):
         # check that it was called
         self.assertTrue(self.module.custom_add_called())
 
-        z_cpu = z.to(device='cpu')
+        z_cpu = z.to(device="cpu")
 
         # Check that our cross-device copy correctly copied the data to cpu
         self.assertTrue(z_cpu.is_cpu)
@@ -119,8 +124,9 @@ class TestCppExtensionOpenRgistration(common.TestCase):
         self.assertFalse(self.module.custom_add_called())
 
         # check generator registered befor use
-        with self.assertRaisesRegex(RuntimeError,
-                                    "Please register a generator to the PrivateUse1 dispatch key"):
+        with self.assertRaisesRegex(
+            RuntimeError, "Please register a generator to the PrivateUse1 dispatch key"
+        ):
             gen_ = torch.Generator(device=device)
 
         self.module.register_generator()
@@ -129,39 +135,42 @@ class TestCppExtensionOpenRgistration(common.TestCase):
         self.assertTrue(gen.device == device)
 
         # generator can be registered only once
-        with self.assertRaisesRegex(RuntimeError,
-                                    "Only can register a generator to the PrivateUse1 dispatch key once"):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "Only can register a generator to the PrivateUse1 dispatch key once",
+        ):
             self.module.register_generator()
 
         # check whether print tensor.type() meets the expectation
-        torch.utils.rename_privateuse1_backend('foo')
+        torch.utils.rename_privateuse1_backend("foo")
         dtypes = {
-            torch.bool: 'torch.foo.BoolTensor',
-            torch.double: 'torch.foo.DoubleTensor',
-            torch.float32: 'torch.foo.FloatTensor',
-            torch.half: 'torch.foo.HalfTensor',
-            torch.int32: 'torch.foo.IntTensor',
-            torch.int64: 'torch.foo.LongTensor',
-            torch.int8: 'torch.foo.CharTensor',
-            torch.short: 'torch.foo.ShortTensor',
-            torch.uint8: 'torch.foo.ByteTensor',
+            torch.bool: "torch.foo.BoolTensor",
+            torch.double: "torch.foo.DoubleTensor",
+            torch.float32: "torch.foo.FloatTensor",
+            torch.half: "torch.foo.HalfTensor",
+            torch.int32: "torch.foo.IntTensor",
+            torch.int64: "torch.foo.LongTensor",
+            torch.int8: "torch.foo.CharTensor",
+            torch.short: "torch.foo.ShortTensor",
+            torch.uint8: "torch.foo.ByteTensor",
         }
         for tt, dt in dtypes.items():
             test_tensor = torch.empty(4, 4, dtype=tt, device=device)
             self.assertTrue(test_tensor.type() == dt)
 
     def test_open_device_random(self):
-        torch.utils.rename_privateuse1_backend('foo')
+        torch.utils.rename_privateuse1_backend("foo")
         with self.assertRaisesRegex(RuntimeError, "Expected one of cpu"):
-            torch._register_device_module('xxx', DummyModule)
+            torch._register_device_module("xxx", DummyModule)
 
         with self.assertRaisesRegex(RuntimeError, "torch has no module of"):
             with torch.random.fork_rng(device_type="foo"):
                 pass
-        torch._register_device_module('foo', DummyModule)
+        torch._register_device_module("foo", DummyModule)
 
         with torch.random.fork_rng(device_type="foo"):
             pass
+
 
 if __name__ == "__main__":
     common.run_tests()

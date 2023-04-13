@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core
 
 import caffe2.python.hypothesis_test_util as hu
@@ -31,18 +26,24 @@ class TestMomentsOp(serial.SerializedTestCase):
             )
 
         def ref(X):
-            mean = np.mean(X, axis=None if axes is None else tuple(
-                axes), keepdims=keepdims)
-            variance = np.var(X, axis=None if axes is None else tuple(
-                axes), keepdims=keepdims)
+            mean = np.mean(
+                X, axis=None if axes is None else tuple(axes), keepdims=keepdims
+            )
+            variance = np.var(
+                X, axis=None if axes is None else tuple(axes), keepdims=keepdims
+            )
             return [mean, variance]
 
         self.assertReferenceChecks(gc, op, [X], ref)
         self.assertDeviceChecks(dc, op, [X], [0, 1])
         self.assertGradientChecks(gc, op, [X], 0, [0, 1])
 
-    @serial.given(X=hu.tensor(dtype=np.float32), keepdims=st.booleans(),
-           num_axes=st.integers(1, 4), **hu.gcs)
+    @serial.given(
+        X=hu.tensor(dtype=np.float32),
+        keepdims=st.booleans(),
+        num_axes=st.integers(1, 4),
+        **hu.gcs,
+    )
     def test_moments(self, X, keepdims, num_axes, gc, dc):
         self.run_moments_test(X, None, keepdims, gc, dc)
         num_dims = len(X.shape)

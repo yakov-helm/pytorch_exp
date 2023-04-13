@@ -2,15 +2,11 @@
 # Module caffe2.python.optimizer_context
 
 
-
-
-
 from caffe2.python import context
-from caffe2.python.modifier_context import (
-    ModifierContext, UseModifierBase)
+from caffe2.python.modifier_context import ModifierContext, UseModifierBase
 
 
-DEFAULT_OPTIM = 'DEFAULT'
+DEFAULT_OPTIM = "DEFAULT"
 
 
 class OptimizerContext(ModifierContext, context.DefaultManaged):
@@ -22,13 +18,12 @@ class OptimizerContext(ModifierContext, context.DefaultManaged):
         return self._has_modifier(name)
 
     def get_optimizer(self, name):
-        assert self.has_optimizer(name), (
-            "{} optimizer is not provided!".format(name))
+        assert self.has_optimizer(name), "{} optimizer is not provided!".format(name)
         return self._get_modifier(name)
 
 
 class UseOptimizer(UseModifierBase):
-    '''
+    """
     context class to allow setting the current context.
     Example usage with brew:
         - with UseOptimizer(optim):
@@ -48,6 +43,7 @@ class UseOptimizer(UseModifierBase):
         with Optimizers(optimizers):
             optim = OptimizerContext.current().get_optimizer('optim1')
             layer(optim=optim)
-    '''
+    """
+
     def _context_class(self):
         return OptimizerContext

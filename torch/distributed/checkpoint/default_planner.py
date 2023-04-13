@@ -80,9 +80,7 @@ class DefaultSavePlanner(SavePlanner):
         self.dedup_replicated_tensors = dedup_replicated_tensors
         self.mappings = {}
 
-    def set_up_planner(
-        self, state_dict: STATE_DICT_TYPE, is_coordinator: bool
-    ) -> None:
+    def set_up_planner(self, state_dict: STATE_DICT_TYPE, is_coordinator: bool) -> None:
         if self.flatten_state_dict:
             state_dict, self.mappings = flatten_state_dict(state_dict)
         if self.flatten_sharded_tensors:
@@ -91,9 +89,7 @@ class DefaultSavePlanner(SavePlanner):
         self.is_coordinator = is_coordinator
 
     def create_local_plan(self) -> SavePlan:
-        plan = create_default_local_save_plan(
-            self.state_dict, self.is_coordinator
-        )
+        plan = create_default_local_save_plan(self.state_dict, self.is_coordinator)
         if self.flatten_state_dict:
             plan = dataclasses.replace(plan, planner_data=self.mappings)
         self.plan = plan
@@ -115,9 +111,7 @@ class DefaultSavePlanner(SavePlanner):
             # )
             planner_data_dict = [p.planner_data for p in global_plan]
             merged_mappings = dict(ChainMap(*planner_data_dict))
-            metadata = dataclasses.replace(
-                metadata, planner_data=merged_mappings
-            )
+            metadata = dataclasses.replace(metadata, planner_data=merged_mappings)
 
         if not _validate_global_plan(global_plan, metadata):
             raise ValueError("Failed to validate global plan")
@@ -131,9 +125,7 @@ class DefaultSavePlanner(SavePlanner):
         self.plan = new_plan
         return new_plan
 
-    def resolve_data(
-        self, write_item: WriteItem
-    ) -> Union[torch.Tensor, io.BytesIO]:
+    def resolve_data(self, write_item: WriteItem) -> Union[torch.Tensor, io.BytesIO]:
         object = self.lookup_object(write_item.index)
         return self.transform_object(write_item, object)
 
@@ -231,9 +223,7 @@ class DefaultLoadPlanner(LoadPlanner):
         """
         This is an extension from the planner interface to make it easy to extend the default planner
         """
-        return narrow_tensor_by_index(
-            tensor, read_item.dest_offsets, read_item.lengths
-        )
+        return narrow_tensor_by_index(tensor, read_item.dest_offsets, read_item.lengths)
 
 
 def create_default_local_load_plan(
@@ -334,9 +324,7 @@ def create_default_global_save_plan(
                         ),
                     ),
                 )
-                new_index = dataclasses.replace(
-                    item.index, index=len(tensor_md.chunks)
-                )
+                new_index = dataclasses.replace(item.index, index=len(tensor_md.chunks))
                 new_item = dataclasses.replace(item, index=new_index)
                 new_items.append(new_item)
 
@@ -360,9 +348,7 @@ def _create_default_local_metadata(state_dict: STATE_DICT_TYPE) -> Metadata:
     return md
 
 
-def _check_box_overlap(
-    box0: ChunkStorageMetadata, box1: ChunkStorageMetadata
-) -> bool:
+def _check_box_overlap(box0: ChunkStorageMetadata, box1: ChunkStorageMetadata) -> bool:
     """
     Checks if two boxes overlap. Tuples are (offset, lengths)
     """
@@ -395,9 +381,7 @@ def _check_box_bounds(
     return True
 
 
-def _validate_global_plan(
-    global_plan: List[SavePlan], metadata: Metadata
-) -> bool:
+def _validate_global_plan(global_plan: List[SavePlan], metadata: Metadata) -> bool:
     all_good = True
     for key, value in metadata.state_dict_metadata.items():
         if isinstance(value, BytesStorageMetadata):
@@ -412,7 +396,10 @@ def _validate_global_plan(
                     """
                         key:%s has out of bounds chunk:
                         tensor-size:%s chunk: %s
-                    """, key, value.size, chunk0
+                    """,
+                    key,
+                    value.size,
+                    chunk0,
                 )
                 all_good = False
             chunks_volume += reduce(operator.mul, chunk0.sizes, 1)
@@ -432,7 +419,10 @@ def _validate_global_plan(
                 """
                     key:%s invalid fill tensor-volume:
                     %s chunks-volume: %s
-                """, key, tensor_volume, chunks_volume
+                """,
+                key,
+                tensor_volume,
+                chunks_volume,
             )
             all_good = False
 

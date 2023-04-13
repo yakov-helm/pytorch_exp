@@ -8,7 +8,7 @@ from torch.ao.quantization.fx.prepare import (
     _maybe_make_input_output_share_observers,
     _remove_output_observer,
     _maybe_insert_observers_before_graph_output,
-    _save_state
+    _save_state,
 )
 from torch.fx import GraphModule
 from torch.fx import Node
@@ -17,22 +17,21 @@ from torch.ao.quantization import QConfigMapping
 from torch.ao.quantization.fx.custom_config import PrepareCustomConfig
 from typing import Dict, Tuple
 
+
 def _maybe_insert_input_and_output_observers_for_node(
-    node: Node,
-    model: torch.fx.GraphModule
+    node: Node, model: torch.fx.GraphModule
 ):
-    this_node_dtype_info = node.meta["target_dtype_info"] if "target_dtype_info" in node.meta else None
+    this_node_dtype_info = (
+        node.meta["target_dtype_info"] if "target_dtype_info" in node.meta else None
+    )
     if "val" in node.meta:
-        output_is_a_tensor = (
-            this_node_dtype_info is not None and
-            isinstance(node.meta["val"], FakeTensor)
+        output_is_a_tensor = this_node_dtype_info is not None and isinstance(
+            node.meta["val"], FakeTensor
         )
     else:
         output_is_a_tensor = this_node_dtype_info is not None
 
-    skip_inserting_observers = (
-        not output_is_a_tensor
-    )
+    skip_inserting_observers = not output_is_a_tensor
 
     if skip_inserting_observers:
         return
@@ -51,7 +50,9 @@ def _maybe_insert_input_and_output_observers_for_node(
     )
 
     # this returns the new observer node if it was needed
-    maybe_output_obs_node = _maybe_insert_output_observer_for_node(node, model, named_modules, model.graph)
+    maybe_output_obs_node = _maybe_insert_output_observer_for_node(
+        node, model, named_modules, model.graph
+    )
 
     if maybe_output_obs_node is None:
         return
@@ -78,18 +79,24 @@ def _maybe_insert_input_and_output_observers_for_node(
     _is_observer_in_same_graph_ = _is_observer_in_same_graph(node, named_modules)
 
     # TODO: target_dtype_info rename
-    input_output_share_observers = node.meta["target_dtype_info"].get("input_output_share_observers", False)
-    reuse_input_obs_or_fq = node.meta["target_dtype_info"].get("reuse_input_obs_or_fq", False)
-    if (input_output_share_observers and _is_observer_in_same_graph_) or \
-       reuse_input_obs_or_fq:
+    input_output_share_observers = node.meta["target_dtype_info"].get(
+        "input_output_share_observers", False
+    )
+    reuse_input_obs_or_fq = node.meta["target_dtype_info"].get(
+        "reuse_input_obs_or_fq", False
+    )
+    if (
+        input_output_share_observers and _is_observer_in_same_graph_
+    ) or reuse_input_obs_or_fq:
         if not _maybe_make_input_output_share_observers(node, model, named_modules):
             _remove_output_observer(node, model, named_modules)
 
+
 def prepare(
-        model: GraphModule,
-        quantizer: Quantizer,
-        is_qat: bool,
-        node_name_to_scope: Dict[str, Tuple[str, type]],
+    model: GraphModule,
+    quantizer: Quantizer,
+    is_qat: bool,
+    node_name_to_scope: Dict[str, Tuple[str, type]],
 ) -> GraphModule:
     quantizer.annotate(model)
     quantizer.validate(model)
@@ -106,7 +113,9 @@ def prepare(
             _maybe_insert_input_and_output_observers_for_node(node, model)
         elif node.op == "output":
             named_modules = dict(model.named_modules(remove_duplicate=False))
-            _maybe_insert_observers_before_graph_output(node, model, named_modules, model.graph)
+            _maybe_insert_observers_before_graph_output(
+                node, model, named_modules, model.graph
+            )
 
     model = GraphModule(model, model.graph)
 
@@ -118,6 +127,6 @@ def prepare(
         {},  # equalization_node_name_to_qconfig
         QConfigMapping(),
         is_qat,
-        set()  # observed_node_names
+        set(),  # observed_node_names
     )
     return model

@@ -13,11 +13,16 @@ from torch.fx.passes.operator_support import OperatorSupport
 from torch.fx.passes.utils.fuser_utils import fuse_by_partitions
 from torch.fx.passes.utils.matcher_utils import SubgraphMatcher
 
-from torch.testing._internal.common_utils import run_tests, parametrize, instantiate_parametrized_tests
+from torch.testing._internal.common_utils import (
+    run_tests,
+    parametrize,
+    instantiate_parametrized_tests,
+)
 from torch.testing._internal.jit_utils import JitTestCase
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
+
 
 class TestModule(torch.nn.Module):
     def __init__(self):
@@ -43,6 +48,7 @@ class TestModule(torch.nn.Module):
         relu = add_6.relu()
 
         return add_4, add_6, relu
+
 
 class TestDeepModule(torch.nn.Module):
     def __init__(self):
@@ -227,50 +233,114 @@ class TestPartitionFunctions:
         a7 = torch.ops.aten.permute(a6, [1, 0])
         return a7 - 1.0
 
+
 # A mock OperatorSupport class, where only operator.add is supported
 class MockOperatorSupport(OperatorSupport):
     def is_node_supported(self, submodules, node: torch.fx.Node) -> bool:
-        return (node.op == "call_function" and
-                node.target in {operator.add, operator.getitem,
-                                torch.ops.aten.view,
-                                torch.ops.aten.permute,
-                                torch.ops.aten.std_mean})
+        return node.op == "call_function" and node.target in {
+            operator.add,
+            operator.getitem,
+            torch.ops.aten.view,
+            torch.ops.aten.permute,
+            torch.ops.aten.std_mean,
+        }
+
 
 @instantiate_parametrized_tests
 class TestFXGraphPasses(JitTestCase):
-
-    @parametrize("fn, expected_partition, bookend_non_compute_pass", [
-        (TestPartitionFunctions.forward1, [["add_7", "add_6"], ["add_5", "add_4", "add_3"], ["add_2", "add_1", "add"]], False),
-        (TestPartitionFunctions.forward2, [["add_3", "add_2"], ["add_1", "add"]], False),
-
-        # 1 horizontal fusion with common producer
-        (TestPartitionFunctions.forward3, [["add_2", "add_1", "add"]], False),
-        (TestPartitionFunctions.forward4, [["add_2", "add_1", "add"]], False),
-
-        # 2 branches cases
-        (TestPartitionFunctions.forward5, [["add_1", "add"]], False),
-        (TestPartitionFunctions.forward6, [["add"]], False),
-        (TestPartitionFunctions.forward7, [["add_3", "add_2", "add", "add_1"]], False),
-        (TestPartitionFunctions.forward8, [["add_3", "add_2", "add", "add_1"]], False),
-
-        # 3 branch cases
-        (TestPartitionFunctions.forward9, [['add_3', 'add_2', 'add_1', 'add']], False),
-        (TestPartitionFunctions.forward10, [['add_3', 'add_2', 'add', 'add_1']], False),
-        (TestPartitionFunctions.forward11, [['add_1'], ['add']], False),
-
-        # 4 not necessarily the only partition, just to verify that there's no cyclic dependency after partition
-        (TestPartitionFunctions.forward12, [["add_2"], ["add_3", "add_4", "add_1"], ["add"]], False),
-
-        # 5 getitem special case
-        (TestPartitionFunctions.forward13, [["add_2", "add_1", "add"]], False),
-        (TestPartitionFunctions.forward14, [["add", "std_mean", "getitem", "getitem_1"]], False),
-
-        # 6 bookend non_compute pass
-        (TestPartitionFunctions.forward15, [["permute_1", "add_1", "add"]], True),
-        (TestPartitionFunctions.forward15, [['add_1', 'add', 'permute_1', 'view', 'permute_2', 'permute_3', 'permute']], False),
-        (TestPartitionFunctions.forward16, [["permute_1", "add_1", "add"]], True),
-        (TestPartitionFunctions.forward16, [['add_1', 'add', 'permute_1', 'view', 'permute_2', 'permute_3', 'permute']], False),
-    ])
+    @parametrize(
+        "fn, expected_partition, bookend_non_compute_pass",
+        [
+            (
+                TestPartitionFunctions.forward1,
+                [
+                    ["add_7", "add_6"],
+                    ["add_5", "add_4", "add_3"],
+                    ["add_2", "add_1", "add"],
+                ],
+                False,
+            ),
+            (
+                TestPartitionFunctions.forward2,
+                [["add_3", "add_2"], ["add_1", "add"]],
+                False,
+            ),
+            # 1 horizontal fusion with common producer
+            (TestPartitionFunctions.forward3, [["add_2", "add_1", "add"]], False),
+            (TestPartitionFunctions.forward4, [["add_2", "add_1", "add"]], False),
+            # 2 branches cases
+            (TestPartitionFunctions.forward5, [["add_1", "add"]], False),
+            (TestPartitionFunctions.forward6, [["add"]], False),
+            (
+                TestPartitionFunctions.forward7,
+                [["add_3", "add_2", "add", "add_1"]],
+                False,
+            ),
+            (
+                TestPartitionFunctions.forward8,
+                [["add_3", "add_2", "add", "add_1"]],
+                False,
+            ),
+            # 3 branch cases
+            (
+                TestPartitionFunctions.forward9,
+                [["add_3", "add_2", "add_1", "add"]],
+                False,
+            ),
+            (
+                TestPartitionFunctions.forward10,
+                [["add_3", "add_2", "add", "add_1"]],
+                False,
+            ),
+            (TestPartitionFunctions.forward11, [["add_1"], ["add"]], False),
+            # 4 not necessarily the only partition, just to verify that there's no cyclic dependency after partition
+            (
+                TestPartitionFunctions.forward12,
+                [["add_2"], ["add_3", "add_4", "add_1"], ["add"]],
+                False,
+            ),
+            # 5 getitem special case
+            (TestPartitionFunctions.forward13, [["add_2", "add_1", "add"]], False),
+            (
+                TestPartitionFunctions.forward14,
+                [["add", "std_mean", "getitem", "getitem_1"]],
+                False,
+            ),
+            # 6 bookend non_compute pass
+            (TestPartitionFunctions.forward15, [["permute_1", "add_1", "add"]], True),
+            (
+                TestPartitionFunctions.forward15,
+                [
+                    [
+                        "add_1",
+                        "add",
+                        "permute_1",
+                        "view",
+                        "permute_2",
+                        "permute_3",
+                        "permute",
+                    ]
+                ],
+                False,
+            ),
+            (TestPartitionFunctions.forward16, [["permute_1", "add_1", "add"]], True),
+            (
+                TestPartitionFunctions.forward16,
+                [
+                    [
+                        "add_1",
+                        "add",
+                        "permute_1",
+                        "view",
+                        "permute_2",
+                        "permute_3",
+                        "permute",
+                    ]
+                ],
+                False,
+            ),
+        ],
+    )
     def test_partitioner(self, fn, expected_partition, bookend_non_compute_pass):
         traced = symbolic_trace(fn)
 
@@ -279,15 +349,19 @@ class TestFXGraphPasses(JitTestCase):
             non_compute_ops = ["torch.ops.aten.view", "torch.ops.aten.permute"]
 
         supported_ops = MockOperatorSupport()
-        partitioner = CapabilityBasedPartitioner(traced,
-                                                 supported_ops,
-                                                 allows_single_node_partition=True,
-                                                 non_compute_ops=non_compute_ops)
+        partitioner = CapabilityBasedPartitioner(
+            traced,
+            supported_ops,
+            allows_single_node_partition=True,
+            non_compute_ops=non_compute_ops,
+        )
         partitions = partitioner.propose_partitions()
         if bookend_non_compute_pass:
             partitioner.remove_bookend_non_compute_ops(partitions)
 
-        partitions_name = [[node.name for node in partition.nodes] for partition in partitions]
+        partitions_name = [
+            [node.name for node in partition.nodes] for partition in partitions
+        ]
         assert len(partitions_name) == len(expected_partition)
         for i in range(len(partitions_name)):
             assert set(partitions_name[i]) == set(expected_partition[i])
@@ -300,25 +374,47 @@ class TestFXGraphPasses(JitTestCase):
         result = fused_graph(a, b, c)
         torch.testing.assert_close(expected, result)
 
-    @parametrize("partition", [
-        [['add', 'add_1'], ['add_5', 'add_6']],
-        [['add', 'add_1', 'add_2']],  # vertical fusion
-        [['add_2', 'add_3']],         # horizontal fusion
-        [['add_3', 'add_4']],
-        [['add_6', 'add_5']],     # arbitray node order
-        [['add_4', 'add_1', 'add_3', 'add_2']],           # arbitray node order
-        [['add_5', 'add_6'], ['add_1', 'add_2', 'add_3', 'add_4']],  # arbitray partition order
-        [['add_5', 'linear2']],   # includes call_function + call_module node
-        [['add_6', 'relu']],   # includes call_function + call_module node
-        [['param', 'add_2']],   # includes get_attr + call_module nodes
-        [['param', 'add_1', 'linear']],   # includes get_attr + call_function + call_module nodes
-        [["add", "linear", "add_1", "param", "add_2", "add_3", "add_4", "linear2", "add_5", "add_6", "relu"]],  # full graph
-    ])
+    @parametrize(
+        "partition",
+        [
+            [["add", "add_1"], ["add_5", "add_6"]],
+            [["add", "add_1", "add_2"]],  # vertical fusion
+            [["add_2", "add_3"]],  # horizontal fusion
+            [["add_3", "add_4"]],
+            [["add_6", "add_5"]],  # arbitray node order
+            [["add_4", "add_1", "add_3", "add_2"]],  # arbitray node order
+            [
+                ["add_5", "add_6"],
+                ["add_1", "add_2", "add_3", "add_4"],
+            ],  # arbitray partition order
+            [["add_5", "linear2"]],  # includes call_function + call_module node
+            [["add_6", "relu"]],  # includes call_function + call_module node
+            [["param", "add_2"]],  # includes get_attr + call_module nodes
+            [
+                ["param", "add_1", "linear"]
+            ],  # includes get_attr + call_function + call_module nodes
+            [
+                [
+                    "add",
+                    "linear",
+                    "add_1",
+                    "param",
+                    "add_2",
+                    "add_3",
+                    "add_4",
+                    "linear2",
+                    "add_5",
+                    "add_6",
+                    "relu",
+                ]
+            ],  # full graph
+        ],
+    )
     def test_fuser_util(self, partition):
         m = TestModule()
         gm = symbolic_trace(m)
 
-        nodes_by_name = {node.name : node for node in gm.graph.nodes}
+        nodes_by_name = {node.name: node for node in gm.graph.nodes}
 
         partitions = []
         for node_names in partition:
@@ -333,17 +429,23 @@ class TestFXGraphPasses(JitTestCase):
 
         torch.testing.assert_close(expected, result)
 
-    @parametrize("partition", [
-        [['add', 'add_1'], ['add_1', 'add_5', 'add_6']],  # add_1 exists in multiple partitions
-        [['add', 'add_1', 'add_3']],    # invalid partition: circular dependency
-        [['add_4', 'add_5']],    # invalid partition: circular dependency
-        [['relu', 'add_5']],    # invalid partition: circular dependency
-    ])
+    @parametrize(
+        "partition",
+        [
+            [
+                ["add", "add_1"],
+                ["add_1", "add_5", "add_6"],
+            ],  # add_1 exists in multiple partitions
+            [["add", "add_1", "add_3"]],  # invalid partition: circular dependency
+            [["add_4", "add_5"]],  # invalid partition: circular dependency
+            [["relu", "add_5"]],  # invalid partition: circular dependency
+        ],
+    )
     def test_fuser_util_xfail(self, partition):
         m = TestModule()
         gm = symbolic_trace(m)
 
-        nodes_by_name = {node.name : node for node in gm.graph.nodes}
+        nodes_by_name = {node.name: node for node in gm.graph.nodes}
 
         partitions = []
         for node_names in partition:
@@ -357,10 +459,11 @@ class TestFXGraphPasses(JitTestCase):
         traced = symbolic_trace(m)
 
         supported_ops = MockOperatorSupport()
-        partitioner = CapabilityBasedPartitioner(traced,
-                                                 supported_ops,
-                                                 allows_single_node_partition=True)
+        partitioner = CapabilityBasedPartitioner(
+            traced, supported_ops, allows_single_node_partition=True
+        )
         partitions = partitioner.propose_partitions()
+
 
 @dataclass
 class TestCase:
@@ -368,6 +471,7 @@ class TestCase:
     match_placeholder: bool
     num_matches: int
     remove_overlapping_matches: bool = True
+
 
 class SingleNodePattern:
     @staticmethod
@@ -384,8 +488,10 @@ class SingleNodePattern:
         TestCase(False, False, 1),
         TestCase(True, False, 0),
         TestCase(False, True, 1),
-        TestCase(True, True, 0)
+        TestCase(True, True, 0),
     ]
+
+
 class SimplePattern:
     @staticmethod
     def forward(x, w1, w2):
@@ -403,8 +509,9 @@ class SimplePattern:
         TestCase(False, False, 3),
         TestCase(True, False, 0),
         TestCase(False, True, 2),
-        TestCase(True, True, 0)
+        TestCase(True, True, 0),
     ]
+
 
 class SimpleFullGraphMatching:
     @staticmethod
@@ -422,8 +529,9 @@ class SimpleFullGraphMatching:
         TestCase(False, False, 1),
         TestCase(True, False, 1),
         TestCase(False, True, 1),
-        TestCase(True, True, 1)
+        TestCase(True, True, 1),
     ]
+
 
 class DiamondShapePatternTestCase:
     @staticmethod
@@ -450,8 +558,9 @@ class DiamondShapePatternTestCase:
         TestCase(False, False, 1),
         TestCase(True, False, 1),
         TestCase(False, True, 0),
-        TestCase(True, True, 0)
+        TestCase(True, True, 0),
     ]
+
 
 class NonFullyContainedMatches:
     @staticmethod
@@ -460,7 +569,7 @@ class NonFullyContainedMatches:
         m1 = torch.cat([w1, w2])
         m2 = torch.cat([x, b2])
         t0 = torch.addmm(b1, m1, m2.t())
-        t0_sum = torch.sum(t0)   # use of t0 is not leaking
+        t0_sum = torch.sum(t0)  # use of t0 is not leaking
 
         # leaking matched subgraph, m3 is leaked
         m3 = torch.cat([w1, w2])
@@ -479,11 +588,10 @@ class NonFullyContainedMatches:
     test_cases = [
         # match_output, match_placeholder, num_matches
         TestCase(False, False, 1),
-
         TestCase(True, False, 0),
-
-        TestCase(False, True, 1),     # leaked used of placeholder is not leaking
+        TestCase(False, True, 1),  # leaked used of placeholder is not leaking
     ]
+
 
 class ChainRepeatedPattern:
     @staticmethod
@@ -503,8 +611,9 @@ class ChainRepeatedPattern:
         TestCase(False, False, 2, remove_overlapping_matches=True),
         TestCase(True, False, 1),
         TestCase(False, True, 1),
-        TestCase(True, True, 0)
+        TestCase(True, True, 0),
     ]
+
 
 class QuantizationModel:
     @staticmethod
@@ -527,8 +636,9 @@ class QuantizationModel:
         TestCase(False, False, 1),
         TestCase(True, False, 1),
         TestCase(False, True, 0),
-        TestCase(True, True, 0)
+        TestCase(True, True, 0),
     ]
+
 
 class MultipleOutputsWithDependency:
     @staticmethod
@@ -541,15 +651,16 @@ class MultipleOutputsWithDependency:
     def pattern(a):
         b = a.relu()
         c = b.sigmoid()
-        return b, c     # outputs have data dependency
+        return b, c  # outputs have data dependency
 
     test_cases = [
         # match_output, match_placeholder, num_matches
         TestCase(False, False, 1),
         TestCase(True, False, 0),
         TestCase(False, True, 1),
-        TestCase(True, True, 0)
+        TestCase(True, True, 0),
     ]
+
 
 class MultipleOutputsWithoutDependency:
     @staticmethod
@@ -576,8 +687,9 @@ class MultipleOutputsWithoutDependency:
         TestCase(False, False, 1),
         TestCase(True, False, 0),
         TestCase(False, True, 0),
-        TestCase(True, True, 0)
+        TestCase(True, True, 0),
     ]
+
 
 class MultipleOutputsMultipleOverlappingMatches:
     @staticmethod
@@ -606,6 +718,7 @@ class MultipleOutputsMultipleOverlappingMatches:
         TestCase(False, False, 1, remove_overlapping_matches=True),
     ]
 
+
 class MultipleOutputsMultipleNonOverlappingMatches:
     @staticmethod
     def forward(x):
@@ -633,6 +746,7 @@ class MultipleOutputsMultipleNonOverlappingMatches:
         # match_output, match_placeholder, num_matches
         TestCase(False, False, 1),
     ]
+
 
 class MultipleOutputsIdenticalAnchor:
     @staticmethod
@@ -684,8 +798,9 @@ class MultipleOutputsHorizontalPattern:
         TestCase(False, False, 1),
         TestCase(True, False, 1),
         TestCase(False, True, 0),
-        TestCase(True, True, 0)
+        TestCase(True, True, 0),
     ]
+
 
 class MultiOutputWithWithInvalidMatches:
     @staticmethod
@@ -709,12 +824,17 @@ class MultiOutputWithWithInvalidMatches:
         TestCase(False, True, 0),
     ]
 
+
 class QuantizationFp8Pattern:
     @classmethod
     def setup(cls):
         cls.quantization = torch.library.Library("fp8_quantization", "DEF")
-        cls.quantization.define("quantize_per_tensor_affine_fp8(Tensor self, int dtype, float scale) -> Tensor")
-        cls.quantization.define("dequantize_per_tensor_affine_fp8(Tensor self, int dtype, float scale) -> Tensor")
+        cls.quantization.define(
+            "quantize_per_tensor_affine_fp8(Tensor self, int dtype, float scale) -> Tensor"
+        )
+        cls.quantization.define(
+            "dequantize_per_tensor_affine_fp8(Tensor self, int dtype, float scale) -> Tensor"
+        )
 
     @classmethod
     def tearDown(cls):
@@ -724,15 +844,29 @@ class QuantizationFp8Pattern:
     def forward(self, arg0_1, arg1_1):
         qt = torch.ops.fp8_quantization
         _scale_0 = self._scale_0
-        quantize_per_tensor_affine_fp8 = qt.quantize_per_tensor_affine_fp8(arg0_1, 0, _scale_0)
-        dequantize_per_tensor_affine_fp8 = qt.dequantize_per_tensor_affine_fp8(quantize_per_tensor_affine_fp8, 0, _scale_0)
+        quantize_per_tensor_affine_fp8 = qt.quantize_per_tensor_affine_fp8(
+            arg0_1, 0, _scale_0
+        )
+        dequantize_per_tensor_affine_fp8 = qt.dequantize_per_tensor_affine_fp8(
+            quantize_per_tensor_affine_fp8, 0, _scale_0
+        )
         _scale_1 = self._scale_0
-        quantize_per_tensor_affine_fp8_1 = qt.quantize_per_tensor_affine_fp8(arg1_1, 0, _scale_1)
-        dequantize_per_tensor_affine_fp8_1 = qt.dequantize_per_tensor_affine_fp8(quantize_per_tensor_affine_fp8_1, 0, _scale_1)
-        add = torch.ops.aten.add.Tensor(dequantize_per_tensor_affine_fp8, dequantize_per_tensor_affine_fp8_1)
+        quantize_per_tensor_affine_fp8_1 = qt.quantize_per_tensor_affine_fp8(
+            arg1_1, 0, _scale_1
+        )
+        dequantize_per_tensor_affine_fp8_1 = qt.dequantize_per_tensor_affine_fp8(
+            quantize_per_tensor_affine_fp8_1, 0, _scale_1
+        )
+        add = torch.ops.aten.add.Tensor(
+            dequantize_per_tensor_affine_fp8, dequantize_per_tensor_affine_fp8_1
+        )
         _scale_2 = self._scale_0
-        quantize_per_tensor_affine_fp8_2 = qt.quantize_per_tensor_affine_fp8(add, 0, _scale_2)
-        dequantize_per_tensor_affine_fp8_2 = qt.dequantize_per_tensor_affine_fp8(quantize_per_tensor_affine_fp8_2, 0, _scale_2)
+        quantize_per_tensor_affine_fp8_2 = qt.quantize_per_tensor_affine_fp8(
+            add, 0, _scale_2
+        )
+        dequantize_per_tensor_affine_fp8_2 = qt.dequantize_per_tensor_affine_fp8(
+            quantize_per_tensor_affine_fp8_2, 0, _scale_2
+        )
         return dequantize_per_tensor_affine_fp8_2
 
     @staticmethod
@@ -752,6 +886,7 @@ class QuantizationFp8Pattern:
         TestCase(False, False, 1),
     ]
 
+
 class NoAnchorFound:
     # This test case is for pattern where no matching anchor is found in the target graph
     # `anchor` is the starting point of the pattern matching, it's usually the boundary returning nodes
@@ -770,30 +905,33 @@ class NoAnchorFound:
         TestCase(False, False, 0),
         TestCase(True, False, 0),
         TestCase(False, True, 0),
-        TestCase(True, True, 0)
+        TestCase(True, True, 0),
     ]
+
 
 @instantiate_parametrized_tests
 class TestFXMatcherUtils(JitTestCase):
-
-    @parametrize("test_model", [
-        SingleNodePattern,
-        SimplePattern,
-        SimpleFullGraphMatching,
-        DiamondShapePatternTestCase,
-        NonFullyContainedMatches,
-        ChainRepeatedPattern,
-        QuantizationModel,
-        MultipleOutputsWithDependency,
-        MultipleOutputsWithoutDependency,
-        MultipleOutputsMultipleOverlappingMatches,
-        MultipleOutputsMultipleNonOverlappingMatches,
-        MultipleOutputsIdenticalAnchor,
-        MultipleOutputsHorizontalPattern,
-        MultiOutputWithWithInvalidMatches,
-        QuantizationFp8Pattern,
-        NoAnchorFound,
-    ])
+    @parametrize(
+        "test_model",
+        [
+            SingleNodePattern,
+            SimplePattern,
+            SimpleFullGraphMatching,
+            DiamondShapePatternTestCase,
+            NonFullyContainedMatches,
+            ChainRepeatedPattern,
+            QuantizationModel,
+            MultipleOutputsWithDependency,
+            MultipleOutputsWithoutDependency,
+            MultipleOutputsMultipleOverlappingMatches,
+            MultipleOutputsMultipleNonOverlappingMatches,
+            MultipleOutputsIdenticalAnchor,
+            MultipleOutputsHorizontalPattern,
+            MultiOutputWithWithInvalidMatches,
+            QuantizationFp8Pattern,
+            NoAnchorFound,
+        ],
+    )
     def test_subgraph_matcher(self, test_model):
 
         setup = getattr(test_model, "setup", None)
@@ -805,10 +943,12 @@ class TestFXMatcherUtils(JitTestCase):
 
         for test_case in test_model.test_cases:
 
-            matcher = SubgraphMatcher(pattern_traced.graph,
-                                      match_output=test_case.match_output,
-                                      match_placeholder=test_case.match_placeholder,
-                                      remove_overlapping_matches=test_case.remove_overlapping_matches)
+            matcher = SubgraphMatcher(
+                pattern_traced.graph,
+                match_output=test_case.match_output,
+                match_placeholder=test_case.match_placeholder,
+                remove_overlapping_matches=test_case.remove_overlapping_matches,
+            )
             matches = matcher.match(traced.graph)
 
             assert len(matches) == test_case.num_matches

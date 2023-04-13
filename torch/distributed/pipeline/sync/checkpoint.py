@@ -36,7 +36,7 @@ from typing import (
     Protocol,
     Union,
     Sequence,
-    Tuple
+    Tuple,
 )
 
 import torch
@@ -47,9 +47,21 @@ from .dependency import fork, join
 from .microbatch import Batch
 from .phony import get_phony
 
-__all__ = ["Function", "checkpoint", "Checkpointing", "ThreadLocal", "enable_checkpointing",
-           "enable_recomputing", "is_checkpointing", "is_recomputing", "Context", "save_rng_states",
-           "restore_rng_states", "Checkpoint", "Recompute"]
+__all__ = [
+    "Function",
+    "checkpoint",
+    "Checkpointing",
+    "ThreadLocal",
+    "enable_checkpointing",
+    "enable_recomputing",
+    "is_checkpointing",
+    "is_recomputing",
+    "Context",
+    "save_rng_states",
+    "restore_rng_states",
+    "Checkpoint",
+    "Recompute",
+]
 
 
 Tensors = Sequence[Tensor]
@@ -103,11 +115,25 @@ class Checkpointing:
         # require grad.
         phony = get_phony(self.batch.get_device(), requires_grad=True)
 
-        output = Checkpoint.apply(phony, self.recomputed, self.rng_states, self.function, input_atomic, *inputs)
+        output = Checkpoint.apply(
+            phony,
+            self.recomputed,
+            self.rng_states,
+            self.function,
+            input_atomic,
+            *inputs,
+        )
 
         # Gradients are only supported for float Tensors.
         if isinstance(output, tuple):
-            output = tuple([x.detach() if torch.is_tensor(x) and not x.is_floating_point() else x for x in output])
+            output = tuple(
+                [
+                    x.detach()
+                    if torch.is_tensor(x) and not x.is_floating_point()
+                    else x
+                    for x in output
+                ]
+            )
 
         return Batch(output)
 
@@ -121,7 +147,14 @@ class Checkpointing:
         # batch[tensor_idx] is always requiring grad, because it has been passed
         # checkpoint with a phony requiring grad.
         batch[tensor_idx], phony = fork(batch[tensor_idx])
-        phony = Recompute.apply(phony, self.recomputed, self.rng_states, self.function, input_atomic, *inputs)
+        phony = Recompute.apply(
+            phony,
+            self.recomputed,
+            self.rng_states,
+            self.function,
+            input_atomic,
+            *inputs,
+        )
         batch[tensor_idx] = join(batch[tensor_idx], phony)
 
 
@@ -207,7 +240,10 @@ class Context:
         pass
 
 
-def save_rng_states(device: torch.device, rng_states: Deque[RNGStates],) -> None:
+def save_rng_states(
+    device: torch.device,
+    rng_states: Deque[RNGStates],
+) -> None:
     """:meth:`Checkpoint.forward` captures the current PyTorch's random number
     generator states at CPU and GPU to reuse in :meth:`Recompute.backward`.
 
@@ -226,7 +262,10 @@ def save_rng_states(device: torch.device, rng_states: Deque[RNGStates],) -> None
 
 
 @contextmanager
-def restore_rng_states(device: torch.device, rng_states: Deque[RNGStates],) -> Generator[None, None, None]:
+def restore_rng_states(
+    device: torch.device,
+    rng_states: Deque[RNGStates],
+) -> Generator[None, None, None]:
     """:meth:`Recompute.backward` restores the random number generator states
     captured by :func:`save_rng_states` within its context.
 
@@ -284,7 +323,10 @@ class Checkpoint(torch.autograd.Function):
         return output
 
     @staticmethod
-    def backward(ctx: Context, *grad_output: Tensor,) -> Tuple[Optional[Tensor], ...]:  # pragma: no cover
+    def backward(
+        ctx: Context,
+        *grad_output: Tensor,
+    ) -> Tuple[Optional[Tensor], ...]:  # pragma: no cover
         output, input_leaf = ctx.recomputed.pop()
 
         if isinstance(output, tuple):
@@ -292,7 +334,9 @@ class Checkpoint(torch.autograd.Function):
         else:
             outputs = (output,)
         if any(torch.is_tensor(y) and y.requires_grad for y in outputs):
-            tensors = tuple([x for x in outputs if torch.is_tensor(x) and x.requires_grad])
+            tensors = tuple(
+                [x for x in outputs if torch.is_tensor(x) and x.requires_grad]
+            )
             torch.autograd.backward(tensors, grad_output)
 
         grad_input: List[Optional[Tensor]] = [None, None, None, None, None]
@@ -330,9 +374,14 @@ class Recompute(torch.autograd.Function):
         return phony
 
     @staticmethod
-    def backward(ctx: Context, *grad_output: Tensor) -> Tuple[None, ...]:  # pragma: no cover
+    def backward(
+        ctx: Context, *grad_output: Tensor
+    ) -> Tuple[None, ...]:  # pragma: no cover
         inputs = ctx.inputs
-        inputs_leaf = tuple(x.detach().requires_grad_(x.requires_grad) if torch.is_tensor(x) else x for x in inputs)
+        inputs_leaf = tuple(
+            x.detach().requires_grad_(x.requires_grad) if torch.is_tensor(x) else x
+            for x in inputs
+        )
 
         # Get the device for the inputs from a tensor
         device = None
@@ -342,7 +391,7 @@ class Recompute(torch.autograd.Function):
                 break
 
         if device is None:
-            raise RuntimeError(f'No tensors found in {inputs}')
+            raise RuntimeError(f"No tensors found in {inputs}")
 
         with restore_rng_states(device, ctx.rng_states):
             with torch.enable_grad(), enable_recomputing():

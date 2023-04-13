@@ -7,8 +7,10 @@ from torch.utils.data.datapipes._decorator import functional_datapipe
 from torch.utils.data._utils.collate import default_collate
 from torch.utils.data.datapipes.dataframe import dataframe_wrapper as df_wrapper
 from torch.utils.data.datapipes.datapipe import IterDataPipe
-from torch.utils.data.datapipes.utils.common import (_check_unpickable_fn,
-                                                     validate_input_col)
+from torch.utils.data.datapipes.utils.common import (
+    _check_unpickable_fn,
+    validate_input_col,
+)
 
 __all__ = [
     "CollatorIterDataPipe",
@@ -147,15 +149,18 @@ def _collate_helper(conversion, item):
     for name in columns_name:
         if name in conversion:
             if not callable(conversion[name]):
-                raise Exception('Collate (DF)DataPipe requires callable as dict values')
+                raise Exception("Collate (DF)DataPipe requires callable as dict values")
             collation_fn = conversion[name]
         else:
             # TODO(VitalyFedyunin): Add default collation into df_wrapper
             try:
                 import torcharrow.pytorch as tap  # type: ignore[import]
+
                 collation_fn = tap.rec.Default()
             except Exception as e:
-                raise Exception("unable to import default collation function from the TorchArrow") from e
+                raise Exception(
+                    "unable to import default collation function from the TorchArrow"
+                ) from e
 
         tuple_names.append(str(name))
         value = collation_fn(df[name])
@@ -215,8 +220,8 @@ class CollatorIterDataPipe(MapperIterDataPipe):
         datapipe: IterDataPipe,
         conversion: Optional[
             Union[
-            Callable[..., Any],
-            Dict[Union[str, Any], Union[Callable, Any]],
+                Callable[..., Any],
+                Dict[Union[str, Any], Union[Callable, Any]],
             ]
         ] = default_collate,
         collate_fn: Optional[Callable] = None,

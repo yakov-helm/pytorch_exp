@@ -17,14 +17,11 @@
 # Module caffe2.experiments.python.SparseTransformer
 
 
-
-
 from caffe2.python import workspace
 import scipy.sparse
 
 
-class NetDefNode():
-
+class NetDefNode:
     def __init__(self, name, optype, p=None, op=None):
         self.name = name
         self.optype = optype
@@ -80,7 +77,7 @@ def transFCRelu(cur, id2node, name2id, ops, model):
     # Create a node /op and insert it.
     # TODO(wyiming): check whether it is correct here
     current_blob = model.Transpose(cur.op.input[0], cur.op.input[0] + "_trans")
-#     print model.net.Proto()
+    #     print model.net.Proto()
     trans_op = model.net.Proto().op[-1]
     trans_node = NetDefNode(trans_op.output[0], "Transpose", pre, trans_op)
     trans_node.visited = True
@@ -100,21 +97,20 @@ def transFCRelu(cur, id2node, name2id, ops, model):
             wcsr, iw, jw = maskNallocate(op.input[1])
             bias_name = op.input[3]
             # TODO(wyiming): create a new Op here
-            current_blob = model.FC_Sparse(current_blob,
-                                           cur.op.output[0] + "_Sparse",
-                                           wcsr, iw, jw, bias_name)
+            current_blob = model.FC_Sparse(
+                current_blob, cur.op.output[0] + "_Sparse", wcsr, iw, jw, bias_name
+            )
             sps_op = model.net.Proto().op[-1]
-            sps_node = NetDefNode(cur.op.output[0] + "_Sparse",
-                                  "FC_Sparse",
-                                  pre_new, sps_op)
+            sps_node = NetDefNode(
+                cur.op.output[0] + "_Sparse", "FC_Sparse", pre_new, sps_op
+            )
             sps_node.visited = True
             pre_new = sps_node
         if cur.optype == "Relu":
             op = cur.op
             current_blob = model.Relu(current_blob, current_blob)
             rel_op = model.net.Proto().op[-1]
-            rel_node = NetDefNode(str(current_blob), "Relu",
-                                  pre_new, rel_op)
+            rel_node = NetDefNode(str(current_blob), "Relu", pre_new, rel_op)
             rel_node.visited = True
             pre_new = rel_node
 
@@ -182,8 +178,11 @@ def netbuilder(model):
     for op_id, op in enumerate(proto.op):
         if op.type == "Print":
             continue
-        op_name = '%s/%s (op#%d)' % (op.name, op.type, op_id) \
-                  if op.name else '%s (op#%d)' % (op.type, op_id)
+        op_name = (
+            "%s/%s (op#%d)" % (op.name, op.type, op_id)
+            if op.name
+            else "%s (op#%d)" % (op.type, op_id)
+        )
         # print(op_name)
         op_node = NetDefNode(op_name, op.type, op=op)
         net_id2node[op_id] = op_node

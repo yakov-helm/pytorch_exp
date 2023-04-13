@@ -1,5 +1,3 @@
-
-
 import collections
 
 import caffe2.python.hypothesis_test_util as hu
@@ -35,7 +33,7 @@ class GroupWiseDNNLowPOpConvTest(hu.HypothesisTestCase):
         prepack_weight=st.booleans(),
         preserve_activation_sparsity=st.booleans(),
         preserve_weight_sparsity=st.booleans(),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(max_examples=10, deadline=None)
     def test_groupwise_dnnlowp_conv_int(
@@ -184,7 +182,7 @@ class GroupWiseDNNLowPOpConvTest(hu.HypothesisTestCase):
         output_channels_per_group=st.integers(2, 16),
         batch_size=st.integers(0, 3),
         order=st.sampled_from(["NCHW", "NHWC"]),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(max_examples=10, deadline=None)
     def test_groupwise_dnnlowp_conv_relu_int(

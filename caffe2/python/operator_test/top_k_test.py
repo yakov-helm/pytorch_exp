@@ -1,8 +1,3 @@
-
-
-
-
-
 import hypothesis.strategies as st
 import numpy as np
 
@@ -13,7 +8,6 @@ import caffe2.python.serialized_test.serialized_test_util as serial
 
 
 class TestTopK(serial.SerializedTestCase):
-
     def top_k_ref(self, X, k, flatten_indices, axis=-1):
         in_dims = X.shape
         out_dims = list(in_dims)
@@ -30,14 +24,13 @@ class TestTopK(serial.SerializedTestCase):
         n = in_dims[axis]
         X_flat = X.reshape((prev_dims, n, next_dims))
 
-        values_ref = np.ndarray(
-            shape=(prev_dims, k, next_dims), dtype=np.float32)
+        values_ref = np.ndarray(shape=(prev_dims, k, next_dims), dtype=np.float32)
         values_ref.fill(0)
-        indices_ref = np.ndarray(
-            shape=(prev_dims, k, next_dims), dtype=np.int64)
+        indices_ref = np.ndarray(shape=(prev_dims, k, next_dims), dtype=np.int64)
         indices_ref.fill(-1)
         flatten_indices_ref = np.ndarray(
-            shape=(prev_dims, k, next_dims), dtype=np.int64)
+            shape=(prev_dims, k, next_dims), dtype=np.int64
+        )
         flatten_indices_ref.fill(-1)
         for i in range(prev_dims):
             for j in range(next_dims):
@@ -47,8 +40,7 @@ class TestTopK(serial.SerializedTestCase):
                     y = x * next_dims + i * in_dims[axis] * next_dims + j
                     kv.append((val, x, y))
                 cnt = 0
-                for val, x, y in sorted(
-                        kv, key=lambda x: (x[0], -x[1]), reverse=True):
+                for val, x, y in sorted(kv, key=lambda x: (x[0], -x[1]), reverse=True):
                     values_ref[i, cnt, j] = val
                     indices_ref[i, cnt, j] = x
                     flatten_indices_ref[i, cnt, j] = y
@@ -66,10 +58,7 @@ class TestTopK(serial.SerializedTestCase):
             return (values_ref, indices_ref)
 
     @serial.given(
-        X=hu.tensor(),
-        flatten_indices=st.booleans(),
-        seed=st.integers(0, 10),
-        **hu.gcs
+        X=hu.tensor(), flatten_indices=st.booleans(), seed=st.integers(0, 10), **hu.gcs
     )
     def test_top_k(self, X, flatten_indices, seed, gc, dc):
         X = X.astype(dtype=np.float32)
@@ -80,8 +69,7 @@ class TestTopK(serial.SerializedTestCase):
         output_list = ["Values", "Indices"]
         if flatten_indices:
             output_list.append("FlattenIndices")
-        op = core.CreateOperator("TopK", ["X"], output_list,
-                                 k=k, device_option=gc)
+        op = core.CreateOperator("TopK", ["X"], output_list, k=k, device_option=gc)
 
         def bind_ref(X_loc):
             return self.top_k_ref(X_loc, k, flatten_indices)
@@ -89,15 +77,19 @@ class TestTopK(serial.SerializedTestCase):
         self.assertReferenceChecks(gc, op, [X], bind_ref)
         self.assertDeviceChecks(dc, op, [X], [0])
 
-    @given(bs=st.integers(1, 3), n=st.integers(1, 1), k=st.integers(1, 1),
-           flatten_indices=st.booleans(), **hu.gcs)
+    @given(
+        bs=st.integers(1, 3),
+        n=st.integers(1, 1),
+        k=st.integers(1, 1),
+        flatten_indices=st.booleans(),
+        **hu.gcs,
+    )
     def test_top_k_1(self, bs, n, k, flatten_indices, gc, dc):
         X = np.random.rand(bs, n).astype(dtype=np.float32)
         output_list = ["Values", "Indices"]
         if flatten_indices:
             output_list.append("FlattenIndices")
-        op = core.CreateOperator("TopK", ["X"], output_list,
-                                 k=k, device_option=gc)
+        op = core.CreateOperator("TopK", ["X"], output_list, k=k, device_option=gc)
 
         def bind_ref(X_loc):
             return self.top_k_ref(X_loc, k, flatten_indices)
@@ -105,16 +97,20 @@ class TestTopK(serial.SerializedTestCase):
         self.assertReferenceChecks(gc, op, [X], bind_ref)
         self.assertDeviceChecks(dc, op, [X], [0])
 
-    @given(bs=st.integers(1, 3), n=st.integers(1, 10000), k=st.integers(1, 1),
-           flatten_indices=st.booleans(), **hu.gcs)
+    @given(
+        bs=st.integers(1, 3),
+        n=st.integers(1, 10000),
+        k=st.integers(1, 1),
+        flatten_indices=st.booleans(),
+        **hu.gcs,
+    )
     def test_top_k_2(self, bs, n, k, flatten_indices, gc, dc):
         X = np.random.rand(bs, n).astype(dtype=np.float32)
 
         output_list = ["Values", "Indices"]
         if flatten_indices:
             output_list.append("FlattenIndices")
-        op = core.CreateOperator("TopK", ["X"], output_list,
-                                 k=k, device_option=gc)
+        op = core.CreateOperator("TopK", ["X"], output_list, k=k, device_option=gc)
 
         def bind_ref(X_loc):
             return self.top_k_ref(X_loc, k, flatten_indices)
@@ -122,15 +118,19 @@ class TestTopK(serial.SerializedTestCase):
         self.assertReferenceChecks(gc, op, [X], bind_ref)
         self.assertDeviceChecks(dc, op, [X], [0])
 
-    @given(bs=st.integers(1, 3), n=st.integers(1, 10000),
-           k=st.integers(1, 1024), flatten_indices=st.booleans(), **hu.gcs)
+    @given(
+        bs=st.integers(1, 3),
+        n=st.integers(1, 10000),
+        k=st.integers(1, 1024),
+        flatten_indices=st.booleans(),
+        **hu.gcs,
+    )
     def test_top_k_3(self, bs, n, k, flatten_indices, gc, dc):
         X = np.random.rand(bs, n).astype(dtype=np.float32)
         output_list = ["Values", "Indices"]
         if flatten_indices:
             output_list.append("FlattenIndices")
-        op = core.CreateOperator("TopK", ["X"], output_list,
-                                 k=k, device_option=gc)
+        op = core.CreateOperator("TopK", ["X"], output_list, k=k, device_option=gc)
 
         def bind_ref(X_loc):
             return self.top_k_ref(X_loc, k, flatten_indices)
@@ -138,8 +138,12 @@ class TestTopK(serial.SerializedTestCase):
         self.assertReferenceChecks(gc, op, [X], bind_ref)
         self.assertDeviceChecks(dc, op, [X], [0])
 
-    @given(bs=st.integers(1, 3), n=st.integers(100, 10000),
-           flatten_indices=st.booleans(), **hu.gcs)
+    @given(
+        bs=st.integers(1, 3),
+        n=st.integers(100, 10000),
+        flatten_indices=st.booleans(),
+        **hu.gcs,
+    )
     @settings(deadline=10000)
     def test_top_k_4(self, bs, n, flatten_indices, gc, dc):
         k = np.random.randint(n // 3, 3 * n // 4)
@@ -148,8 +152,7 @@ class TestTopK(serial.SerializedTestCase):
         output_list = ["Values", "Indices"]
         if flatten_indices:
             output_list.append("FlattenIndices")
-        op = core.CreateOperator("TopK", ["X"], output_list,
-                                 k=k, device_option=gc)
+        op = core.CreateOperator("TopK", ["X"], output_list, k=k, device_option=gc)
 
         def bind_ref(X_loc):
             return self.top_k_ref(X_loc, k, flatten_indices)
@@ -157,8 +160,12 @@ class TestTopK(serial.SerializedTestCase):
         self.assertReferenceChecks(gc, op, [X], bind_ref)
         self.assertDeviceChecks(dc, op, [X], [0])
 
-    @given(bs=st.integers(1, 3), n=st.integers(1, 1024),
-           flatten_indices=st.booleans(), **hu.gcs)
+    @given(
+        bs=st.integers(1, 3),
+        n=st.integers(1, 1024),
+        flatten_indices=st.booleans(),
+        **hu.gcs,
+    )
     def test_top_k_5(self, bs, n, flatten_indices, gc, dc):
         k = n
         X = np.random.rand(bs, n).astype(dtype=np.float32)
@@ -166,8 +173,7 @@ class TestTopK(serial.SerializedTestCase):
         output_list = ["Values", "Indices"]
         if flatten_indices:
             output_list.append("FlattenIndices")
-        op = core.CreateOperator("TopK", ["X"], output_list,
-                                 k=k, device_option=gc)
+        op = core.CreateOperator("TopK", ["X"], output_list, k=k, device_option=gc)
 
         def bind_ref(X_loc):
             return self.top_k_ref(X_loc, k, flatten_indices)
@@ -175,8 +181,12 @@ class TestTopK(serial.SerializedTestCase):
         self.assertReferenceChecks(gc, op, [X], bind_ref)
         self.assertDeviceChecks(dc, op, [X], [0])
 
-    @given(bs=st.integers(1, 3), n=st.integers(1, 5000),
-           flatten_indices=st.booleans(), **hu.gcs)
+    @given(
+        bs=st.integers(1, 3),
+        n=st.integers(1, 5000),
+        flatten_indices=st.booleans(),
+        **hu.gcs,
+    )
     @settings(deadline=10000)
     def test_top_k_6(self, bs, n, flatten_indices, gc, dc):
         k = n
@@ -185,8 +195,7 @@ class TestTopK(serial.SerializedTestCase):
         output_list = ["Values", "Indices"]
         if flatten_indices:
             output_list.append("FlattenIndices")
-        op = core.CreateOperator("TopK", ["X"], output_list,
-                                 k=k, device_option=gc)
+        op = core.CreateOperator("TopK", ["X"], output_list, k=k, device_option=gc)
 
         def bind_ref(X_loc):
             return self.top_k_ref(X_loc, k, flatten_indices)
@@ -194,9 +203,13 @@ class TestTopK(serial.SerializedTestCase):
         self.assertReferenceChecks(gc, op, [X], bind_ref)
         self.assertDeviceChecks(dc, op, [X], [0])
 
-    @given(X=hu.tensor(dtype=np.float32), k=st.integers(1, 5),
-           axis=st.integers(-1, 5), flatten_indices=st.booleans(),
-           **hu.gcs)
+    @given(
+        X=hu.tensor(dtype=np.float32),
+        k=st.integers(1, 5),
+        axis=st.integers(-1, 5),
+        flatten_indices=st.booleans(),
+        **hu.gcs,
+    )
     def test_top_k_axis(self, X, k, axis, flatten_indices, gc, dc):
         dims = X.shape
         if axis >= len(dims):
@@ -206,7 +219,8 @@ class TestTopK(serial.SerializedTestCase):
         if flatten_indices:
             output_list.append("FlattenIndices")
         op = core.CreateOperator(
-            "TopK", ["X"], output_list, k=k, axis=axis, device_option=gc)
+            "TopK", ["X"], output_list, k=k, axis=axis, device_option=gc
+        )
 
         def bind_ref(X_loc):
             return self.top_k_ref(X_loc, k, flatten_indices, axis)
@@ -214,8 +228,12 @@ class TestTopK(serial.SerializedTestCase):
         self.assertReferenceChecks(gc, op, [X], bind_ref)
         self.assertDeviceChecks(dc, op, [X], [0])
 
-    @given(X=hu.tensor(dtype=np.float32), k=st.integers(1, 5),
-           axis=st.integers(-1, 5), **hu.gcs)
+    @given(
+        X=hu.tensor(dtype=np.float32),
+        k=st.integers(1, 5),
+        axis=st.integers(-1, 5),
+        **hu.gcs,
+    )
     @settings(deadline=10000)
     def test_top_k_grad(self, X, k, axis, gc, dc):
         dims = X.shape
@@ -240,7 +258,7 @@ class TestTopK(serial.SerializedTestCase):
         X = X_flat.reshape(dims)
 
         op = core.CreateOperator(
-            "TopK", ["X"], ["Values", "Indices"], k=k, axis=axis,
-            device_option=gc)
+            "TopK", ["X"], ["Values", "Indices"], k=k, axis=axis, device_option=gc
+        )
 
         self.assertGradientChecks(gc, op, [X], 0, [0], stepsize=0.05)

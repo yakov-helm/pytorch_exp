@@ -1,8 +1,3 @@
-
-
-
-
-
 from hypothesis import given, settings
 import numpy as np
 
@@ -17,18 +12,17 @@ class TestEnforceFinite(hu.HypothesisTestCase):
             min_value=0,
             elements=hu.floats(allow_nan=True, allow_infinity=True),
         ),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=10000)
     def test_enforce_finite(self, X, gc, dc):
-
         def all_finite_value(X):
             if X.size <= 0:
                 return True
 
             return np.isfinite(X).all()
 
-        net = core.Net('test_net')
+        net = core.Net("test_net")
         net.Const(array=X, blob_out="X")
         net.EnforceFinite("X", [])
 
@@ -40,9 +34,11 @@ class TestEnforceFinite(hu.HypothesisTestCase):
 
     @given(
         X=hu.tensor(
-            elements=hu.floats(min_value=0, max_value=10, allow_nan=False, allow_infinity=False),
+            elements=hu.floats(
+                min_value=0, max_value=10, allow_nan=False, allow_infinity=False
+            ),
         ),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_enforce_finite_device_check(self, X, gc, dc):
         op = core.CreateOperator(

@@ -21,7 +21,7 @@ xml_key = StashKey["LogXMLReruns"]()
 
 
 def pytest_addoption(parser: Parser) -> None:
-    parser.addoption("--use-main-module", action='store_true')
+    parser.addoption("--use-main-module", action="store_true")
     group = parser.getgroup("terminal reporting")
     group.addoption(
         "--junit-xml-reruns",
@@ -177,7 +177,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
 def pytest_pycollect_makemodule(module_path, path, parent) -> Module:
     if parent.config.getoption("--use-main-module"):
         mod = Module.from_parent(parent, path=module_path)
-        mod._getobj = MethodType(lambda x: sys.modules['__main__'], mod)
+        mod._getobj = MethodType(lambda x: sys.modules["__main__"], mod)
         return mod
 
 

@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core, workspace
 
 import caffe2.python.hypothesis_test_util as hu
@@ -12,13 +7,22 @@ import numpy as np
 
 
 class TestScaleOps(serial.SerializedTestCase):
-    @serial.given(dim=st.sampled_from([[1, 386, 1], [386, 1, 1],
-                                       [1, 256, 1], [256, 1, 1],
-                                       [1024, 256, 1], [1, 1024, 1],
-                                       [1, 1, 1]]),
-                    scale=st.floats(0.0, 10.0),
-                    num_tensors=st.integers(1, 10),
-                    **hu.gcs)
+    @serial.given(
+        dim=st.sampled_from(
+            [
+                [1, 386, 1],
+                [386, 1, 1],
+                [1, 256, 1],
+                [256, 1, 1],
+                [1024, 256, 1],
+                [1, 1024, 1],
+                [1, 1, 1],
+            ]
+        ),
+        scale=st.floats(0.0, 10.0),
+        num_tensors=st.integers(1, 10),
+        **hu.gcs,
+    )
     def test_scale_ops(self, dim, scale, num_tensors, gc, dc):
         in_tensors = []
         in_tensor_ps = []
@@ -60,7 +64,8 @@ class TestScaleOps(serial.SerializedTestCase):
             o = workspace.FetchBlob(out_tensors[i])
             np.testing.assert_allclose(o, o_ref)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import unittest
 
     unittest.main()

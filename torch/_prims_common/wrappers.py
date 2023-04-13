@@ -16,21 +16,26 @@ from functools import wraps
 import warnings
 from itertools import chain
 
+
 @overload
 def _maybe_convert_to_dtype(a: TensorLikeType, dtype: torch.dtype) -> TensorLikeType:
     pass
+
 
 @overload
 def _maybe_convert_to_dtype(a: NumberType, dtype: torch.dtype) -> NumberType:
     pass
 
+
 @overload
 def _maybe_convert_to_dtype(a: Sequence, dtype: torch.dtype) -> Sequence:
     pass
 
+
 @overload
 def _maybe_convert_to_dtype(a: None, dtype: torch.dtype) -> None:
     pass
+
 
 # TODO: implement ref.cast with an option to enforce safe casting
 def _maybe_convert_to_dtype(a, dtype):
@@ -286,7 +291,9 @@ def backwards_not_supported(prim):
     def redispatch_prim(args, kwargs):
         g = torch._C._AutoDispatchBelowAutograd()
         try:
-            old = torch._C._dispatch_tls_is_dispatch_key_excluded(torch._C.DispatchKey.ADInplaceOrView)
+            old = torch._C._dispatch_tls_is_dispatch_key_excluded(
+                torch._C.DispatchKey.ADInplaceOrView
+            )
             return prim(*args, **kwargs)
         finally:
             del g
@@ -304,7 +311,9 @@ def backwards_not_supported(prim):
     @wraps(prim)
     def _autograd_impl(*args, **kwargs):
         flat_args, args_spec = tree_flatten((args, kwargs))
-        if torch.is_grad_enabled() and any(a.requires_grad for a in flat_args if isinstance(a, torch.Tensor)):
+        if torch.is_grad_enabled() and any(
+            a.requires_grad for a in flat_args if isinstance(a, torch.Tensor)
+        ):
             # TODO: There is a subtle bug here: prims like copy_to
             # return their input argument after mutating it; and custom
             # autograd function will incorrectly turn the result into

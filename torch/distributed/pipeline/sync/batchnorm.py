@@ -61,7 +61,7 @@ class DeferredBatchNorm(_BatchNorm):
 
         with torch.no_grad():
             self.sum += input.sum(dim)
-            self.sum_squares += (input ** 2).sum(dim)
+            self.sum_squares += (input**2).sum(dim)
 
         size = input.size().numel() // input.size(1)
         self.counter += size
@@ -79,7 +79,7 @@ class DeferredBatchNorm(_BatchNorm):
             exponential_average_factor = self.momentum
 
         mean = self.sum / self.counter
-        var = self.sum_squares / self.counter - mean ** 2
+        var = self.sum_squares / self.counter - mean**2
 
         # Calculate the exponential moving average here.
         m = exponential_average_factor
@@ -148,15 +148,21 @@ class DeferredBatchNorm(_BatchNorm):
         module_output: nn.Module = module
 
         if isinstance(module, _BatchNorm) and module.track_running_stats:
-            module_output = DeferredBatchNorm(module.num_features, module.eps, module.momentum, module.affine, chunks)
+            module_output = DeferredBatchNorm(
+                module.num_features, module.eps, module.momentum, module.affine, chunks
+            )
             if module.affine:
                 module_output.register_parameter("weight", module.weight)
                 module_output.register_parameter("bias", module.bias)
             module_output.register_buffer("running_mean", module.running_mean)
             module_output.register_buffer("running_var", module.running_var)
-            module_output.register_buffer("num_batches_tracked", module.num_batches_tracked)
+            module_output.register_buffer(
+                "num_batches_tracked", module.num_batches_tracked
+            )
 
         for name, child in module.named_children():
-            module_output.add_module(name, cls.convert_deferred_batch_norm(child, chunks))
+            module_output.add_module(
+                name, cls.convert_deferred_batch_norm(child, chunks)
+            )
 
         return cast(TModule, module_output)

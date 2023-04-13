@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import core
 from hypothesis import given, settings
 import caffe2.python.hypothesis_test_util as hu
@@ -25,13 +20,13 @@ class TestSinusoidPositionEncodingOp(serial.SerializedTestCase):
         positions_vec=hu.arrays(
             dims=[MAX_TEST_SEQUENCE_LENGTH],
             dtype=np.int32,
-            elements=st.integers(1, MAX_TEST_SEQUENCE_LENGTH)
+            elements=st.integers(1, MAX_TEST_SEQUENCE_LENGTH),
         ),
         embedding_size=st.integers(1, MAX_TEST_EMBEDDING_SIZE),
         batch_size=st.integers(1, MAX_TEST_BATCH_SIZE),
         alpha=st.floats(MIN_TEST_ALPHA, MAX_TEST_ALPHA),
         amplitude=st.floats(MIN_TEST_AMPLITUDE, MAX_TEST_AMPLITUDE),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     @settings(deadline=10000)
     def test_sinusoid_embedding(
@@ -49,7 +44,7 @@ class TestSinusoidPositionEncodingOp(serial.SerializedTestCase):
         )
 
         def sinusoid_encoding(dim, position):
-            x = 1. * position / math.pow(alpha, 1. * dim / embedding_size)
+            x = 1.0 * position / math.pow(alpha, 1.0 * dim / embedding_size)
             if dim % 2 == 0:
                 return amplitude * math.sin(x)
             else:

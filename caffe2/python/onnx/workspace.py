@@ -2,10 +2,6 @@
 # Module caffe2.python.onnx.workspace
 
 
-
-
-
-
 import uuid
 
 from caffe2.python import workspace
@@ -50,6 +46,7 @@ class Workspace:
     makes it possible to work with workspaces more locally, and without
     forgetting to deallocate everything in the end.
     """
+
     def __init__(self):
         # Caffe2 (apparently) doesn't provide any native method of generating
         # a fresh, unused workspace, so we have to fake it by generating
@@ -61,6 +58,7 @@ class Workspace:
         def f(*args, **kwargs):
             with self._ctx:
                 return getattr(workspace, attr)(*args, **kwargs)
+
         return f
 
     def __del__(self):

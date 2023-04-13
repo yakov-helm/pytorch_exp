@@ -33,9 +33,7 @@ class TestDedupTensor(TestCase):
         self.assertEqual(2, len(dedup_plans[0].items))
         self.assertEqual(1, len(dedup_plans[1].items))
 
-        self.assertIn(
-            "tensor_0", (item.index.fqn for item in dedup_plans[0].items)
-        )
+        self.assertIn("tensor_0", (item.index.fqn for item in dedup_plans[0].items))
         self.assertIn("r0", (item.index.fqn for item in dedup_plans[0].items))
 
         self.assertIn("r1", (item.index.fqn for item in dedup_plans[1].items))

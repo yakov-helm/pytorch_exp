@@ -1,8 +1,3 @@
-
-
-
-
-
 import unittest
 import hypothesis.strategies as st
 from hypothesis import given, settings
@@ -13,9 +8,7 @@ import caffe2.python.hypothesis_test_util as hu
 
 @unittest.skipIf(not workspace.C.use_mkldnn, "No MKLDNN support.")
 class SigmoidTest(hu.HypothesisTestCase):
-    @given(X=hu.tensor(dtype=np.float32),
-           inplace=st.booleans(),
-           **hu.gcs)
+    @given(X=hu.tensor(dtype=np.float32), inplace=st.booleans(), **hu.gcs)
     @settings(deadline=1000)
     def test_sigmoid(self, X, inplace, gc, dc):
         op = core.CreateOperator(

@@ -9,17 +9,18 @@ from hypothesis import settings
 
 core.GlobalInit(["caffe2", "--caffe2_log_level=-3", "--glow_global_fp16=1"])
 
+
 class DeqSwishQuantTest(serial.SerializedTestCase):
     def _get_scale_zp(self, tensor):
         tensor_max = np.max(tensor)
         tensor_min = min(0, np.min(tensor))
-        scale = np.float32(np.float16((tensor_max - tensor_min) / 255.))
+        scale = np.float32(np.float16((tensor_max - tensor_min) / 255.0))
         zero_point = -tensor_min / scale
         zero_point = int(round(np.clip(zero_point, 0, 255.0)))
         return (scale, zero_point)
 
     def _sigmoid(self, x):
-        return 1. / (1. + np.exp(np.float32(-x)))
+        return 1.0 / (1.0 + np.exp(np.float32(-x)))
 
     def _swish(self, x):
         return np.float32(x) * self._sigmoid(x)
@@ -30,7 +31,7 @@ class DeqSwishQuantTest(serial.SerializedTestCase):
         workspace.ResetWorkspace()
         n = 256
 
-        X_fp32 = np.linspace(-20.5, 8., num=n).astype(np.float32).reshape(1, n)
+        X_fp32 = np.linspace(-20.5, 8.0, num=n).astype(np.float32).reshape(1, n)
         Y_fp32 = self._swish(X_fp32)
         X_scale, X_zero_point = self._get_scale_zp(X_fp32)
         Y_scale, Y_zero_point = self._get_scale_zp(Y_fp32)
@@ -54,10 +55,7 @@ class DeqSwishQuantTest(serial.SerializedTestCase):
 
         ref_net1 = core.Net("net")
         ref_net1.Int8QuantizeNNPI(
-            ["X"],
-            ["X_int8"],
-            Y_scale=X_scale,
-            Y_zero_point=X_zero_point
+            ["X"], ["X_int8"], Y_scale=X_scale, Y_zero_point=X_zero_point
         )
         ref_net1.Int8FCFakeAcc32NNPI(
             ["X_int8", "W_int8", "b"],
@@ -71,16 +69,13 @@ class DeqSwishQuantTest(serial.SerializedTestCase):
             X_scale=X_scale,
             X_zero_point=X_zero_point,
             Y_scale=Y_scale,
-            Y_zero_point=Y_zero_point
+            Y_zero_point=Y_zero_point,
         )
         ref_net1.Proto().external_output.append("Y")
 
         ref_net = core.Net("net")
         ref_net.Int8QuantizeNNPI(
-            ["X"],
-            ["X_int8"],
-            Y_scale=X_scale,
-            Y_zero_point=X_zero_point
+            ["X"], ["X_int8"], Y_scale=X_scale, Y_zero_point=X_zero_point
         )
         ref_net.Int8FCFakeAcc32NNPI(
             ["X_int8", "W_int8", "b"],
@@ -88,20 +83,10 @@ class DeqSwishQuantTest(serial.SerializedTestCase):
             Y_scale=X_scale,
             Y_zero_point=X_zero_point,
         )
-        ref_net.Int8DequantizeNNPI(
-            ["U_int8"],
-            ["U_fp16"],
-            UsingOneOverScale=False
-        )
-        ref_net.SwishFakeFp16NNPI(
-            ["U_fp16"],
-            ["Y_fp16"]
-        )
+        ref_net.Int8DequantizeNNPI(["U_int8"], ["U_fp16"], UsingOneOverScale=False)
+        ref_net.SwishFakeFp16NNPI(["U_fp16"], ["Y_fp16"])
         ref_net.Int8QuantizeNNPI(
-            ["Y_fp16"],
-            ["Y"],
-            Y_scale=Y_scale,
-            Y_zero_point=Y_zero_point
+            ["Y_fp16"], ["Y"], Y_scale=Y_scale, Y_zero_point=Y_zero_point
         )
         ref_net.Proto().external_output.append("Y")
 
@@ -138,8 +123,11 @@ class DeqSwishQuantTest(serial.SerializedTestCase):
 
         num_mismatches = np.count_nonzero(diff_Y)
         max_diff = np.max(diff_Y)
-        if max_diff > 0 or Y_glow.scale != Y_fbgemm.scale or \
-           Y_glow.zero_point != Y_fbgemm.zero_point:
+        if (
+            max_diff > 0
+            or Y_glow.scale != Y_fbgemm.scale
+            or Y_glow.zero_point != Y_fbgemm.zero_point
+        ):
             print_test_debug_info(
                 "QuantizedSwish",
                 {

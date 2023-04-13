@@ -3,7 +3,8 @@ from .. import functional as F
 
 from torch import Tensor
 
-__all__ = ['ChannelShuffle']
+__all__ = ["ChannelShuffle"]
+
 
 class ChannelShuffle(Module):
     r"""Divide the channels in a tensor of shape :math:`(*, C , H, W)`
@@ -40,7 +41,7 @@ class ChannelShuffle(Module):
            [15, 16]],
          ]]
     """
-    __constants__ = ['groups']
+    __constants__ = ["groups"]
     groups: int
 
     def __init__(self, groups: int) -> None:
@@ -51,4 +52,4 @@ class ChannelShuffle(Module):
         return F.channel_shuffle(input, self.groups)
 
     def extra_repr(self) -> str:
-        return 'groups={}'.format(self.groups)
+        return "groups={}".format(self.groups)

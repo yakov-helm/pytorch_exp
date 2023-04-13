@@ -8,8 +8,8 @@ def nop(f, _):
     return f
 
 
-fw_compiler = tvm_compile(target='llvm', tuning_logfile='fw_keops')
-bw_compiler = tvm_compile(target='llvm', tuning_logfile='bw_keops')
+fw_compiler = tvm_compile(target="llvm", tuning_logfile="fw_keops")
+bw_compiler = tvm_compile(target="llvm", tuning_logfile="bw_keops")
 fw_compiler = nop
 bw_compiler = nop
 

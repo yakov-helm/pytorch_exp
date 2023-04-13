@@ -22,5 +22,5 @@ from torch.ao.quantization.quantize_jit import (
     convert_dynamic_jit,
     _quantize_jit,
     quantize_jit,
-    quantize_dynamic_jit
+    quantize_dynamic_jit,
 )

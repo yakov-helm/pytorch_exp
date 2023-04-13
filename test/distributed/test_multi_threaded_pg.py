@@ -25,6 +25,7 @@ from torch.testing._internal.common_utils import (
 
 DEFAULT_WORLD_SIZE = 4
 
+
 class TestCollectivesWithWrapper(TestCase):
     @spawn_threads_and_init_comms(world_size=4)
     def test_broadcast_object_list(self):
@@ -38,7 +39,9 @@ class TestCollectivesWithWrapper(TestCase):
         @spawn_threads_and_init_comms(world_size=4)
         def _test_method(self):
             input_tensor = torch.ones(3, 3) * dist.get_rank()  # perform 1st all gather
-            output_tensors = [torch.empty_like(input_tensor) for _ in range(dist.get_world_size())]
+            output_tensors = [
+                torch.empty_like(input_tensor) for _ in range(dist.get_world_size())
+            ]
             dist.all_gather(output_tensors, input_tensor)
 
             if dist.get_rank() == 0:
@@ -53,7 +56,9 @@ class TestCollectivesWithWrapper(TestCase):
         @spawn_threads_and_init_comms(world_size=4)
         def _test_method(self):
             input_tensor = torch.ones(3, 3) * dist.get_rank()  # perform 1st all gather
-            output_tensors = [torch.empty_like(input_tensor) for _ in range(dist.get_world_size())]
+            output_tensors = [
+                torch.empty_like(input_tensor) for _ in range(dist.get_world_size())
+            ]
             dist.all_gather(output_tensors, input_tensor)
 
             if dist.get_rank() == 1:
@@ -68,11 +73,15 @@ class TestCollectivesWithWrapper(TestCase):
         @spawn_threads_and_init_comms(world_size=4)
         def _test_method(self):
             input_tensor = torch.ones(3, 3) * dist.get_rank()  # perform 1st all gather
-            output_tensors = [torch.empty_like(input_tensor) for _ in range(dist.get_world_size())]
+            output_tensors = [
+                torch.empty_like(input_tensor) for _ in range(dist.get_world_size())
+            ]
             dist.all_gather(output_tensors, input_tensor)
 
             if dist.get_rank() > 0:
-                raise AssertionError("Mimic real test failure.")  # fail on all non-zero rank
+                raise AssertionError(
+                    "Mimic real test failure."
+                )  # fail on all non-zero rank
 
             dist.all_gather(output_tensors, input_tensor)  # perform 2nd all gather
 
@@ -89,6 +98,7 @@ class TestCollectivesWithWrapper(TestCase):
             with self.assertRaises(SkipTest):
                 _test_method(self)
 
+
 class TestCollectivesWithBaseClass(MultiThreadedTestCase):
     @property
     def world_size(self):
@@ -100,7 +110,9 @@ class TestCollectivesWithBaseClass(MultiThreadedTestCase):
 
     def test_allgather(self):
         input_tensor = torch.ones(3, 3) * dist.get_rank()
-        output_tensors = [torch.empty_like(input_tensor) for _ in range(self.world_size)]
+        output_tensors = [
+            torch.empty_like(input_tensor) for _ in range(self.world_size)
+        ]
         dist.all_gather(output_tensors, input_tensor)
         for rank, out_tensor in enumerate(output_tensors):
             self.assertEqual(out_tensor, torch.ones(3, 3) * rank)
@@ -234,6 +246,7 @@ class TestCollectivesWithBaseClass(MultiThreadedTestCase):
         if dist.get_rank() == 0:
             for i in range(self.world_size):
                 self.assertEqual(gather_list[i], torch.ones(3, 3) * i)
+
 
 if __name__ == "__main__":
     run_tests()

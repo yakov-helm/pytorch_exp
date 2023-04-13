@@ -35,7 +35,9 @@ def parallel_apply(modules, inputs, kwargs_tup=None, devices=None):
     element of :attr:`inputs` can either be a single object as the only argument
     to a module, or a collection of positional arguments.
     """
-    assert len(modules) == len(inputs), f'The number of modules {len(modules)} is not equal to the number of inputs {len(inputs)}'
+    assert len(modules) == len(
+        inputs
+    ), f"The number of modules {len(modules)} is not equal to the number of inputs {len(inputs)}"
     if kwargs_tup is not None:
         assert len(modules) == len(kwargs_tup)
     else:
@@ -48,7 +50,10 @@ def parallel_apply(modules, inputs, kwargs_tup=None, devices=None):
     streams = [torch.cuda.current_stream(x) for x in devices]
     lock = threading.Lock()
     results = {}
-    grad_enabled, autocast_enabled = torch.is_grad_enabled(), torch.is_autocast_enabled()
+    grad_enabled, autocast_enabled = (
+        torch.is_grad_enabled(),
+        torch.is_autocast_enabled(),
+    )
 
     def _worker(i, module, input, kwargs, device=None, stream=None):
         torch.set_grad_enabled(grad_enabled)
@@ -57,7 +62,9 @@ def parallel_apply(modules, inputs, kwargs_tup=None, devices=None):
         if stream is None:
             stream = torch.cuda.current_stream(device)
         try:
-            with torch.cuda.device(device), torch.cuda.stream(stream), autocast(enabled=autocast_enabled):
+            with torch.cuda.device(device), torch.cuda.stream(stream), autocast(
+                enabled=autocast_enabled
+            ):
                 # this also avoids accidental slicing of `input` if it is a Tensor
                 if not isinstance(input, (list, tuple)):
                     input = (input,)
@@ -67,13 +74,18 @@ def parallel_apply(modules, inputs, kwargs_tup=None, devices=None):
         except Exception:
             with lock:
                 results[i] = ExceptionWrapper(
-                    where="in replica {} on device {}".format(i, device))
+                    where="in replica {} on device {}".format(i, device)
+                )
 
     if len(modules) > 1:
-        threads = [threading.Thread(target=_worker,
-                                    args=(i, module, input, kwargs, device, stream))
-                   for i, (module, input, kwargs, device, stream) in
-                   enumerate(zip(modules, inputs, kwargs_tup, devices, streams))]
+        threads = [
+            threading.Thread(
+                target=_worker, args=(i, module, input, kwargs, device, stream)
+            )
+            for i, (module, input, kwargs, device, stream) in enumerate(
+                zip(modules, inputs, kwargs_tup, devices, streams)
+            )
+        ]
 
         for thread in threads:
             thread.start()

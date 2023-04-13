@@ -1,13 +1,9 @@
-
-
-
-
 import numpy as np
 from caffe2.proto import caffe2_pb2
 
 from caffe2.python import core, workspace, dyndep, test_util
 
-dyndep.InitOpsLibrary('@/caffe2/caffe2/contrib/warpctc:ctc_ops')
+dyndep.InitOpsLibrary("@/caffe2/caffe2/contrib/warpctc:ctc_ops")
 workspace.GlobalInit(["python"])
 
 
@@ -24,12 +20,16 @@ class CTCOpsTest(test_util.TestCase):
         N = 1
         T = 2
 
-        inputs = np.asarray(
-            [
-                [[0.1, 0.6, 0.1, 0.1, 0.1]],
-                [[0.1, 0.1, 0.6, 0.1, 0.1]],
-            ]
-        ).reshape(T, N, alphabet_size).astype(np.float32)
+        inputs = (
+            np.asarray(
+                [
+                    [[0.1, 0.6, 0.1, 0.1, 0.1]],
+                    [[0.1, 0.1, 0.6, 0.1, 0.1]],
+                ]
+            )
+            .reshape(T, N, alphabet_size)
+            .astype(np.float32)
+        )
 
         labels = np.asarray([1, 2]).astype(np.int32).reshape(T)
         label_lengths = np.asarray([2]).astype(np.int32).reshape(N)
@@ -39,12 +39,12 @@ class CTCOpsTest(test_util.TestCase):
         input_blobs = ["inputs", "labels", "label_lengths"]
         if not skip_input_lengths:
             input_blobs.append("input_lengths")
-        output_blobs = ["costs", "workspace"] if is_test \
-                else ["inputs_grad_to_be_copied", "costs", "workspace"]
-        net.CTC(input_blobs,
-                output_blobs,
-                is_test=is_test,
-                device_option=device_option)
+        output_blobs = (
+            ["costs", "workspace"]
+            if is_test
+            else ["inputs_grad_to_be_copied", "costs", "workspace"]
+        )
+        net.CTC(input_blobs, output_blobs, is_test=is_test, device_option=device_option)
         if not is_test:
             net.AddGradientOperators(["costs"])
         self.ws.create_blob("inputs").feed(inputs, device_option=device_option)
@@ -65,44 +65,47 @@ class CTCOpsTest(test_util.TestCase):
             # it is equal to the inputs_grad_to_be_copied blob returned by CTCop
             assert np.array_equal(
                 self.ws.blobs["inputs_grad"].fetch(),
-                self.ws.blobs["inputs_grad_to_be_copied"].fetch()
+                self.ws.blobs["inputs_grad_to_be_copied"].fetch(),
             )
 
     def test_ctc_cost_cpu(self):
         self.verify_cost(
-            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CPU),
-            is_test=False)
+            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CPU), is_test=False
+        )
         self.verify_cost(
             caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CPU),
-            is_test=False, skip_input_lengths=True)
+            is_test=False,
+            skip_input_lengths=True,
+        )
 
     def test_ctc_cost_gpu(self):
         self.verify_cost(
-            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CUDA,
-                                    device_id=0),
-            is_test=False)
-        self.verify_cost(
-            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CUDA,
-                                    device_id=0),
+            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CUDA, device_id=0),
             is_test=False,
-            skip_input_lengths=True)
+        )
+        self.verify_cost(
+            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CUDA, device_id=0),
+            is_test=False,
+            skip_input_lengths=True,
+        )
 
     def test_ctc_forward_only_cpu(self):
         self.verify_cost(
-            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CPU),
-            is_test=True)
+            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CPU), is_test=True
+        )
         self.verify_cost(
             caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CPU),
             is_test=True,
-            skip_input_lengths=True)
+            skip_input_lengths=True,
+        )
 
     def test_ctc_forward_only_gpu(self):
         self.verify_cost(
-            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CUDA,
-                                    device_id=0),
-            is_test=True)
-        self.verify_cost(
-            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CUDA,
-                                    device_id=0),
+            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CUDA, device_id=0),
             is_test=True,
-            skip_input_lengths=True)
+        )
+        self.verify_cost(
+            caffe2_pb2.DeviceOption(device_type=caffe2_pb2.CUDA, device_id=0),
+            is_test=True,
+            skip_input_lengths=True,
+        )

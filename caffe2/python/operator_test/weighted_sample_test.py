@@ -1,8 +1,3 @@
-
-
-
-
-
 import numpy as np
 
 from hypothesis import given
@@ -17,7 +12,7 @@ class TestWeightedSample(hu.HypothesisTestCase):
     @given(
         batch=st.integers(min_value=0, max_value=128),
         weights_len=st.integers(min_value=0, max_value=128),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_weighted_sample(self, batch, weights_len, gc, dc):
 
@@ -41,8 +36,7 @@ class TestWeightedSample(hu.HypothesisTestCase):
 
         # output both indices and values
         op = core.CreateOperator(
-            "WeightedSample", ["weights", "values"],
-            ["sample_indices", "sample_values"]
+            "WeightedSample", ["weights", "values"], ["sample_indices", "sample_values"]
         )
         workspace.RunOperatorOnce(op)
         result_indices = workspace.FetchBlob("sample_indices")
@@ -55,16 +49,11 @@ class TestWeightedSample(hu.HypothesisTestCase):
             np.testing.assert_allclose(rand_indices, result_indices)
             np.testing.assert_allclose(rand_values, result_values)
         self.assertDeviceChecks(
-            dc,
-            op,
-            [weights.astype(np.float32), values.astype(np.float32)],
-            [0, 1]
+            dc, op, [weights.astype(np.float32), values.astype(np.float32)], [0, 1]
         )
 
         # output indices only
-        op2 = core.CreateOperator(
-            "WeightedSample", ["weights"], ["sample_indices_2"]
-        )
+        op2 = core.CreateOperator("WeightedSample", ["weights"], ["sample_indices_2"])
         workspace.RunOperatorOnce(op2)
         result = workspace.FetchBlob("sample_indices_2")
         if batch > 0 and weights_len > 0:
@@ -77,4 +66,5 @@ class TestWeightedSample(hu.HypothesisTestCase):
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

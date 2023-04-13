@@ -1,8 +1,3 @@
-
-
-
-
-
 from caffe2.python import model_helper, workspace, core, rnn_cell
 import numpy as np
 
@@ -11,7 +6,6 @@ import unittest
 
 @unittest.skipIf(not workspace.has_gpu_support, "No gpu support.")
 class TestLSTMs(unittest.TestCase):
-
     def testEqualToCudnn(self):
         with core.DeviceScope(core.DeviceOption(workspace.GpuDeviceType)):
             T = 8
@@ -20,33 +14,40 @@ class TestLSTMs(unittest.TestCase):
             hidden_dim = 31
 
             workspace.FeedBlob(
-                "seq_lengths",
-                np.array([T] * batch_size, dtype=np.int32)
+                "seq_lengths", np.array([T] * batch_size, dtype=np.int32)
             )
-            workspace.FeedBlob("target", np.zeros(
-                [T, batch_size, hidden_dim], dtype=np.float32
-            ))
-            workspace.FeedBlob("hidden_init", np.zeros(
-                [1, batch_size, hidden_dim], dtype=np.float32
-            ))
-            workspace.FeedBlob("cell_init", np.zeros(
-                [1, batch_size, hidden_dim], dtype=np.float32
-            ))
+            workspace.FeedBlob(
+                "target", np.zeros([T, batch_size, hidden_dim], dtype=np.float32)
+            )
+            workspace.FeedBlob(
+                "hidden_init", np.zeros([1, batch_size, hidden_dim], dtype=np.float32)
+            )
+            workspace.FeedBlob(
+                "cell_init", np.zeros([1, batch_size, hidden_dim], dtype=np.float32)
+            )
 
             own_model = model_helper.ModelHelper(name="own_lstm")
 
             input_shape = [T, batch_size, input_dim]
             cudnn_model = model_helper.ModelHelper(name="cudnn_lstm")
             input_blob = cudnn_model.param_init_net.UniformFill(
-                [], "input", shape=input_shape)
-            workspace.FeedBlob("CUDNN/hidden_init_cudnn", np.zeros(
-                [1, batch_size, hidden_dim], dtype=np.float32
-            ))
-            workspace.FeedBlob("CUDNN/cell_init_cudnn", np.zeros(
-                [1, batch_size, hidden_dim], dtype=np.float32
-            ))
+                [], "input", shape=input_shape
+            )
+            workspace.FeedBlob(
+                "CUDNN/hidden_init_cudnn",
+                np.zeros([1, batch_size, hidden_dim], dtype=np.float32),
+            )
+            workspace.FeedBlob(
+                "CUDNN/cell_init_cudnn",
+                np.zeros([1, batch_size, hidden_dim], dtype=np.float32),
+            )
 
-            cudnn_output, cudnn_last_hidden, cudnn_last_state, param_extract = rnn_cell.cudnn_LSTM(
+            (
+                cudnn_output,
+                cudnn_last_hidden,
+                cudnn_last_state,
+                param_extract,
+            ) = rnn_cell.cudnn_LSTM(
                 model=cudnn_model,
                 input_blob=input_blob,
                 initial_states=("hidden_init_cudnn", "cell_init_cudnn"),
@@ -56,9 +57,8 @@ class TestLSTMs(unittest.TestCase):
                 return_params=True,
             )
             cudnn_loss = cudnn_model.AveragedLoss(
-                cudnn_model.SquaredL2Distance(
-                    [cudnn_output, "target"], "CUDNN/dist"
-                ), "CUDNN/loss"
+                cudnn_model.SquaredL2Distance([cudnn_output, "target"], "CUDNN/dist"),
+                "CUDNN/loss",
             )
 
             own_output, own_last_hidden, _, own_last_state, own_params = rnn_cell.LSTM(
@@ -73,7 +73,7 @@ class TestLSTMs(unittest.TestCase):
             )
             own_loss = own_model.AveragedLoss(
                 own_model.SquaredL2Distance([own_output, "target"], "OWN/dist"),
-                "OWN/loss"
+                "OWN/loss",
             )
 
             # Add gradients
@@ -81,12 +81,8 @@ class TestLSTMs(unittest.TestCase):
             own_model.AddGradientOperators([own_loss])
 
             # Add parameter updates
-            LR = cudnn_model.param_init_net.ConstantFill(
-                [], shape=[1], value=0.01
-            )
-            ONE = cudnn_model.param_init_net.ConstantFill(
-                [], shape=[1], value=1.0
-            )
+            LR = cudnn_model.param_init_net.ConstantFill([], shape=[1], value=0.01)
+            ONE = cudnn_model.param_init_net.ConstantFill([], shape=[1], value=1.0)
             for param in cudnn_model.GetParams():
                 cudnn_model.WeightedSum(
                     [param, ONE, cudnn_model.param_to_grad[param], LR], param
@@ -113,10 +109,7 @@ class TestLSTMs(unittest.TestCase):
             (param_extract_net, param_extract_mapping) = param_extract
             workspace.RunNetOnce(param_extract_net)
             cudnn_lstm_params = {
-                input_type: {
-                    k: workspace.FetchBlob(v[0])
-                    for k, v in pars.items()
-                }
+                input_type: {k: workspace.FetchBlob(v[0]) for k, v in pars.items()}
                 for input_type, pars in param_extract_mapping.items()
             }
 

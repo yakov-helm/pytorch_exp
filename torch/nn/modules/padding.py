@@ -9,11 +9,24 @@ from typing import Sequence, Tuple
 
 # TODO: grad_output size asserts in THNN
 
-__all__ = ['ConstantPad1d', 'ConstantPad2d', 'ConstantPad3d', 'ReflectionPad1d', 'ReflectionPad2d',
-           'ReflectionPad3d', 'ReplicationPad1d', 'ReplicationPad2d', 'ReplicationPad3d', 'ZeroPad1d', 'ZeroPad2d', 'ZeroPad3d']
+__all__ = [
+    "ConstantPad1d",
+    "ConstantPad2d",
+    "ConstantPad3d",
+    "ReflectionPad1d",
+    "ReflectionPad2d",
+    "ReflectionPad3d",
+    "ReplicationPad1d",
+    "ReplicationPad2d",
+    "ReplicationPad3d",
+    "ZeroPad1d",
+    "ZeroPad2d",
+    "ZeroPad3d",
+]
+
 
 class _ConstantPadNd(Module):
-    __constants__ = ['padding', 'value']
+    __constants__ = ["padding", "value"]
     value: float
     padding: Sequence[int]
 
@@ -22,10 +35,10 @@ class _ConstantPadNd(Module):
         self.value = value
 
     def forward(self, input: Tensor) -> Tensor:
-        return F.pad(input, self.padding, 'constant', self.value)
+        return F.pad(input, self.padding, "constant", self.value)
 
     def extra_repr(self) -> str:
-        return 'padding={}, value={}'.format(self.padding, self.value)
+        return "padding={}, value={}".format(self.padding, self.value)
 
 
 class ConstantPad1d(_ConstantPadNd):
@@ -122,7 +135,7 @@ class ConstantPad2d(_ConstantPadNd):
                  [ 3.5000,  3.5000,  3.5000,  3.5000,  3.5000]]])
 
     """
-    __constants__ = ['padding', 'value']
+    __constants__ = ["padding", "value"]
     padding: Tuple[int, int, int, int]
 
     def __init__(self, padding: _size_4_t, value: float) -> None:
@@ -171,14 +184,14 @@ class ConstantPad3d(_ConstantPadNd):
 
 
 class _ReflectionPadNd(Module):
-    __constants__ = ['padding']
+    __constants__ = ["padding"]
     padding: Sequence[int]
 
     def forward(self, input: Tensor) -> Tensor:
-        return F.pad(input, self.padding, 'reflect')
+        return F.pad(input, self.padding, "reflect")
 
     def extra_repr(self) -> str:
-        return '{}'.format(self.padding)
+        return "{}".format(self.padding)
 
 
 class ReflectionPad1d(_ReflectionPadNd):
@@ -328,14 +341,14 @@ class ReflectionPad3d(_ReflectionPadNd):
 
 
 class _ReplicationPadNd(Module):
-    __constants__ = ['padding']
+    __constants__ = ["padding"]
     padding: Sequence[int]
 
     def forward(self, input: Tensor) -> Tensor:
-        return F.pad(input, self.padding, 'replicate')
+        return F.pad(input, self.padding, "replicate")
 
     def extra_repr(self) -> str:
-        return '{}'.format(self.padding)
+        return "{}".format(self.padding)
 
 
 class ReplicationPad1d(_ReplicationPadNd):
@@ -519,10 +532,11 @@ class ZeroPad1d(ConstantPad1d):
     padding: Tuple[int, int]
 
     def __init__(self, padding: _size_2_t) -> None:
-        super().__init__(padding, 0.)
+        super().__init__(padding, 0.0)
 
     def extra_repr(self) -> str:
-        return '{}'.format(self.padding)
+        return "{}".format(self.padding)
+
 
 class ZeroPad2d(ConstantPad2d):
     r"""Pads the input tensor boundaries with zero.
@@ -572,10 +586,11 @@ class ZeroPad2d(ConstantPad2d):
     padding: Tuple[int, int, int, int]
 
     def __init__(self, padding: _size_4_t) -> None:
-        super().__init__(padding, 0.)
+        super().__init__(padding, 0.0)
 
     def extra_repr(self) -> str:
-        return '{}'.format(self.padding)
+        return "{}".format(self.padding)
+
 
 class ZeroPad3d(ConstantPad3d):
     r"""Pads the input tensor boundaries with zero.
@@ -614,7 +629,7 @@ class ZeroPad3d(ConstantPad3d):
     padding: Tuple[int, int, int, int, int, int]
 
     def __init__(self, padding: _size_6_t) -> None:
-        super().__init__(padding, 0.)
+        super().__init__(padding, 0.0)
 
     def extra_repr(self) -> str:
-        return '{}'.format(self.padding)
+        return "{}".format(self.padding)

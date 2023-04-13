@@ -17,8 +17,9 @@ def get_model_name(filename):
     Get model name from a file in format {model_name}_chrome_trace_*.json
     """
     _, tail = os.path.split(filename)
-    modelname = tail[:tail.find("_chrome_trace")]
+    modelname = tail[: tail.find("_chrome_trace")]
     return modelname
+
 
 def get_total_length(run_times_df, modelname):
     return float(run_times_df[run_times_df["name"] == modelname]["runtime"])
@@ -31,13 +32,13 @@ def main():
         "--runtime", "-runf", help="file name of the runtime file", required=True
     )
     group.add_argument(
-        "--filename", "-f", action="append", help="a filename of the json file to process"
+        "--filename",
+        "-f",
+        action="append",
+        help="a filename of the json file to process",
     )
-    group.add_argument(
-        "--folder", "-fd", help="a folder of the json files to process"
-    )
+    group.add_argument("--folder", "-fd", help="a folder of the json files to process")
     args = parser.parse_args()
-
 
     if args.filename:
         filenames = args.filename
@@ -58,11 +59,14 @@ def main():
         try:
             modelname = get_model_name(filename)
             total_length = get_total_length(run_times_df, modelname) * 1e6
-            utilization, mm_conv_utilization = compute_utilization(filenames, total_length)
+            utilization, mm_conv_utilization = compute_utilization(
+                filenames, total_length
+            )
             print(f"{modelname}, {utilization}, {mm_conv_utilization}")
         except BaseException:
             logging.exception("%s, ERROR", filename)
             print(f"{filename}, ERROR")
+
 
 if __name__ == "__main__":
     main()

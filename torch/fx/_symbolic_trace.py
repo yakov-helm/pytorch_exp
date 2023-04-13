@@ -45,6 +45,7 @@ _is_fx_tracing_flag = False
 def is_fx_tracing():
     return _is_fx_tracing_flag
 
+
 @compatibility(is_backward_compatible=True)
 class ProxyableClassMeta(type):
     """
@@ -393,9 +394,9 @@ class Tracer(TracerBase):
                 appear with the qualified name ``foo.bar.baz`` here.
         """
         return (
-            (m.__module__.startswith("torch.nn") or m.__module__.startswith("torch.ao.nn"))
-            and not isinstance(m, torch.nn.Sequential)
-        )
+            m.__module__.startswith("torch.nn")
+            or m.__module__.startswith("torch.ao.nn")
+        ) and not isinstance(m, torch.nn.Sequential)
 
     @compatibility(is_backward_compatible=True)
     def path_of_module(self, mod: torch.nn.Module) -> str:
@@ -459,14 +460,18 @@ class Tracer(TracerBase):
             value was returned from the ``Module`` invocation.
         """
         module_qualified_name = self.path_of_module(m)
-        with ScopeContextManager(self.scope, Scope(module_qualified_name, type(m))) as _scope:
+        with ScopeContextManager(
+            self.scope, Scope(module_qualified_name, type(m))
+        ) as _scope:
             # module_stack is an ordered dict so writing then deleting the
             # entry is equivalent to push/pop on a list
             self.module_stack[_scope.module_path] = _scope.module_type
             if not self.is_leaf_module(m, module_qualified_name):
                 ret_val = forward(*args, **kwargs)
             else:
-                ret_val = self.create_proxy("call_module", module_qualified_name, args, kwargs)
+                ret_val = self.create_proxy(
+                    "call_module", module_qualified_name, args, kwargs
+                )
             key, _ = self.module_stack.popitem(last=True)
             assert key == _scope.module_path, f" Unexpected key {key}"
 
@@ -495,6 +500,7 @@ class Tracer(TracerBase):
 
             The return value from the getattr call.
         """
+
         def maybe_get_proxy_for_attr(
             attr_val, collection_to_search, parameter_proxy_cache
         ):
@@ -618,7 +624,7 @@ class Tracer(TracerBase):
                 name,
                 default,
                 {},
-                type_expr=fn_for_analysis.__annotations__.get(name, None)
+                type_expr=fn_for_analysis.__annotations__.get(name, None),
             )
 
         arg_names = [next(names_iter) for idx in range(skip_arg_idx, total_args)]
@@ -790,7 +796,7 @@ class Tracer(TracerBase):
         new_tracer = Tracer.__new__(Tracer)
 
         for k, v in self.__dict__.items():
-            if k in {'_autowrap_search'}:
+            if k in {"_autowrap_search"}:
                 new_obj = copy.copy(v)
             else:
                 new_obj = copy.deepcopy(v, memo)

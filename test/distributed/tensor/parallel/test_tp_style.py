@@ -71,8 +71,7 @@ class TensorParallelStyleTest(DTensorTestBase):
     def test_make_input_reshard_replicate(self):
         tensor = torch.rand(8, 16, device=self.device_type)
         gathered_tensor = [
-            torch.empty(8, 16, device=self.device_type)
-            for _ in range(self.world_size)
+            torch.empty(8, 16, device=self.device_type) for _ in range(self.world_size)
         ]
         dist.all_gather(gathered_tensor, tensor)
         gathered_tensor = torch.cat(gathered_tensor)

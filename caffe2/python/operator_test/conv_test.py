@@ -1,5 +1,3 @@
-
-
 import collections
 import functools
 import unittest
@@ -68,7 +66,7 @@ class TestConvolution(serial.SerializedTestCase):
         engine=st.sampled_from(["", "EIGEN"]),
         shared_buffer=st.booleans(),
         use_bias=st.booleans(),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=None, max_examples=50)
     def test_convolution_separate_stride_pad_gradients(
@@ -162,7 +160,7 @@ class TestConvolution(serial.SerializedTestCase):
         batch_size=st.integers(0, 3),
         engine=st.sampled_from(["", "EIGEN"]),
         use_bias=st.booleans(),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=None)
     def test_convolution_separate_stride_pad_layout(
@@ -244,7 +242,7 @@ class TestConvolution(serial.SerializedTestCase):
         force_algo_fwd=_cudnn_convolution_algo_count("fwd"),
         force_algo_dgrad=_cudnn_convolution_algo_count("dgrad"),
         force_algo_wgrad=_cudnn_convolution_algo_count("wgrad"),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(max_examples=20, deadline=None)
     def test_convolution_gradients(
@@ -445,7 +443,7 @@ class TestConvolution(serial.SerializedTestCase):
         force_algo_fwd=_cudnn_convolution_algo_count("fwd"),
         force_algo_dgrad=_cudnn_convolution_algo_count("dgrad"),
         force_algo_wgrad=_cudnn_convolution_algo_count("wgrad"),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=10000)
     def test_1d_convolution(
@@ -513,7 +511,7 @@ class TestConvolution(serial.SerializedTestCase):
         force_algo_fwd=_cudnn_convolution_algo_count("fwd"),
         force_algo_dgrad=_cudnn_convolution_algo_count("dgrad"),
         force_algo_wgrad=_cudnn_convolution_algo_count("wgrad"),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(max_examples=20, deadline=None)
     def test_3d_convolution(
@@ -573,7 +571,7 @@ class TestConvolution(serial.SerializedTestCase):
         force_algo_fwd=_cudnn_convolution_algo_count("fwd"),
         force_algo_dgrad=_cudnn_convolution_algo_count("dgrad"),
         force_algo_wgrad=_cudnn_convolution_algo_count("wgrad"),
-        **hu.gcs_no_hip
+        **hu.gcs_no_hip,
     )  # MIOPEN doesn't support 3D conv yet
     @settings(deadline=10000)
     def test_3d_convolution_cudnn_nchw(
@@ -663,7 +661,7 @@ class TestConvolution(serial.SerializedTestCase):
         output_channels=st.integers(1, 8),
         batch_size=st.integers(0, 3),
         use_bias=st.booleans(),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=None, max_examples=50)
     def test_convolution_layout(
@@ -751,15 +749,10 @@ class TestConvolution(serial.SerializedTestCase):
     @given(
         num_workers=st.integers(1, 4),
         net_type=st.sampled_from(
-            ["simple", "dag"]
-            + (
-                ["async_dag"]
-                if workspace.has_gpu_support
-                else []
-            )
+            ["simple", "dag"] + (["async_dag"] if workspace.has_gpu_support else [])
         ),
         engine=st.sampled_from(["CUDNN", ""]),
-        **hu.gcs_no_hip
+        **hu.gcs_no_hip,
     )
     @settings(deadline=None)
     def test_convolution_sync(self, net_type, num_workers, engine, gc, dc):
@@ -777,7 +770,7 @@ class TestConvolution(serial.SerializedTestCase):
         np.random.seed(1701)
         # Build a binary tree of conv layers, summing at each node.
         for i in reversed(range(depth)):
-            for j in range(2 ** i):
+            for j in range(2**i):
                 bottom_1 = "{}_{}".format(i + 1, 2 * j)
                 bottom_2 = "{}_{}".format(i + 1, 2 * j + 1)
                 mid_1 = "{}_{}_m".format(i + 1, 2 * j)
@@ -832,7 +825,7 @@ class TestConvolution(serial.SerializedTestCase):
             import numpy as np
 
             np.random.seed(1701)
-            input_blobs = ["{}_{}".format(depth, j) for j in range(2 ** depth)]
+            input_blobs = ["{}_{}".format(depth, j) for j in range(2**depth)]
             for input_blob in input_blobs:
                 self.ws.create_blob(input_blob).feed(
                     np.random.randn(n, d, h, w).astype(np.float32), device_option=gc
@@ -904,7 +897,7 @@ class TestConvolution(serial.SerializedTestCase):
         force_algo_fwd=_cudnn_convolution_algo_count("fwd"),
         force_algo_dgrad=_cudnn_convolution_algo_count("dgrad"),
         force_algo_wgrad=_cudnn_convolution_algo_count("wgrad"),
-        **hu.gcs
+        **hu.gcs,
     )
     @settings(deadline=10000)
     def test_1x1_conv(

@@ -2,9 +2,6 @@
 # Module caffe2.python.model_helper
 
 
-
-
-
 from caffe2.python import core, scope, workspace
 from caffe2.python.helpers.db_input import db_input
 from caffe2.python.modeling import parameter_info
@@ -68,7 +65,7 @@ _known_working_ops = [
     "Transpose",
     "UnpackSegments",
     "WeightedSum",
-    "YellowFin"
+    "YellowFin",
 ]
 
 
@@ -90,8 +87,15 @@ class ModelHelper:
 
     """
 
-    def __init__(self, name=None, init_params=True, allow_not_known_ops=True,
-                 skip_sparse_optim=False, param_model=None, arg_scope=None):
+    def __init__(
+        self,
+        name=None,
+        init_params=True,
+        allow_not_known_ops=True,
+        skip_sparse_optim=False,
+        param_model=None,
+        arg_scope=None,
+    ):
         self.name = name or "model"
         self.net = core.Net(self.name)
 
@@ -102,7 +106,7 @@ class ModelHelper:
             self._parameters_info = param_model._parameters_info
             self._computed_params = param_model._computed_params
         else:
-            self.param_init_net = core.Net(self.name + '_init')
+            self.param_init_net = core.Net(self.name + "_init")
             self.param_to_grad = {}
             self.params = []
             self._parameters_info = {}
@@ -117,9 +121,9 @@ class ModelHelper:
         self.weights = []
         self.biases = []
         self._arg_scope = {
-            'order': "NCHW",
-            'use_cudnn': True,
-            'cudnn_exhaustive_search': False,
+            "order": "NCHW",
+            "use_cudnn": True,
+            "cudnn_exhaustive_search": False,
         }
         if arg_scope is not None:
             # Please notice value as None is not acceptable. We are not checking it
@@ -143,14 +147,16 @@ class ModelHelper:
 
     def _update_param_info_deprecated(self):
         assert len(self._param_info_deprecated) <= len(self.params)
-        for param in self.params[len(self._param_info_deprecated):]:
+        for param in self.params[len(self._param_info_deprecated) :]:
             if not isinstance(param, core.BlobReference):
-                raise ValueError(
-                    "Param %s must be a BlobReference!" % str(param))
-            self._param_info_deprecated.append(parameter_info.ParameterInfo(
-                param_id=len(self._param_info_deprecated),
-                param=param,
-                shape=self._infer_param_shape(param)))
+                raise ValueError("Param %s must be a BlobReference!" % str(param))
+            self._param_info_deprecated.append(
+                parameter_info.ParameterInfo(
+                    param_id=len(self._param_info_deprecated),
+                    param=param,
+                    shape=self._infer_param_shape(param),
+                )
+            )
         for info in self._param_info_deprecated:
             info.grad = self.param_to_grad.get(info.name)
 
@@ -200,8 +206,7 @@ class ModelHelper:
         elif isinstance(param_name, str):
             # Parameter name will be equal to current Namescope that got
             # resolved with the respect of parameter sharing of the scopes.
-            param_name = parameter_sharing_context.get_parameter_name(
-                param_name)
+            param_name = parameter_sharing_context.get_parameter_name(param_name)
         else:
             raise TypeError("Unsupported type for param_name")
 
@@ -232,8 +237,9 @@ class ModelHelper:
         return param_info.blob
 
     def get_param_info(self, param):
-        assert isinstance(param, core.BlobReference), \
-            "Param {} is not a BlobReference".format(param)
+        assert isinstance(
+            param, core.BlobReference
+        ), "Param {} is not a BlobReference".format(param)
         return self._parameters_info.get(param, None)
 
     # This method is deprecated, use create_param method which
@@ -248,13 +254,15 @@ class ModelHelper:
         shape = shape if shape is not None else self._infer_param_shape(param)
         if not isinstance(param, core.BlobReference):
             raise ValueError("Param %s must be a BlobReference!" % str(param))
-        self._param_info_deprecated.append(parameter_info.ParameterInfo(
-            param_id=len(self._param_info_deprecated),
-            param=param,
-            shape=shape,
-            key=key,
-            length=length,
-        ))
+        self._param_info_deprecated.append(
+            parameter_info.ParameterInfo(
+                param_id=len(self._param_info_deprecated),
+                param=param,
+                shape=shape,
+                key=key,
+                length=length,
+            )
+        )
         return self._param_info_deprecated[-1]
 
     def AddParameter(self, param, tags=None):
@@ -274,22 +282,21 @@ class ModelHelper:
     def _NormalizeNamescope(namescope):
         if namescope is None:
             return scope.CurrentNameScope()
-        elif namescope == '' or namescope.endswith(scope._NAMESCOPE_SEPARATOR):
+        elif namescope == "" or namescope.endswith(scope._NAMESCOPE_SEPARATOR):
             return namescope
         else:
             return namescope + scope._NAMESCOPE_SEPARATOR
 
     def GetParams(self, namescope=None, top_scope=False):
-        '''
+        """
         Returns the params in current namescope
-        '''
+        """
         namescope = ModelHelper._NormalizeNamescope(namescope)
 
-        if namescope == '':
+        if namescope == "":
             return self.params[:]
         else:
-            return [p for p in self.params if
-                    p.GetNameScope().startswith(namescope)]
+            return [p for p in self.params if p.GetNameScope().startswith(namescope)]
 
     def Proto(self):
         return self.net.Proto()
@@ -303,7 +310,8 @@ class ModelHelper:
 
     def CreateDB(self, blob_out, db, db_type, **kwargs):
         dbreader = self.param_init_net.CreateDB(
-            [], blob_out, db=db, db_type=db_type, **kwargs)
+            [], blob_out, db=db, db_type=db_type, **kwargs
+        )
         return dbreader
 
     def AddGradientOperators(self, *args, **kwargs):
@@ -331,10 +339,10 @@ class ModelHelper:
         return self.grad_map
 
     def get_param_to_grad(self, params):
-        '''
+        """
         Given a list of parameters returns a dict from a parameter
         to a corresponding gradient
-        '''
+        """
 
         param_to_grad = {}
         if not self.gradient_ops_added:
@@ -347,10 +355,10 @@ class ModelHelper:
         return param_to_grad
 
     def GetOptimizationParamInfo(self, params=None):
-        '''
+        """
         Returns a map for param => grad.
         If params is not specified, all parameters will be considered.
-        '''
+        """
         if not self.gradient_ops_added:
             raise RuntimeError("Need to call AddGradientOperators first")
 
@@ -359,17 +367,15 @@ class ModelHelper:
             param_to_grad = self.get_param_to_grad(params)
 
         return [
-            self.get_param_info(param) for param, grad in param_to_grad.items()
-            if (
-                not self.skip_sparse_optim or
-                not isinstance(grad, core.GradientSlice)
-            )
+            self.get_param_info(param)
+            for param, grad in param_to_grad.items()
+            if (not self.skip_sparse_optim or not isinstance(grad, core.GradientSlice))
         ]
 
     def _Validate(self):
-        '''
+        """
         Check for duplicate params
-        '''
+        """
         params_list = [str(p) for p in self.params]
         params_set = set(params_list)
 
@@ -388,19 +394,22 @@ class ModelHelper:
         assert dupes == [], "Duplicate params: {}".format(dupes)
 
     def GetComputedParams(self, namescope=None):
-        '''
+        """
         Returns the computed params in current namescope. 'Computed params'
         are such parameters that are not optimized via gradient descent but are
         directly computed from data, such as the running mean and variance
         of Spatial Batch Normalization.
-        '''
+        """
         namescope = ModelHelper._NormalizeNamescope(namescope)
 
-        if namescope == '':
+        if namescope == "":
             return self._computed_params[:]
         else:
-            return [p for p in self._computed_params
-                    if p.GetNameScope().startswith(namescope)]
+            return [
+                p
+                for p in self._computed_params
+                if p.GetNameScope().startswith(namescope)
+            ]
 
     def GetAllParams(self, namescope=None):
         return self.GetParams(namescope) + self.GetComputedParams(namescope)
@@ -409,52 +418,58 @@ class ModelHelper:
         self, unused_blob_in, blob_out, batch_size, db, db_type, **kwargs
     ):
         """TensorProtosDBInput."""
-        assert len(unused_blob_in) == 0, \
-            """You cannot pass reader to model_helper.TensorProtosDBInput.
+        assert (
+            len(unused_blob_in) == 0
+        ), """You cannot pass reader to model_helper.TensorProtosDBInput.
                Use model.net.TensorProtosDBInput instead to create the op."""
 
-        return db_input(
-            self, blob_out, batch_size, db, db_type, **kwargs)
+        return db_input(self, blob_out, batch_size, db, db_type, **kwargs)
 
     def GetDevices(self):
-        assert len(self._devices) > 0, \
-            "Use data_parallel_model to run model on multiple GPUs."
+        assert (
+            len(self._devices) > 0
+        ), "Use data_parallel_model to run model on multiple GPUs."
         return self._devices
 
     def __getattr__(self, op_type):
         """Catch-all for all other operators, mostly those without params."""
-        if op_type.startswith('__'):
+        if op_type.startswith("__"):
             raise AttributeError(op_type)
 
         if not core.IsOperator(op_type):
             raise AttributeError(
-                'Method ' + op_type + ' is not a registered operator.' +
-                ' Did you mean: [' +
-                ','.join(workspace.C.nearby_opnames(op_type)) + ']'
+                "Method "
+                + op_type
+                + " is not a registered operator."
+                + " Did you mean: ["
+                + ",".join(workspace.C.nearby_opnames(op_type))
+                + "]"
             )
         if op_type not in _known_working_ops:
             if not self.allow_not_known_ops:
                 raise AttributeError(
-                    "Operator {} is not known to be safe".format(op_type))
+                    "Operator {} is not known to be safe".format(op_type)
+                )
 
-            logging.warning("You are creating an op that the ModelHelper "
-                            "does not recognize: {}.".format(op_type))
+            logging.warning(
+                "You are creating an op that the ModelHelper "
+                "does not recognize: {}.".format(op_type)
+            )
         return self.net.__getattr__(op_type)
 
     def __dir__(self):
-        return sorted(set(chain(
-            dir(type(self)),
-            self.__dict__.keys(),
-            _known_working_ops
-        )))
+        return sorted(
+            set(chain(dir(type(self)), self.__dict__.keys(), _known_working_ops))
+        )
 
     def GetCompleteNet(self):
-        r""" Return param_init_net + net Net.
+        r"""Return param_init_net + net Net.
         Returns:
           'core.Net' containing param_init_net and net
         """
         new_net = self.param_init_net.Clone(
-            self.name + "_complete_net", keep_schema=True)
+            self.name + "_complete_net", keep_schema=True
+        )
         # add init net info to debug info
         for op in new_net.Proto().op:
             op.debug_info = op.debug_info + "/param_init_net"
@@ -465,7 +480,7 @@ class ModelHelper:
         return new_net
 
     def ConstructInitTrainNetfromNet(self, net):
-        r""" construct init net and train net from complete_net
+        r"""construct init net and train net from complete_net
         Inputs:
           net: 'core.Net' containing param_init_net and train net
         """
@@ -499,7 +514,7 @@ def ExtractPredictorNet(
     renames=None,
     disabled_inputs=None,
 ):
-    '''
+    """
     Takes a model net for training and returns a net which can be
     used for prediction. For example, all gradient operators and
     input operators are removed.
@@ -510,7 +525,7 @@ def ExtractPredictorNet(
     @param renames dictionary of blob name to a new name (optional)
     @param disabled_inputs optional set of blobs that are 'switched off'. This
                 will cause branches with those blobs as inputs to be removed
-    '''
+    """
     predict_net = core.Net(net_proto.name + "_predict")
     predict_proto = predict_net.Proto()
 
@@ -534,19 +549,17 @@ def ExtractPredictorNet(
     try:
         first_op_with_input = min(
             [
-                j for j in range(len(ops))
-                if input_blobs.intersection(ops[j].input) and ops[j].type !=
-                'StopGradient'
+                j
+                for j in range(len(ops))
+                if input_blobs.intersection(ops[j].input)
+                and ops[j].type != "StopGradient"
             ]
         )
     except ValueError as e:
         raise Exception("No ops with input={}".format(input_blobs)) from e
     try:
         last_op_with_output = max(
-            [
-                j for j in range(len(ops))
-                if output_blobs.intersection(ops[j].output)
-            ]
+            [j for j in range(len(ops)) if output_blobs.intersection(ops[j].output)]
         )
     except ValueError as e:
         raise Exception("No ops with output={}".format(output_blobs)) from e
@@ -557,9 +570,9 @@ def ExtractPredictorNet(
         for arg in op.arg:
             if arg.name == "is_test" and arg.i == 0:
                 raise Exception(
-                    "An operator had is_test=0, did you try to extract a " +
-                    "predictor from a train model (instead of test model)?" +
-                    " Op was: {}".format(str(op))
+                    "An operator had is_test=0, did you try to extract a "
+                    + "predictor from a train model (instead of test model)?"
+                    + " Op was: {}".format(str(op))
                 )
 
     def rename_list(proto_list):
@@ -574,17 +587,17 @@ def ExtractPredictorNet(
 
     # Iterate through the ops and only include those whose inputs
     # we can satisfy.
-    for op in ops[first_op_with_input:(last_op_with_output + 1)]:
+    for op in ops[first_op_with_input : (last_op_with_output + 1)]:
         if known_blobs.issuperset(op.input):
 
             # Special handling for recurrent nets
             # TODO: when standard argument type for "nets" is introduced,
             # this can be more general
-            if op.type == 'RecurrentNetwork':
+            if op.type == "RecurrentNetwork":
                 for arg in op.arg:
-                    if arg.name == 'backward_step_net':
-                        arg.ClearField(str('n'))
-                    elif arg.name == 'step_net':
+                    if arg.name == "backward_step_net":
+                        arg.ClearField(str("n"))
+                    elif arg.name == "step_net":
                         for step_op in arg.n.op:
                             rename_list(step_op.input)
                             rename_list(step_op.output)
@@ -597,9 +610,7 @@ def ExtractPredictorNet(
 
                         # Add additional external inputs
                         external_inputs.update(
-                            set(arg.n.external_input).intersection(
-                                orig_external_inputs
-                            )
+                            set(arg.n.external_input).intersection(orig_external_inputs)
                         )
 
             if device is not None:
@@ -608,12 +619,8 @@ def ExtractPredictorNet(
             validate_op(op)
             predict_proto.op.extend([op])
             known_blobs.update(op.output)
-            external_inputs.update(
-                set(op.input).intersection(orig_external_inputs)
-            )
-            external_outputs.update(
-                set(op.output).intersection(orig_external_outputs)
-            )
+            external_inputs.update(set(op.input).intersection(orig_external_inputs))
+            external_outputs.update(set(op.output).intersection(orig_external_outputs))
 
         else:
             logging.debug(

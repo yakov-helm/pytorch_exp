@@ -1,8 +1,16 @@
 import torch
 from torch import Tensor
 
-from .optimizer import (Optimizer, _use_grad_for_differentiable, _get_value, _stack_if_compiling,
-                        _default_to_fused_or_foreach, _differentiable_doc, _maximize_doc, _foreach_doc)
+from .optimizer import (
+    Optimizer,
+    _use_grad_for_differentiable,
+    _get_value,
+    _stack_if_compiling,
+    _default_to_fused_or_foreach,
+    _differentiable_doc,
+    _maximize_doc,
+    _foreach_doc,
+)
 from typing import List, Optional
 from torch.utils._foreach_utils import _group_tensors_by_device_and_dtype
 
@@ -58,7 +66,9 @@ class Adamax(Optimizer):
             for s in state_values:
                 s["step"] = torch.tensor(float(s["step"]))
 
-    def _init_group(self, group, params_with_grad, grads, exp_avgs, exp_infs, state_steps):
+    def _init_group(
+        self, group, params_with_grad, grads, exp_avgs, exp_infs, state_steps
+    ):
         for p in group["params"]:
             if p.grad is None:
                 continue
@@ -111,7 +121,9 @@ class Adamax(Optimizer):
             maximize = group["maximize"]
             differentiable = group["differentiable"]
 
-            self._init_group(group, params_with_grad, grads, exp_avgs, exp_infs, state_steps)
+            self._init_group(
+                group, params_with_grad, grads, exp_avgs, exp_infs, state_steps
+            )
 
             adamax(
                 params_with_grad,
@@ -174,7 +186,9 @@ Adamax.__doc__ = r"""Implements Adamax algorithm (a variant of Adam based on inf
     .. _Adam\: A Method for Stochastic Optimization:
         https://arxiv.org/abs/1412.6980
 
-    """.format(foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc)
+    """.format(
+    foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc
+)
 
 
 def adamax(
@@ -206,7 +220,9 @@ def adamax(
         )
 
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
+        _, foreach = _default_to_fused_or_foreach(
+            params, differentiable, use_fused=False
+        )
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")
@@ -305,21 +321,41 @@ def _multi_tensor_adamax(
     if len(params) == 0:
         return
 
-    grouped_tensors = _group_tensors_by_device_and_dtype([params, grads, exp_avgs, exp_infs, state_steps])
-    for grouped_params, grouped_grads, grouped_exp_avgs, grouped_exp_infs, grouped_state_steps in grouped_tensors.values():
+    grouped_tensors = _group_tensors_by_device_and_dtype(
+        [params, grads, exp_avgs, exp_infs, state_steps]
+    )
+    for (
+        grouped_params,
+        grouped_grads,
+        grouped_exp_avgs,
+        grouped_exp_infs,
+        grouped_state_steps,
+    ) in grouped_tensors.values():
         if maximize:
             grouped_grads = torch._foreach_neg(grouped_grads)
 
-        grouped_params = [torch.view_as_real(x) if torch.is_complex(x) else x for x in grouped_params]
-        grouped_grads = [torch.view_as_real(x) if torch.is_complex(x) else x for x in grouped_grads]
-        grouped_exp_avgs = [torch.view_as_real(x) if torch.is_complex(x) else x for x in grouped_exp_avgs]
-        grouped_exp_infs = [torch.view_as_real(x) if torch.is_complex(x) else x for x in grouped_exp_infs]
+        grouped_params = [
+            torch.view_as_real(x) if torch.is_complex(x) else x for x in grouped_params
+        ]
+        grouped_grads = [
+            torch.view_as_real(x) if torch.is_complex(x) else x for x in grouped_grads
+        ]
+        grouped_exp_avgs = [
+            torch.view_as_real(x) if torch.is_complex(x) else x
+            for x in grouped_exp_avgs
+        ]
+        grouped_exp_infs = [
+            torch.view_as_real(x) if torch.is_complex(x) else x
+            for x in grouped_exp_infs
+        ]
 
         # Update steps
         torch._foreach_add_(grouped_state_steps, 1)
 
         if weight_decay != 0:
-            grouped_grads = torch._foreach_add(grouped_grads, grouped_params, alpha=weight_decay)
+            grouped_grads = torch._foreach_add(
+                grouped_grads, grouped_params, alpha=weight_decay
+            )
 
         # Update biased first moment estimate.
         torch._foreach_mul_(grouped_exp_avgs, beta1)
@@ -333,6 +369,10 @@ def _multi_tensor_adamax(
                 [exp_inf.unsqueeze(0), grad.abs().add_(eps).unsqueeze_(0)], 0
             )
             torch.max(norm_buf, 0, keepdim=False, out=(exp_inf, exp_inf.new().long()))
-        bias_corrections = [1 - beta1 ** _get_value(step) for step in grouped_state_steps]
-        clr = _stack_if_compiling([-1 * (lr / bias_correction) for bias_correction in bias_corrections])
+        bias_corrections = [
+            1 - beta1 ** _get_value(step) for step in grouped_state_steps
+        ]
+        clr = _stack_if_compiling(
+            [-1 * (lr / bias_correction) for bias_correction in bias_corrections]
+        )
         torch._foreach_addcdiv_(grouped_params, grouped_exp_avgs, grouped_exp_infs, clr)

@@ -17,7 +17,7 @@ class FeatureSparseToDense(ModelLayer):
         input_specs,
         name="feature_sparse_to_dense",
         default_dense_value=None,
-        **kwargs
+        **kwargs,
     ):
         """
         `input_specs` follows the format of FeatureSpec from schema. To be more

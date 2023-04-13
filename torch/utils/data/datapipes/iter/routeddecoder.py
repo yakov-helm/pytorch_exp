@@ -8,13 +8,15 @@ from torch.utils.data.datapipes.utils.decoder import (
     Decoder,
     basichandlers as decoder_basichandlers,
     imagehandler as decoder_imagehandler,
-    extension_extract_fn
+    extension_extract_fn,
 )
 
-__all__ = ["RoutedDecoderIterDataPipe", ]
+__all__ = [
+    "RoutedDecoderIterDataPipe",
+]
 
 
-@functional_datapipe('routed_decode')
+@functional_datapipe("routed_decode")
 class RoutedDecoderIterDataPipe(IterDataPipe[Tuple[str, Any]]):
     r"""
     Decodes binary streams from input DataPipe, yields pathname and decoded data
@@ -34,14 +36,16 @@ class RoutedDecoderIterDataPipe(IterDataPipe[Tuple[str, Any]]):
         could use regex to determine the eligibility to handle data.
     """
 
-    def __init__(self,
-                 datapipe: Iterable[Tuple[str, BufferedIOBase]],
-                 *handlers: Callable,
-                 key_fn: Callable = extension_extract_fn) -> None:
+    def __init__(
+        self,
+        datapipe: Iterable[Tuple[str, BufferedIOBase]],
+        *handlers: Callable,
+        key_fn: Callable = extension_extract_fn,
+    ) -> None:
         super().__init__()
         self.datapipe: Iterable[Tuple[str, BufferedIOBase]] = datapipe
         if not handlers:
-            handlers = (decoder_basichandlers, decoder_imagehandler('torch'))
+            handlers = (decoder_basichandlers, decoder_imagehandler("torch"))
         self.decoder = Decoder(*handlers, key_fn=key_fn)
         _deprecation_warning(
             type(self).__name__,
@@ -62,4 +66,6 @@ class RoutedDecoderIterDataPipe(IterDataPipe[Tuple[str, Any]]):
     def __len__(self) -> int:
         if isinstance(self.datapipe, Sized):
             return len(self.datapipe)
-        raise TypeError("{} instance doesn't have valid length".format(type(self).__name__))
+        raise TypeError(
+            "{} instance doesn't have valid length".format(type(self).__name__)
+        )

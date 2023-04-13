@@ -11,6 +11,7 @@ from torch import Tensor
 from torch.optim import SGD, Adam, AdamW
 from torch.testing._internal.common_utils import TestCase, run_tests
 
+
 class MyModule(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -20,6 +21,7 @@ class MyModule(torch.nn.Module):
 
     def forward(self, t1):
         return self.lin2(F.relu(self.lin1(t1)))
+
 
 # dummy class to showcase custom optimizer registration with functional wrapper
 class MyDummyFnOptimizer:
@@ -58,17 +60,26 @@ class MyDummyFnOptimizer:
     def step_param(self, param: Tensor, grad: Optional[Tensor]):
         # call the custom optimizer step_param implementation
         with torch.no_grad():
-            raise RuntimeError("MyDummyFnOptimizer does not support step_param() as of now")
+            raise RuntimeError(
+                "MyDummyFnOptimizer does not support step_param() as of now"
+            )
 
     def step(self, gradients: List[Optional[Tensor]]):
         # call the custom optimizer step implementation
         with torch.no_grad():
             raise RuntimeError("MyDummyFnOptimizer does not support step() as of now")
 
-if torch.distributed.is_available():
-    from torch.distributed.optim.utils import functional_optim_map, register_functional_optim
 
-@unittest.skipIf(not torch.distributed.is_available(), "These are testing distributed functions")
+if torch.distributed.is_available():
+    from torch.distributed.optim.utils import (
+        functional_optim_map,
+        register_functional_optim,
+    )
+
+
+@unittest.skipIf(
+    not torch.distributed.is_available(), "These are testing distributed functions"
+)
 class TestFunctionalOptimParity(TestCase):
     def _validate_parameters(self, params_1, params_2):
         for p1, p2 in zip(params_1, params_2):

@@ -2,9 +2,6 @@
 # Module caffe2.python.layer_test_util
 
 
-
-
-
 from collections import namedtuple
 
 from caffe2.python import (
@@ -23,14 +20,11 @@ import numpy as np
 # pyre-fixme[13]: Pyre can't detect attribute initialization through the
 #    super().__new__ call
 class OpSpec(namedtuple("OpSpec", "type input output arg")):
-
     def __new__(cls, op_type, op_input, op_output, op_arg=None):
-        return super(OpSpec, cls).__new__(cls, op_type, op_input,
-                                          op_output, op_arg)
+        return super(OpSpec, cls).__new__(cls, op_type, op_input, op_output, op_arg)
 
 
 class LayersTestCase(test_util.TestCase):
-
     def setUp(self):
         super().setUp()
         self.setup_example()
@@ -45,13 +39,14 @@ class LayersTestCase(test_util.TestCase):
 
     def reset_model(self, input_feature_schema=None, trainer_extra_schema=None):
         input_feature_schema = input_feature_schema or schema.Struct(
-            ('float_features', schema.Scalar((np.float32, (32,)))),
+            ("float_features", schema.Scalar((np.float32, (32,)))),
         )
         trainer_extra_schema = trainer_extra_schema or schema.Struct()
         self.model = layer_model_helper.LayerModelHelper(
-            'test_model',
+            "test_model",
             input_feature_schema=input_feature_schema,
-            trainer_extra_schema=trainer_extra_schema)
+            trainer_extra_schema=trainer_extra_schema,
+        )
 
     def new_record(self, schema_obj):
         return schema.NewRecord(self.model.net, schema_obj)
@@ -63,11 +58,11 @@ class LayersTestCase(test_util.TestCase):
         here because it includes initialization of global constants, which make
         testing tricky
         """
-        train_net = core.Net('train_net')
+        train_net = core.Net("train_net")
         if add_constants:
-            train_init_net = self.model.create_init_net('train_init_net')
+            train_init_net = self.model.create_init_net("train_init_net")
         else:
-            train_init_net = core.Net('train_init_net')
+            train_init_net = core.Net("train_init_net")
         for layer in self.model.layers:
             layer.add_operators(train_net, train_init_net)
         return train_init_net, train_net
@@ -80,18 +75,20 @@ class LayersTestCase(test_util.TestCase):
 
     def run_train_net(self):
         self.model.output_schema = schema.Struct()
-        train_init_net, train_net = \
-            layer_model_instantiator.generate_training_nets(self.model)
+        train_init_net, train_net = layer_model_instantiator.generate_training_nets(
+            self.model
+        )
         workspace.RunNetOnce(train_init_net)
         workspace.RunNetOnce(train_net)
 
     def run_train_net_forward_only(self, num_iter=1):
         self.model.output_schema = schema.Struct()
-        train_init_net, train_net = \
-            layer_model_instantiator.generate_training_nets_forward_only(
-                self.model)
+        (
+            train_init_net,
+            train_net,
+        ) = layer_model_instantiator.generate_training_nets_forward_only(self.model)
         workspace.RunNetOnce(train_init_net)
-        assert num_iter > 0, 'num_iter must be larger than 0'
+        assert num_iter > 0, "num_iter must be larger than 0"
         workspace.CreateNet(train_net)
         workspace.RunNet(train_net.Proto().name, num_iter=num_iter)
 

@@ -2,9 +2,6 @@
 # Module caffe2.python.experiment_util
 
 
-
-
-
 import datetime
 import time
 import logging
@@ -13,14 +10,14 @@ import abc
 
 from collections import OrderedDict
 
-'''
+"""
 Utilities for logging experiment run stats, such as accuracy
 and loss over time for different runs. Runtime arguments are stored
 in the log.
 
 Optionally, ModelTrainerLog calls out to a logger to log to
 an external log destination.
-'''
+"""
 
 
 class ExternalLogger:
@@ -29,30 +26,26 @@ class ExternalLogger:
     @abc.abstractmethod
     def set_runtime_args(self, runtime_args):
         """
-            Set runtime arguments for the logger.
-            runtime_args: dict of runtime arguments.
+        Set runtime arguments for the logger.
+        runtime_args: dict of runtime arguments.
         """
         raise NotImplementedError(
-            'Must define set_runtime_args function to use this base class'
+            "Must define set_runtime_args function to use this base class"
         )
 
     @abc.abstractmethod
     def log(self, log_dict):
         """
-            log a dict of key/values to an external destination
-            log_dict: input dict
+        log a dict of key/values to an external destination
+        log_dict: input dict
         """
-        raise NotImplementedError(
-            'Must define log function to use this base class'
-        )
+        raise NotImplementedError("Must define log function to use this base class")
 
 
-class ModelTrainerLog():
-
+class ModelTrainerLog:
     def __init__(self, expname, runtime_args, external_loggers=None):
         now = datetime.datetime.fromtimestamp(time.time())
-        self.experiment_id = \
-            "{}_{}".format(expname, now.strftime('%Y%m%d_%H%M%S'))
+        self.experiment_id = "{}_{}".format(expname, now.strftime("%Y%m%d_%H%M%S"))
         self.filename = "{}.log".format(self.experiment_id)
         self.logstr("# %s" % str(runtime_args))
         self.headers = None
@@ -65,8 +58,8 @@ class ModelTrainerLog():
             self.external_loggers = external_loggers
             if not isinstance(runtime_args, dict):
                 runtime_args = dict(vars(runtime_args))
-            runtime_args['experiment_id'] = self.experiment_id
-            runtime_args['hostname'] = socket.gethostname()
+            runtime_args["experiment_id"] = self.experiment_id
+            runtime_args["hostname"] = socket.gethostname()
             for logger in self.external_loggers:
                 logger.set_runtime_args(runtime_args)
         else:
@@ -85,15 +78,15 @@ class ModelTrainerLog():
         self.last_time = time.time()
         self.last_input_count = input_count
 
-        logdict['time_spent'] = delta_t
-        logdict['cumulative_time_spent'] = time.time() - self.start_time
-        logdict['input_count'] = delta_count
-        logdict['cumulative_input_count'] = input_count
-        logdict['cumulative_batch_count'] = batch_count
+        logdict["time_spent"] = delta_t
+        logdict["cumulative_time_spent"] = time.time() - self.start_time
+        logdict["input_count"] = delta_count
+        logdict["cumulative_input_count"] = input_count
+        logdict["cumulative_batch_count"] = batch_count
         if delta_t > 0:
-            logdict['inputs_per_sec'] = delta_count / delta_t
+            logdict["inputs_per_sec"] = delta_count / delta_t
         else:
-            logdict['inputs_per_sec'] = 0.0
+            logdict["inputs_per_sec"] = 0.0
 
         for k in sorted(additional_values.keys()):
             logdict[k] = additional_values[k]
@@ -109,5 +102,4 @@ class ModelTrainerLog():
             try:
                 logger.log(logdict)
             except Exception as e:
-                logging.warning(
-                    "Failed to call ExternalLogger: {}".format(e), e)
+                logging.warning("Failed to call ExternalLogger: {}".format(e), e)

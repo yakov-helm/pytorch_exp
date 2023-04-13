@@ -1,5 +1,3 @@
-
-
 import numpy as np
 
 
@@ -49,12 +47,12 @@ def _compress_uniform_simplified(X, bit_rate, xmin, xmax, fp16_scale_bias=True):
         xmin = xmin.astype(np.float16).astype(np.float32)
     data_range = xmax - xmin
     scale = np.where(
-        data_range == 0, np.float32(1), data_range / np.float32(2 ** bit_rate - 1)
+        data_range == 0, np.float32(1), data_range / np.float32(2**bit_rate - 1)
     )
     if fp16_scale_bias:
         scale = scale.astype(np.float16).astype(np.float32)
     inverse_scale = np.float32(1) / scale
-    Xq = np.clip(np.round((X - xmin) * inverse_scale), 0, np.float32(2 ** bit_rate - 1))
+    Xq = np.clip(np.round((X - xmin) * inverse_scale), 0, np.float32(2**bit_rate - 1))
     Xq = Xq * scale + xmin
 
     # Manually compute loss instead of using np.linalg.norm to use the same

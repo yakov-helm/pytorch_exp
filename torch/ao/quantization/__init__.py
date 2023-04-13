@@ -131,6 +131,7 @@ __all__ = [
     "weight_observer_range_neg_127_to_127",
 ]
 
+
 def default_eval_fn(model, calib_data):
     r"""
     Default evaluation function takes a torch.utils.data.Dataset or a list of

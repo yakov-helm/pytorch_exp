@@ -9,6 +9,7 @@ from torch.fx.experimental.proxy_tensor import make_fx
 
 from torch.testing._internal.common_utils import run_tests, TestCase
 
+
 class TestControlFlow(TestCase):
     def test_cond_no_trace(self):
         def true_fn(x):
@@ -88,10 +89,18 @@ class TestControlFlowTraced(TestCase):
         x = torch.randn(4)
         graph = make_fx(f)(x, torch.tensor(False), torch.tensor(False))
 
-        result_true_true = graph.forward(x, torch.tensor(True), torch.tensor(True))  # True + True -> x * x
-        result_true_false = graph.forward(x, torch.tensor(True), torch.tensor(False))  # True + True -> x + x
-        result_false_true = graph.forward(x, torch.tensor(False), torch.tensor(True))  # False + either -> cos
-        result_false_false = graph.forward(x, torch.tensor(False), torch.tensor(False))  # False + either -> cos
+        result_true_true = graph.forward(
+            x, torch.tensor(True), torch.tensor(True)
+        )  # True + True -> x * x
+        result_true_false = graph.forward(
+            x, torch.tensor(True), torch.tensor(False)
+        )  # True + True -> x + x
+        result_false_true = graph.forward(
+            x, torch.tensor(False), torch.tensor(True)
+        )  # False + either -> cos
+        result_false_false = graph.forward(
+            x, torch.tensor(False), torch.tensor(False)
+        )  # False + either -> cos
 
         self.assertNotEqual(result_true_true, result_true_false)
         self.assertFalse(torch.allclose(result_false_true, result_true_true))
@@ -103,8 +112,13 @@ class TestControlFlowTraced(TestCase):
 
         self.assertEqual(result_false_true, torch.cos(x))
 
-        graph = make_fx(f, tracing_mode="symbolic")(x, torch.tensor(False), torch.tensor(False))
-        self.assertEqual(graph(x, torch.tensor(True), torch.tensor(True)), f(x, torch.tensor(True), torch.tensor(True)))
+        graph = make_fx(f, tracing_mode="symbolic")(
+            x, torch.tensor(False), torch.tensor(False)
+        )
+        self.assertEqual(
+            graph(x, torch.tensor(True), torch.tensor(True)),
+            f(x, torch.tensor(True), torch.tensor(True)),
+        )
 
     def test_cond_functionalized(self):
         def true_fn(x):
@@ -133,7 +147,9 @@ class TestControlFlowTraced(TestCase):
 
         self.assertFalse(any([op._schema.is_mutable for op in all_ops_in_true_branch]))
 
-        graph_module = make_fx(torch.func.functionalize(f), tracing_mode="symbolic")(*example_inputs)
+        graph_module = make_fx(torch.func.functionalize(f), tracing_mode="symbolic")(
+            *example_inputs
+        )
         self.assertEqual(graph_module(*example_inputs), f(*example_inputs))
 
     def test_cond_retrace_functionalized(self):
@@ -148,7 +164,9 @@ class TestControlFlowTraced(TestCase):
 
         inp = torch.ones(1, 2)
         gm_non_functional = make_fx(f, tracing_mode="real")(inp)
-        gm_functional = make_fx(torch.func.functionalize(gm_non_functional), tracing_mode="real")(inp)
+        gm_functional = make_fx(
+            torch.func.functionalize(gm_non_functional), tracing_mode="real"
+        )(inp)
         self.assertEqual(gm_functional(torch.zeros(1, 2)), f(torch.zeros(1, 2)))
 
     def test_cond_functionalized_nested(self):
@@ -180,7 +198,9 @@ class TestControlFlowTraced(TestCase):
 
         gm_true_true_branch = graph_module.true_graph_0.true_graph_0
 
-        graph_module1 = make_fx(torch.func.functionalize(f), tracing_mode="symbolic")(*example_inputs)
+        graph_module1 = make_fx(torch.func.functionalize(f), tracing_mode="symbolic")(
+            *example_inputs
+        )
         self.assertEqual(graph_module1(*example_inputs), f(*example_inputs))
 
         all_ops = []
@@ -223,10 +243,14 @@ class TestControlFlowTraced(TestCase):
 
         example_inputs = (torch.ones(4, 5),)
         functional_f = torch.func.functionalize(f)
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "One of torch.cond branch"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException, "One of torch.cond branch"
+        ):
             functional_f(*example_inputs)
 
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "One of torch.cond branch"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException, "One of torch.cond branch"
+        ):
             make_fx(torch.func.functionalize(f))(*example_inputs)
 
     def test_cond_functionalized_input_mutation_on_false_branch(self):
@@ -244,10 +268,14 @@ class TestControlFlowTraced(TestCase):
 
         example_inputs = (torch.ones(5, 5),)
         functional_f = torch.func.functionalize(f)
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "One of torch.cond branch"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException, "One of torch.cond branch"
+        ):
             functional_f(*example_inputs)
 
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "One of torch.cond branch"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException, "One of torch.cond branch"
+        ):
             make_fx(torch.func.functionalize(f))(*example_inputs)
 
     def test_cond_functionalized_output_alias_input(self):
@@ -265,10 +293,16 @@ class TestControlFlowTraced(TestCase):
         example_inputs = (torch.ones(5, 5),)
         functional_f = torch.func.functionalize(f)
 
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "One of torch.cond branch might be aliasing"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException,
+            "One of torch.cond branch might be aliasing",
+        ):
             functional_f(*example_inputs)
 
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "One of torch.cond branch might be aliasing"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException,
+            "One of torch.cond branch might be aliasing",
+        ):
             make_fx(torch.func.functionalize(f))(*example_inputs)
 
     def test_cond_functionalized_nested_input_mutation(self):
@@ -292,10 +326,14 @@ class TestControlFlowTraced(TestCase):
 
         example_inputs = (torch.ones(4, 5),)
         functional_f = torch.func.functionalize(f)
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "One of torch.cond branch"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException, "One of torch.cond branch"
+        ):
             functional_f(*example_inputs)
 
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "One of torch.cond branch"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException, "One of torch.cond branch"
+        ):
             make_fx(torch.func.functionalize(f))(*example_inputs)
 
     def test_cond_nested_traced_other_inputs(self):
@@ -307,7 +345,7 @@ class TestControlFlowTraced(TestCase):
 
         def true_fn(k, pred2):
             z = cond(pred2, true_nested, false_nested, [k])
-            return torch.add(torch.tensor([.25, .25]), z)
+            return torch.add(torch.tensor([0.25, 0.25]), z)
 
         def false_fn(k, _):
             return k.cos()
@@ -392,7 +430,6 @@ class TestControlFlowTraced(TestCase):
         with self.assertRaises(AssertionError):
             make_fx(f)(x, torch.tensor(False))
 
-
     def test_assert_on_mismatch_tensor_size(self):
         def true_fn(x):
             return x.sin()
@@ -443,12 +480,22 @@ class TestControlFlowTraced(TestCase):
             return cond(pred, true_fn, false_fn, [x, pred2])
 
         x = torch.randn(4)
-        graph = make_fx(f, tracing_mode="fake")(x, torch.tensor(False), torch.tensor(False))
+        graph = make_fx(f, tracing_mode="fake")(
+            x, torch.tensor(False), torch.tensor(False)
+        )
 
-        result_true_true = graph.forward(x, torch.tensor(True), torch.tensor(True))  # True + True -> x * x
-        result_true_false = graph.forward(x, torch.tensor(True), torch.tensor(False))  # True + True -> x + x
-        result_false_true = graph.forward(x, torch.tensor(False), torch.tensor(True))  # False + either -> cos
-        result_false_false = graph.forward(x, torch.tensor(False), torch.tensor(False))  # False + either -> cos
+        result_true_true = graph.forward(
+            x, torch.tensor(True), torch.tensor(True)
+        )  # True + True -> x * x
+        result_true_false = graph.forward(
+            x, torch.tensor(True), torch.tensor(False)
+        )  # True + True -> x + x
+        result_false_true = graph.forward(
+            x, torch.tensor(False), torch.tensor(True)
+        )  # False + either -> cos
+        result_false_false = graph.forward(
+            x, torch.tensor(False), torch.tensor(False)
+        )  # False + either -> cos
 
         self.assertNotEqual(result_true_true, result_true_false)
         self.assertFalse(torch.allclose(result_false_true, result_true_true))
@@ -469,7 +516,7 @@ class TestControlFlowTraced(TestCase):
 
         def true_fn(k, pred2):
             z = cond(pred2, true_nested, false_nested, [k])
-            return torch.add(torch.tensor([.25, .25]), z)
+            return torch.add(torch.tensor([0.25, 0.25]), z)
 
         def false_fn(k, _):
             return k.cos()
@@ -478,7 +525,9 @@ class TestControlFlowTraced(TestCase):
             return cond(pred, true_fn, false_fn, [k, pred2])
 
         x = torch.tensor([0.5, 0.5])
-        graph = make_fx(f, tracing_mode="fake")(x, torch.tensor(False), torch.tensor(False))
+        graph = make_fx(f, tracing_mode="fake")(
+            x, torch.tensor(False), torch.tensor(False)
+        )
 
         a = torch.tensor([1.0, 1.0])
         result_true_true = graph.forward(a, torch.tensor(True), torch.tensor(True))
@@ -507,7 +556,9 @@ class TestControlFlowTraced(TestCase):
             return a_out + b_out
 
         x = torch.randn(4)
-        graph = make_fx(f, tracing_mode="fake")(x, torch.tensor(False), torch.tensor(False))
+        graph = make_fx(f, tracing_mode="fake")(
+            x, torch.tensor(False), torch.tensor(False)
+        )
 
         # Brittle, yet, delicious
         out = """
@@ -553,7 +604,6 @@ class TestControlFlowTraced(TestCase):
         x = torch.randn(4)
         with self.assertRaises(AssertionError):
             make_fx(f, tracing_mode="fake")(x, torch.tensor(False))
-
 
     def test_assert_on_mismatch_tensor_size_fake_tensor(self):
         def true_fn(x):
@@ -623,7 +673,9 @@ class TestControlFlowTraced(TestCase):
         gm = make_fx(torch.func.functionalize(f))(*example_inputs)
         self.assertEqual(gm(*example_inputs), f(*example_inputs))
 
-        gm = make_fx(torch.func.functionalize(f), tracing_mode="symbolic")(*example_inputs)
+        gm = make_fx(torch.func.functionalize(f), tracing_mode="symbolic")(
+            *example_inputs
+        )
         self.assertEqual(gm(*example_inputs), f(*example_inputs))
 
         for node in gm.body_graph_0.graph.nodes:
@@ -640,7 +692,9 @@ class TestControlFlowTraced(TestCase):
 
         example_inputs = (torch.ones(3, 2, 4), torch.ones(4))
         functional_f = torch.func.functionalize(f)
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "torch.map is mutating the input!"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException, "torch.map is mutating the input!"
+        ):
             functional_f(*example_inputs)
 
     def test_map_functionalized_elem_mutation(self):
@@ -653,7 +707,9 @@ class TestControlFlowTraced(TestCase):
 
         example_inputs = (torch.ones(3, 2, 4), torch.ones(4))
         functional_f = torch.func.functionalize(f)
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "torch.map is mutating the input!"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException, "torch.map is mutating the input!"
+        ):
             functional_f(*example_inputs)
 
     def test_map_functionalized_elem_alias(self):
@@ -666,7 +722,9 @@ class TestControlFlowTraced(TestCase):
 
         example_inputs = (torch.ones(3, 2, 4),)
         functional_f = torch.func.functionalize(f)
-        with self.assertRaisesRegex(UnsupportedAliasMutationException, "torch.map is aliasing the input!"):
+        with self.assertRaisesRegex(
+            UnsupportedAliasMutationException, "torch.map is aliasing the input!"
+        ):
             functional_f(*example_inputs)
 
     def test_nested_map_cond_real(self):
@@ -716,7 +774,6 @@ class TestControlFlowTraced(TestCase):
         self.check_map_graph(gm, "val")
 
     def test_nested_cond_map_cond_symbolic(self):
-
         def true_fn(x, y):
             return x * y
 
@@ -762,5 +819,6 @@ class TestControlFlowTraced(TestCase):
         x = torch.ones(4, 3, 2)
         self.assertEqual(foo(x), gm(x))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_tests()

@@ -2,9 +2,6 @@
 # Module caffe2.python.cached_reader
 
 
-
-
-
 import os
 
 from caffe2.python import core
@@ -15,7 +12,7 @@ from caffe2.python.task import Cluster, TaskGroup
 
 class CachedReader(DBFileReader):
 
-    default_name_suffix = 'cached_reader'
+    default_name_suffix = "cached_reader"
 
     """Reader with persistent in-file cache.
 
@@ -59,11 +56,12 @@ class CachedReader(DBFileReader):
             If True given, will go through examples in random order endlessly.
             Defaults to False.
     """
+
     def __init__(
         self,
         original_reader,
         db_path,
-        db_type='LevelDB',
+        db_type="LevelDB",
         name=None,
         batch_size=100,
         loop_over=False,
@@ -82,44 +80,44 @@ class CachedReader(DBFileReader):
     def _init_reader_schema(self, *args, **kwargs):
         """Prepare the reader schema.
 
-            Since an original reader is given,
-            use it's schema as ground truth.
+        Since an original reader is given,
+        use it's schema as ground truth.
 
-            Returns:
-                schema: schema.Struct. Used in Reader.__init__(...).
+        Returns:
+            schema: schema.Struct. Used in Reader.__init__(...).
         """
         return self.original_reader._schema
 
     def build_cache_step(self, overwrite=False):
         """Build a step for generating cache DB file.
 
-            If self.db_path exists and not overwritting, build an empty step.
-            Overwise, build a step as follows.
-            Pipe original reader to the _DatasetWriter,
-            so that dataset field blobs are populated.
-            Then save these blobs into a file.
+        If self.db_path exists and not overwritting, build an empty step.
+        Overwise, build a step as follows.
+        Pipe original reader to the _DatasetWriter,
+        so that dataset field blobs are populated.
+        Then save these blobs into a file.
 
-            Args:
-                overwrite: bool. If true, ignore the existing file
-                    and build a new one overwritting the existing one anyway.
+        Args:
+            overwrite: bool. If true, ignore the existing file
+                and build a new one overwritting the existing one anyway.
 
-            Returns:
-                build_cache_step: ExecutionStep.
-                    The step to be run for building a cache DB file.
+        Returns:
+            build_cache_step: ExecutionStep.
+                The step to be run for building a cache DB file.
         """
         if os.path.exists(self.db_path) and not overwrite:
             # cache already exists, no need to rebuild it
-            return core.execution_step('build_step', [])
+            return core.execution_step("build_step", [])
 
-        init_net = core.Net('init')
+        init_net = core.Net("init")
         self._init_field_blobs_as_empty(init_net)
         with Cluster(), core.NameScope(self.name), TaskGroup() as copy_tg:
             pipe(self.original_reader, self.ds.writer(), num_threads=16)
             copy_step = copy_tg.to_task().get_step()
-        save_net = core.Net('save')
+        save_net = core.Net("save")
         self._save_field_blobs_to_db_file(save_net)
 
-        return core.execution_step('build_cache', [init_net, copy_step, save_net])
+        return core.execution_step("build_cache", [init_net, copy_step, save_net])
 
     def _save_field_blobs_to_db_file(self, net):
         """Save dataset field blobs to a DB file at db_path"""

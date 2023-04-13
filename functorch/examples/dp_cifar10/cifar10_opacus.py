@@ -279,6 +279,7 @@ def main():
     )
     logger.info(metrics)
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="PyTorch CIFAR10 DP Training")
     parser.add_argument(
@@ -309,7 +310,7 @@ def parse_args():
         default=256,
         type=int,
         metavar="N",
-        help="mini-batch size for test dataset (default: 256)"
+        help="mini-batch size for test dataset (default: 256)",
     )
     parser.add_argument(
         "--sample-rate",

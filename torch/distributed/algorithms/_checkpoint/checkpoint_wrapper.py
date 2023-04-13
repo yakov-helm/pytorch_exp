@@ -11,6 +11,7 @@ from torch.utils.checkpoint import checkpoint as torch_utils_checkpoint
 _CHECKPOINT_WRAPPED_MODULE = "_checkpoint_wrapped_module"
 _CHECKPOINT_PREFIX = _CHECKPOINT_WRAPPED_MODULE + "."
 
+
 class CheckpointImpl(Enum):
     REENTRANT = auto()
     NO_REENTRANT = auto()
@@ -21,6 +22,7 @@ class ActivationWrapper(torch.nn.Module):
     Base class for Activation Checkpoint and Activation Offload.
     Not meant to be instantiated directly.
     """
+
     def __init__(self, mod):
         super().__init__()
         self._checkpoint_wrapped_module = mod
@@ -108,6 +110,7 @@ class CheckpointWrapper(ActivationWrapper):
     module is not meant to be used directly, but instead it is to be used
     through the ``checkpoint_wrapper`` function.
     """
+
     def __init__(
         self,
         mod: torch.nn.Module,
@@ -122,9 +125,7 @@ class CheckpointWrapper(ActivationWrapper):
             # use torch.utils.checkpoint
             self.checkpoint_fn = partial(
                 torch_utils_checkpoint,
-                use_reentrant=(
-                    self.checkpoint_impl == CheckpointImpl.REENTRANT
-                ),
+                use_reentrant=(self.checkpoint_impl == CheckpointImpl.REENTRANT),
             )
         else:
             # Construct user-specified checkpoint function.
@@ -147,9 +148,7 @@ class CheckpointWrapper(ActivationWrapper):
             # function, and runs that function.
             def my_function(*inputs):
                 # unpack back into args and kwargs
-                unpacked_args, unpacked_kwargs = _unpack_kwargs(
-                    inputs, kwarg_keys
-                )
+                unpacked_args, unpacked_kwargs = _unpack_kwargs(inputs, kwarg_keys)
                 # run original module
                 return self._checkpoint_wrapped_module(
                     *unpacked_args, **unpacked_kwargs
@@ -163,14 +162,11 @@ class CheckpointWrapper(ActivationWrapper):
             )
         else:
             return self.checkpoint_fn(  # type: ignore[misc]
-                self._checkpoint_wrapped_module,
-                *args,
-                **kwargs
+                self._checkpoint_wrapped_module, *args, **kwargs
             )
 
-def offload_wrapper(
-    module: torch.nn.Module
-) -> torch.nn.Module:
+
+def offload_wrapper(module: torch.nn.Module) -> torch.nn.Module:
     """
     A convenience wrapper for activation offloading to CPU. If the module is wrapped
     with this function, all subsequent calls to the module will automatically
@@ -269,11 +265,12 @@ def apply_activation_checkpointing(
     # TODO: Importing inside function to avoid circular import issue between FSDP and
     # checkpoint_wrapper. This can be resolved once wrap() APIs are decoupled from FSDP code.
     from torch.distributed.fsdp.wrap import _recursive_wrap, lambda_auto_wrap_policy
+
     _recursive_wrap(
         module=model,
         auto_wrap_policy=partial(lambda_auto_wrap_policy, lambda_fn=check_fn),
         wrapper_cls=checkpoint_wrapper_fn,
         ignored_modules=set(),
         ignored_params=set(),
-        only_wrap_children=True
+        only_wrap_children=True,
     )

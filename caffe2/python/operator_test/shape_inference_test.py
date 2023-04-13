@@ -1,8 +1,3 @@
-
-
-
-
-
 import numpy as np
 import unittest
 
@@ -10,10 +5,10 @@ from caffe2.proto import caffe2_pb2
 from caffe2.python import core, workspace, test_util, model_helper, brew, build
 
 
-@unittest.skipIf(build.CAFFE2_NO_OPERATOR_SCHEMA,
-                 'Built with CAFFE2_NO_OPERATOR_SCHEMA')
+@unittest.skipIf(
+    build.CAFFE2_NO_OPERATOR_SCHEMA, "Built with CAFFE2_NO_OPERATOR_SCHEMA"
+)
 class TestShapeInference(test_util.TestCase):
-
     def testShapeInferenceSimpleFC(self):
         m = model_helper.ModelHelper(name="test_model")
 
@@ -22,24 +17,28 @@ class TestShapeInference(test_util.TestCase):
 
         for b in [0, 64]:
             (shapes, types) = workspace.InferShapesAndTypes(
-                [m.param_init_net, m.net],
-                {'data': [b, 96]}
+                [m.param_init_net, m.net], {"data": [b, 96]}
             )
 
-            self.assertEqual(shapes['data'], [b, 96])
-            self.assertEqual(shapes['fc1_w'], [32, 96])
-            self.assertEqual(shapes['fc1_b'], [32])
-            self.assertEqual(shapes['fc1'], [b, 32])
-            self.assertEqual(shapes['fc2_w'], [55, 32])
-            self.assertEqual(shapes['fc2_b'], [55])
-            self.assertEqual(shapes['fc2'], [b, 55])
+            self.assertEqual(shapes["data"], [b, 96])
+            self.assertEqual(shapes["fc1_w"], [32, 96])
+            self.assertEqual(shapes["fc1_b"], [32])
+            self.assertEqual(shapes["fc1"], [b, 32])
+            self.assertEqual(shapes["fc2_w"], [55, 32])
+            self.assertEqual(shapes["fc2_b"], [55])
+            self.assertEqual(shapes["fc2"], [b, 55])
 
     def testFCAxis2(self):
         model = model_helper.ModelHelper(name="test_model")
         model.net.FC(["x", "w", "b"], ["y"], axis=2)
         workspace.FeedBlob("x", np.random.rand(4, 20, 36).astype(np.float32))
         workspace.FeedBlob("w", np.random.rand(36, 36).astype(np.float32))
-        workspace.FeedBlob("b", np.random.rand(36,).astype(np.float32))
+        workspace.FeedBlob(
+            "b",
+            np.random.rand(
+                36,
+            ).astype(np.float32),
+        )
         self.InferTensorRunAndCompare(model)
 
     def testFCTransposed(self):
@@ -47,7 +46,12 @@ class TestShapeInference(test_util.TestCase):
         model.net.FCTransposed(["x", "wt", "b"], ["y"])
         workspace.FeedBlob("x", np.random.rand(20, 36).astype(np.float32))
         workspace.FeedBlob("wt", np.random.rand(36, 48).astype(np.float32))
-        workspace.FeedBlob("b", np.random.rand(48,).astype(np.float32))
+        workspace.FeedBlob(
+            "b",
+            np.random.rand(
+                48,
+            ).astype(np.float32),
+        )
         self.InferTensorRunAndCompare(model)
 
     def testShapeInferenceSlice(self):
@@ -57,10 +61,8 @@ class TestShapeInference(test_util.TestCase):
 
         slice_starts = np.array([0, 0, 0, 0]).astype(np.int32)
         slice_ends = np.array([-1, -1, -3, -1]).astype(np.int32)
-        slice_starts = model.net.GivenTensorIntFill(
-            [], shape=[4], values=slice_starts)
-        slice_ends = model.net.GivenTensorIntFill(
-            [], shape=[4], values=slice_ends)
+        slice_starts = model.net.GivenTensorIntFill([], shape=[4], values=slice_starts)
+        slice_ends = model.net.GivenTensorIntFill([], shape=[4], values=slice_ends)
         model.net.Slice(["x2", slice_starts, slice_ends], ["y2"])
         workspace.FeedBlob("x2", np.random.rand(64, 1, 255, 384).astype(np.float32))
 
@@ -110,29 +112,38 @@ class TestShapeInference(test_util.TestCase):
     def testShapeInferenceConvNet(self):
         model = model_helper.ModelHelper(name="convtest")
         model.NHWC2NCHW("data", "data_nchw")
-        brew.conv(model, "data_nchw", 'conv1', 3, 64,
-                   weight_init=("MSRAFill", {}), kernel=7,
-                   stride=2, pad=3, no_bias=0)
-        brew.spatial_bn(model, 'conv1', 'conv1_spatbn_relu', 64, epsilon=1e-3, is_test=False)
-        brew.relu(model, 'conv1_spatbn_relu', 'conv1_spatbn_relu')
-        brew.max_pool(model, 'conv1_spatbn_relu', 'pool1', kernel=3, stride=2)
-        brew.fc(model, 'pool1', 'fc', dim_in=(64 * 56 * 56), dim_out=100)
-        brew.dropout(model, 'fc', 'fc_drop', is_test=False)
-        model.Sigmoid('fc_drop', 'fc_sigm')
-        brew.softmax(model, 'fc_sigm', 'softmax')
-        model.LabelCrossEntropy(['softmax', 'label'], 'xent')
-        loss = model.AveragedLoss('xent', 'loss')
+        brew.conv(
+            model,
+            "data_nchw",
+            "conv1",
+            3,
+            64,
+            weight_init=("MSRAFill", {}),
+            kernel=7,
+            stride=2,
+            pad=3,
+            no_bias=0,
+        )
+        brew.spatial_bn(
+            model, "conv1", "conv1_spatbn_relu", 64, epsilon=1e-3, is_test=False
+        )
+        brew.relu(model, "conv1_spatbn_relu", "conv1_spatbn_relu")
+        brew.max_pool(model, "conv1_spatbn_relu", "pool1", kernel=3, stride=2)
+        brew.fc(model, "pool1", "fc", dim_in=(64 * 56 * 56), dim_out=100)
+        brew.dropout(model, "fc", "fc_drop", is_test=False)
+        model.Sigmoid("fc_drop", "fc_sigm")
+        brew.softmax(model, "fc_sigm", "softmax")
+        model.LabelCrossEntropy(["softmax", "label"], "xent")
+        loss = model.AveragedLoss("xent", "loss")
 
         model.AddGradientOperators([loss])
 
-        LR = model.param_init_net.ConstantFill(
-            [], 'LR', shape=[1], value=0.1
-        )
+        LR = model.param_init_net.ConstantFill([], "LR", shape=[1], value=0.1)
 
         for param in model.GetParams():
             param_grad = model.param_to_grad[param]
             param_momentum = model.param_init_net.ConstantFill(
-                [param], param + '_momentum', value=0.0
+                [param], param + "_momentum", value=0.0
             )
             model.net.MomentumSGDUpdate(
                 [param_grad, param_momentum, LR, param],
@@ -158,10 +169,7 @@ class TestShapeInference(test_util.TestCase):
     def testShapeInferenceTranspose(self):
         model = model_helper.ModelHelper(name="test_model")
 
-        workspace.FeedBlob(
-            "tensor",
-            np.random.rand(4, 2, 3, 3, 5).astype(np.float32)
-        )
+        workspace.FeedBlob("tensor", np.random.rand(4, 2, 3, 3, 5).astype(np.float32))
 
         # Testing with axes undefined
         brew.transpose(
@@ -172,19 +180,22 @@ class TestShapeInference(test_util.TestCase):
         self.InferTensorRunAndCompare(model)
 
         # Testing with axes defined
-        brew.transpose(
-            model,
-            ["tensor"],
-            "transpose",
-            axes=np.random.permutation(5)
-        )
+        brew.transpose(model, ["tensor"], "transpose", axes=np.random.permutation(5))
 
         return self.InferTensorRunAndCompare(model)
 
     def testShapeInferencePad(self):
         model = model_helper.ModelHelper(name="padtest")
-        model.PadImage("data", 'padded', pad_t=100, pad_l=37, pad_b=28,
-                       pad_r=20, mode="constant", order="NCHW")
+        model.PadImage(
+            "data",
+            "padded",
+            pad_t=100,
+            pad_l=37,
+            pad_b=28,
+            pad_r=20,
+            mode="constant",
+            order="NCHW",
+        )
 
         workspace.FeedBlob(
             "data",
@@ -201,8 +212,7 @@ class TestShapeInference(test_util.TestCase):
 
     def testShapeInferencePadZero(self):
         model = model_helper.ModelHelper(name="padtest")
-        model.PadImage("data", 'padded', pad=0, mode="constant",
-                       order="NCHW")
+        model.PadImage("data", "padded", pad=0, mode="constant", order="NCHW")
 
         workspace.FeedBlob(
             "data",
@@ -278,13 +288,9 @@ class TestShapeInference(test_util.TestCase):
 
         # Test spatial model
         model = model_helper.ModelHelper(name="test_model")
+        workspace.FeedBlob("img", np.random.rand(32, 19, 33, 28).astype(np.float32))
         workspace.FeedBlob(
-            "img",
-            np.random.rand(32, 19, 33, 28).astype(np.float32)
-        )
-        workspace.FeedBlob(
-            "img_labels",
-            (np.random.rand(32, 33, 28) * 19).astype(np.int32)
+            "img_labels", (np.random.rand(32, 33, 28) * 19).astype(np.int32)
         )
         model.SpatialSoftmaxWithLoss(
             ["img", "img_labels"],
@@ -295,8 +301,7 @@ class TestShapeInference(test_util.TestCase):
     def testShapeInferenceIm2Col(self):
         # Test with NCHW
         model = model_helper.ModelHelper(name="test_model")
-        model.Im2Col("X", "Y", pad=1, kernel=4, dilation=2, stride=2,
-                     order="NCHW")
+        model.Im2Col("X", "Y", pad=1, kernel=4, dilation=2, stride=2, order="NCHW")
 
         workspace.FeedBlob(
             "X",
@@ -307,8 +312,7 @@ class TestShapeInference(test_util.TestCase):
 
         # Test with NHWC
         model = model_helper.ModelHelper(name="test_model")
-        model.Im2Col("X", "Y", pad=1, kernel=4, dilation=2, stride=2,
-                     order="NHWC")
+        model.Im2Col("X", "Y", pad=1, kernel=4, dilation=2, stride=2, order="NHWC")
 
         workspace.FeedBlob(
             "X",
@@ -319,8 +323,7 @@ class TestShapeInference(test_util.TestCase):
 
         # Test with different width and height
         model = model_helper.ModelHelper(name="test_model")
-        model.Im2Col("X", "Y", pad=1, kernel_h=8, kernel_w=4,
-                     dilation=2, stride=2)
+        model.Im2Col("X", "Y", pad=1, kernel_h=8, kernel_w=4, dilation=2, stride=2)
 
         workspace.FeedBlob(
             "X",
@@ -332,15 +335,11 @@ class TestShapeInference(test_util.TestCase):
     def testShapeInferenceTile(self):
         m = model_helper.ModelHelper(name="test_model")
 
-        workspace.FeedBlob(
-            "tensor",
-            np.random.rand(4, 2, 3, 3, 5).astype(np.float32)
-        )
+        workspace.FeedBlob("tensor", np.random.rand(4, 2, 3, 3, 5).astype(np.float32))
 
         # Testing with axes undefined
         for i in range(0, 4):
-            m.net.Tile(
-                "tensor", "tiled_tensor_{}".format(i), tiles=5, axis=i)
+            m.net.Tile("tensor", "tiled_tensor_{}".format(i), tiles=5, axis=i)
         self.InferTensorRunAndCompare(m)
 
     def testShapeInferenceFlatten(self):
@@ -420,16 +419,16 @@ class TestShapeInference(test_util.TestCase):
         (shapes, types) = workspace.InferShapesAndTypes(
             [net],
             {
-                'A': [10, 12, 9, 10],
-                'B': [10, 9, 9, 10],
-                'D': [10, 2, 9, 10],
-                'F': [10, 23, 9, 10]
-            }
+                "A": [10, 12, 9, 10],
+                "B": [10, 9, 9, 10],
+                "D": [10, 2, 9, 10],
+                "F": [10, 23, 9, 10],
+            },
         )
-        self.assertEqual(shapes['C'], [10, 21, 9, 10])
-        self.assertEqual(shapes['splits'], [2])
-        self.assertEqual(shapes['E'], [10, 23, 9, 10])
-        self.assertEqual(shapes['G'], [10, 23, 9, 2, 10])
+        self.assertEqual(shapes["C"], [10, 21, 9, 10])
+        self.assertEqual(shapes["splits"], [2])
+        self.assertEqual(shapes["E"], [10, 23, 9, 10])
+        self.assertEqual(shapes["G"], [10, 23, 9, 2, 10])
 
     def testConcatInt32(self):
         net = core.Net("concat")
@@ -440,59 +439,58 @@ class TestShapeInference(test_util.TestCase):
         (shapes, types) = workspace.InferShapesAndTypes(
             [net],
             blob_dimensions={
-                'A': [10, 12, 9, 10],
-                'B': [10, 9, 9, 10],
-                'D': [10, 2, 9, 10],
-                'F': [10, 23, 9, 10]
+                "A": [10, 12, 9, 10],
+                "B": [10, 9, 9, 10],
+                "D": [10, 2, 9, 10],
+                "F": [10, 23, 9, 10],
             },
             blob_types={
-                'A': core.DataType.INT32,
-                'B': core.DataType.INT32,
-                'D': core.DataType.INT32,
-                'F': core.DataType.INT32,
-            }
+                "A": core.DataType.INT32,
+                "B": core.DataType.INT32,
+                "D": core.DataType.INT32,
+                "F": core.DataType.INT32,
+            },
         )
-        self.assertEqual(shapes['C'], [10, 21, 9, 10])
-        self.assertEqual(shapes['splits'], [2])
-        self.assertEqual(shapes['E'], [10, 23, 9, 10])
-        self.assertEqual(shapes['G'], [10, 23, 9, 2, 10])
-        self.assertEqual(types['C'], core.DataType.INT32)
-        self.assertEqual(types['splits'], core.DataType.INT32)
-        self.assertEqual(types['E'], core.DataType.INT32)
-        self.assertEqual(types['G'], core.DataType.INT32)
+        self.assertEqual(shapes["C"], [10, 21, 9, 10])
+        self.assertEqual(shapes["splits"], [2])
+        self.assertEqual(shapes["E"], [10, 23, 9, 10])
+        self.assertEqual(shapes["G"], [10, 23, 9, 2, 10])
+        self.assertEqual(types["C"], core.DataType.INT32)
+        self.assertEqual(types["splits"], core.DataType.INT32)
+        self.assertEqual(types["E"], core.DataType.INT32)
+        self.assertEqual(types["G"], core.DataType.INT32)
 
     def testSqueeze(self):
         net = core.Net("sq")
         net.Squeeze(["data"], ["data_squeezed"], dims=[3, 1])
         (shapes, types) = workspace.InferShapesAndTypes(
-            [net],
-            {'data': [64, 1, 96, 1, 4]}
+            [net], {"data": [64, 1, 96, 1, 4]}
         )
-        self.assertEqual(shapes['data_squeezed'], [64, 96, 4])
+        self.assertEqual(shapes["data_squeezed"], [64, 96, 4])
 
     def testCast(self):
         model = model_helper.ModelHelper(name="test_model")
 
         types = [
-            ('bool', np.bool, caffe2_pb2.TensorProto.BOOL),
-            #('byte', None, caffe2_pb2.TensorProto.BYTE),
-            ('int8', np.int8, caffe2_pb2.TensorProto.INT8),
-            ('uint8', np.uint8, caffe2_pb2.TensorProto.UINT8),
-            ('int16', np.int16, caffe2_pb2.TensorProto.INT16),
-            ('uint16', np.uint16, caffe2_pb2.TensorProto.UINT16),
-            #('float16', np.float16, caffe2_pb2.TensorProto.FLOAT16),
-            ('int32', np.int32, caffe2_pb2.TensorProto.INT32),
-            ('float', np.float32, caffe2_pb2.TensorProto.FLOAT),
-            ('int64', np.int64, caffe2_pb2.TensorProto.INT64),
-            ('double', np.float64, caffe2_pb2.TensorProto.DOUBLE),
-            #('string', None, caffe2_pb2.TensorProto.STRING),
+            ("bool", np.bool, caffe2_pb2.TensorProto.BOOL),
+            # ('byte', None, caffe2_pb2.TensorProto.BYTE),
+            ("int8", np.int8, caffe2_pb2.TensorProto.INT8),
+            ("uint8", np.uint8, caffe2_pb2.TensorProto.UINT8),
+            ("int16", np.int16, caffe2_pb2.TensorProto.INT16),
+            ("uint16", np.uint16, caffe2_pb2.TensorProto.UINT16),
+            # ('float16', np.float16, caffe2_pb2.TensorProto.FLOAT16),
+            ("int32", np.int32, caffe2_pb2.TensorProto.INT32),
+            ("float", np.float32, caffe2_pb2.TensorProto.FLOAT),
+            ("int64", np.int64, caffe2_pb2.TensorProto.INT64),
+            ("double", np.float64, caffe2_pb2.TensorProto.DOUBLE),
+            # ('string', None, caffe2_pb2.TensorProto.STRING),
         ]
 
         for (xstr, xnp, _) in types:
-            xname = 'X%s' % xstr
+            xname = "X%s" % xstr
             workspace.FeedBlob(xname, np.random.rand(1).astype(xnp))
             for (ystr, _, yc2) in types:
-                yname = 'Y%s_to_%s' % (xstr, ystr)
+                yname = "Y%s_to_%s" % (xstr, ystr)
                 model.Cast(xname, yname, to=yc2)
 
         self.InferTensorRunAndCompare(model)
@@ -500,66 +498,61 @@ class TestShapeInference(test_util.TestCase):
     def testShapeInferenceRoiPool(self):
         for is_test in [True, False]:
             model = model_helper.ModelHelper(name="test_model")
-            outputs = ['Y'] if is_test else ['Y', 'argmaxes']
+            outputs = ["Y"] if is_test else ["Y", "argmaxes"]
             model.net.RoIPool(
-                ['X', 'R'], outputs, pooled_h=4, pooled_w=5, is_test=is_test)
-            workspace.FeedBlob(
-                "X",
-                np.random.rand(100, 3, 4, 5).astype(np.float32))
-            workspace.FeedBlob(
-                "R",
-                np.random.rand(2, 5).astype(np.float32))
+                ["X", "R"], outputs, pooled_h=4, pooled_w=5, is_test=is_test
+            )
+            workspace.FeedBlob("X", np.random.rand(100, 3, 4, 5).astype(np.float32))
+            workspace.FeedBlob("R", np.random.rand(2, 5).astype(np.float32))
             self.InferTensorRunAndCompare(model)
 
     def testShapeInferencePow(self):
         model = model_helper.ModelHelper(name="powtest")
-        model.Pow("x", 'y', exponent=-1.0)
-        workspace.FeedBlob('x', np.random.rand(1, 2, 3, 4).astype(np.float32))
+        model.Pow("x", "y", exponent=-1.0)
+        workspace.FeedBlob("x", np.random.rand(1, 2, 3, 4).astype(np.float32))
         self.InferTensorRunAndCompare(model)
 
     def testInt8Conversion(self):
         model = model_helper.ModelHelper(name="fp32_int8_conversion_test")
-        model.FloatToFused8BitRowwiseQuantized('x', 'x_8bit')
-        model.Fused8BitRowwiseQuantizedToFloat('x_8bit', 'x_recovered')
-        workspace.FeedBlob('x', np.random.rand(100, 150).astype(np.float32))
+        model.FloatToFused8BitRowwiseQuantized("x", "x_8bit")
+        model.Fused8BitRowwiseQuantizedToFloat("x_8bit", "x_recovered")
+        workspace.FeedBlob("x", np.random.rand(100, 150).astype(np.float32))
         self.InferTensorRunAndCompare(model)
-        x = workspace.FetchBlob('x')
-        x_recovered = workspace.FetchBlob('x_recovered')
+        x = workspace.FetchBlob("x")
+        x_recovered = workspace.FetchBlob("x_recovered")
         # TODO: find a tighter bound
-        assert(np.allclose(x, x_recovered, atol=1e-2))
+        assert np.allclose(x, x_recovered, atol=1e-2)
 
         model = model_helper.ModelHelper(name="fp32_int8_conversion_test")
-        model.FloatToFused8BitRowwiseQuantizedHalfScaleBias('x', 'x_8bit')
-        model.Fused8BitRowwiseQuantizedHalfScaleBiasToFloat('x_8bit', 'x_recovered')
-        workspace.FeedBlob('x', np.random.rand(100, 150).astype(np.float32))
+        model.FloatToFused8BitRowwiseQuantizedHalfScaleBias("x", "x_8bit")
+        model.Fused8BitRowwiseQuantizedHalfScaleBiasToFloat("x_8bit", "x_recovered")
+        workspace.FeedBlob("x", np.random.rand(100, 150).astype(np.float32))
         self.InferTensorRunAndCompare(model)
-        x = workspace.FetchBlob('x')
-        x_recovered = workspace.FetchBlob('x_recovered')
+        x = workspace.FetchBlob("x")
+        x_recovered = workspace.FetchBlob("x_recovered")
         # TODO: find a tighter bound
-        assert(np.allclose(x, x_recovered, atol=1e-2))
-
+        assert np.allclose(x, x_recovered, atol=1e-2)
 
     def testHalfInt8Conversion(self):
         model = model_helper.ModelHelper(name="fp16_int8_conversion_test")
-        model.HalfFloatToFused8BitRowwiseQuantized('x', 'x_8bit')
-        model.Fused8BitRowwiseQuantizedToHalfFloat('x_8bit', 'x_recovered')
-        workspace.FeedBlob('x', np.random.rand(100, 150).astype(np.float16))
+        model.HalfFloatToFused8BitRowwiseQuantized("x", "x_8bit")
+        model.Fused8BitRowwiseQuantizedToHalfFloat("x_8bit", "x_recovered")
+        workspace.FeedBlob("x", np.random.rand(100, 150).astype(np.float16))
         self.InferTensorRunAndCompare(model)
-        x = workspace.FetchBlob('x')
-        x_recovered = workspace.FetchBlob('x_recovered')
+        x = workspace.FetchBlob("x")
+        x_recovered = workspace.FetchBlob("x_recovered")
         # TODO: find a tighter bound
-        assert(np.allclose(x, x_recovered, atol=1e-2))
+        assert np.allclose(x, x_recovered, atol=1e-2)
 
         model = model_helper.ModelHelper(name="fp16_int8_conversion_test")
-        model.HalfFloatToFused8BitRowwiseQuantizedHalfScaleBias('x', 'x_8bit')
-        model.Fused8BitRowwiseQuantizedHalfScaleBiasToHalfFloat('x_8bit', 'x_recovered')
-        workspace.FeedBlob('x', np.random.rand(100, 150).astype(np.float16))
+        model.HalfFloatToFused8BitRowwiseQuantizedHalfScaleBias("x", "x_8bit")
+        model.Fused8BitRowwiseQuantizedHalfScaleBiasToHalfFloat("x_8bit", "x_recovered")
+        workspace.FeedBlob("x", np.random.rand(100, 150).astype(np.float16))
         self.InferTensorRunAndCompare(model)
-        x = workspace.FetchBlob('x')
-        x_recovered = workspace.FetchBlob('x_recovered')
+        x = workspace.FetchBlob("x")
+        x_recovered = workspace.FetchBlob("x_recovered")
         # TODO: find a tighter bound
-        assert(np.allclose(x, x_recovered, atol=1e-2))
-
+        assert np.allclose(x, x_recovered, atol=1e-2)
 
     def testLearningRateOp(self):
         net = core.Net("lr_test")
@@ -581,22 +574,22 @@ class TestShapeInference(test_util.TestCase):
         (shapes, types) = workspace.InferShapesAndTypes(
             [net],
         )
-        self.assertEqual(shapes['weight_decay'], [1])
+        self.assertEqual(shapes["weight_decay"], [1])
 
     def testShapeOp(self):
         model = model_helper.ModelHelper(name="shape_op_test")
-        model.Shape('x', 'y')
-        workspace.FeedBlob('x', np.random.rand(100, 150).astype(np.float32))
+        model.Shape("x", "y")
+        workspace.FeedBlob("x", np.random.rand(100, 150).astype(np.float32))
         self.InferTensorRunAndCompare(model)
 
     def InferTensorRunAndCompare(self, model, expected_uninferred_blobs=None):
-        '''
+        """
         Runs shape inference, and then the model to check
         that the inferred shapes agree with the actual ones
 
         'expected_uninferred_blobs' is the list of blobs for which type and
         shape cannot be inferred.
-        '''
+        """
         (shapes, types) = workspace.InferShapesAndTypes(
             [model.param_init_net, model.net],
         )
@@ -613,27 +606,27 @@ class TestShapeInference(test_util.TestCase):
             arr = workspace.FetchBlob(b)
             correct_shapes[b] = arr.shape
             if type(arr) is np.ndarray:
-                if arr.dtype == np.dtype('float32'):
+                if arr.dtype == np.dtype("float32"):
                     correct_types[b] = caffe2_pb2.TensorProto.FLOAT
-                elif arr.dtype == np.dtype('int32'):
+                elif arr.dtype == np.dtype("int32"):
                     correct_types[b] = caffe2_pb2.TensorProto.INT32
                 # BYTE
                 # STRING
-                elif arr.dtype == np.dtype('bool'):
+                elif arr.dtype == np.dtype("bool"):
                     correct_types[b] = caffe2_pb2.TensorProto.BOOL
-                elif arr.dtype == np.dtype('uint8'):
+                elif arr.dtype == np.dtype("uint8"):
                     correct_types[b] = caffe2_pb2.TensorProto.UINT8
-                elif arr.dtype == np.dtype('int8'):
+                elif arr.dtype == np.dtype("int8"):
                     correct_types[b] = caffe2_pb2.TensorProto.INT8
-                elif arr.dtype == np.dtype('uint16'):
+                elif arr.dtype == np.dtype("uint16"):
                     correct_types[b] = caffe2_pb2.TensorProto.UINT16
-                elif arr.dtype == np.dtype('int16'):
+                elif arr.dtype == np.dtype("int16"):
                     correct_types[b] = caffe2_pb2.TensorProto.INT16
-                elif arr.dtype == np.dtype('int64'):
+                elif arr.dtype == np.dtype("int64"):
                     correct_types[b] = caffe2_pb2.TensorProto.INT64
-                elif arr.dtype == np.dtype('float16'):
+                elif arr.dtype == np.dtype("float16"):
                     correct_types[b] = caffe2_pb2.TensorProto.FLOAT16
-                elif arr.dtype == np.dtype('float64'):
+                elif arr.dtype == np.dtype("float64"):
                     correct_types[b] = caffe2_pb2.TensorProto.DOUBLE
                 else:
                     correct_types[b] = "unknown {}".format(arr.dtype)
@@ -649,11 +642,11 @@ class TestShapeInference(test_util.TestCase):
             self.assertTrue(
                 np.array_equal(
                     np.array(shapes[b]).astype(np.int32),
-                    np.array(correct_shapes[b]).astype(np.int32)
+                    np.array(correct_shapes[b]).astype(np.int32),
                 ),
                 "Shape {} mismatch: {} vs. correct {}".format(
                     b, shapes[b], correct_shapes[b]
-                )
+                ),
             )
             self.assertFalse(
                 b not in types and b in correct_types,
@@ -663,8 +656,10 @@ class TestShapeInference(test_util.TestCase):
                 types[b],
                 correct_types[b],
                 "Type {} mismatch: {} vs. {}".format(
-                    b, types[b], correct_types[b],
-                )
+                    b,
+                    types[b],
+                    correct_types[b],
+                ),
             )
 
 

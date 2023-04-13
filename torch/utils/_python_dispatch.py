@@ -3,8 +3,13 @@ from typing import Optional
 
 import warnings
 import torch
-from torch._C import _len_torch_dispatch_stack, _get_dispatch_stack_at,\
-    _pop_torch_dispatch_stack, _push_on_torch_dispatch_stack, DispatchKey
+from torch._C import (
+    _len_torch_dispatch_stack,
+    _get_dispatch_stack_at,
+    _pop_torch_dispatch_stack,
+    _push_on_torch_dispatch_stack,
+    DispatchKey,
+)
 
 
 # TODO: Limitations and things about enable_torch_dispatch_mode we should fix before exposing it:
@@ -12,6 +17,7 @@ from torch._C import _len_torch_dispatch_stack, _get_dispatch_stack_at,\
 #   is able to selectively disable __torch_dispatch__ of a particular class.
 # - It doesn't work with the tensor constructors (torch.tensor, torch.Tensor)
 # - Better name (see https://github.com/pytorch/pytorch/pull/63496#discussion_r694091694)
+
 
 class TorchDispatchMode:
     """
@@ -43,10 +49,11 @@ class TorchDispatchMode:
     ``__torch_dispatch__(self)`` to make PyTorch
     API self-referential (beware of infinite loops, in this case!)
     """
+
     def __init__(self, _dispatch_key=None):
         if _dispatch_key is not None:
             assert isinstance(_dispatch_key, torch._C.DispatchKey)
-            self.__dict__['_dispatch_key'] = _dispatch_key
+            self.__dict__["_dispatch_key"] = _dispatch_key
 
     def __torch_dispatch__(self, func, types, args=(), kwargs=None):
         raise NotImplementedError()
@@ -60,9 +67,12 @@ class TorchDispatchMode:
 
     @classmethod
     def push(cls, *args, **kwargs):
-        warnings.warn("`Mode.push()` is no longer necessary and can be replaced with just `with Mode()`")
+        warnings.warn(
+            "`Mode.push()` is no longer necessary and can be replaced with just `with Mode()`"
+        )
         instance = cls(*args, **kwargs)
         return instance
+
 
 def _get_current_dispatch_mode():
     stack_len = _len_torch_dispatch_stack()
@@ -73,9 +83,11 @@ def _get_current_dispatch_mode_stack():
     stack_len = _len_torch_dispatch_stack()
     return [_get_dispatch_stack_at(i) for i in range(stack_len)]
 
+
 def _push_mode(mode, k: Optional[DispatchKey] = None):
     if k is not None:
         from torch._ops import push_mode_for_key, get_cached_ops
+
         # See Note [Not Caching Per-Dispatch-Key Mode Handlers]
         # Clear the cache of every op that has been used so far, for this particular key.
         for op in get_cached_ops():
@@ -96,6 +108,7 @@ def _pop_mode(k: Optional[DispatchKey] = None):
     m = _pop_torch_dispatch_stack()
     if k is not None:
         from torch._ops import pop_mode_for_key
+
         tmp = pop_mode_for_key(k)
         assert m is tmp
     return m

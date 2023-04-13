@@ -1,7 +1,3 @@
-
-
-
-
 from caffe2.python import core
 import caffe2.python.hypothesis_test_util as hu
 import caffe2.python.serialized_test.serialized_test_util as serial
@@ -28,9 +24,14 @@ class TestBatchMomentsOp(serial.SerializedTestCase):
         var = np.mean(np.square(X), axis=0)
         return [mu, var]
 
-    @serial.given(N=st.integers(1, 5), C=st.integers(1, 5),
-            H=st.integers(1, 5), W=st.integers(1, 5),
-            order=st.sampled_from(["NCHW", "NHWC"]), **hu.gcs)
+    @serial.given(
+        N=st.integers(1, 5),
+        C=st.integers(1, 5),
+        H=st.integers(1, 5),
+        W=st.integers(1, 5),
+        order=st.sampled_from(["NCHW", "NHWC"]),
+        **hu.gcs,
+    )
     def test_batch_moments_2d(self, N, C, H, W, order, gc, dc):
         op = core.CreateOperator(
             "BatchMoments",
@@ -59,9 +60,15 @@ class TestBatchMomentsOp(serial.SerializedTestCase):
         self.assertDeviceChecks(dc, op, [X], [0, 1])
         self.assertGradientChecks(gc, op, [X], 0, [0, 1])
 
-    @given(N=st.integers(1, 5), C=st.integers(1, 5), T=st.integers(1, 3),
-           H=st.integers(1, 3), W=st.integers(1, 3),
-           order=st.sampled_from(["NCHW", "NHWC"]), **hu.gcs)
+    @given(
+        N=st.integers(1, 5),
+        C=st.integers(1, 5),
+        T=st.integers(1, 3),
+        H=st.integers(1, 3),
+        W=st.integers(1, 3),
+        order=st.sampled_from(["NCHW", "NHWC"]),
+        **hu.gcs,
+    )
     @settings(deadline=10000)
     def test_batch_moments_3d(self, N, C, T, H, W, order, gc, dc):
         op = core.CreateOperator(

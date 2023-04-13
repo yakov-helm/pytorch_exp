@@ -1,8 +1,3 @@
-
-
-
-
-
 import click.testing
 import numpy as np
 import os
@@ -24,15 +19,16 @@ def load_events(filename):
     try:
         # tensorboard>=1.14.0
         from tensorboard.backend.event_processing import event_file_loader
+
         loader = event_file_loader.EventFileLoader(filename)
         return list(loader.Load())
     except ImportError:
         import tensorflow as tf
+
         return list(tf.train.summary_iterator(filename))
 
 
 class TensorboardTest(unittest.TestCase):
-
     def test_events(self):
         runner = click.testing.CliRunner()
         c2_dir = tempfile.mkdtemp()
@@ -52,8 +48,8 @@ class TensorboardTest(unittest.TestCase):
 
         tf_dir = tempfile.mkdtemp()
         result = runner.invoke(
-            tb.cli,
-            ["tensorboard-events", "--c2-dir", c2_dir, "--tf-dir", tf_dir])
+            tb.cli, ["tensorboard-events", "--c2-dir", c2_dir, "--tf-dir", tf_dir]
+        )
         self.assertEqual(result.exit_code, 0)
         entries = list(os.walk(tf_dir))
         self.assertEqual(len(entries), 1)
@@ -67,9 +63,7 @@ class TensorboardTest(unittest.TestCase):
 
     def test_tensorboard_graphs(self):
         model = model_helper.ModelHelper(name="overfeat")
-        data, label = brew.image_input(
-            model, ["db"], ["data", "label"], is_test=0
-        )
+        data, label = brew.image_input(model, ["db"], ["data", "label"], is_test=0)
         with core.NameScope("conv1"):
             conv1 = brew.conv(model, data, "conv1", 3, 96, 11, stride=4)
             relu1 = brew.relu(model, conv1, conv1)
@@ -91,10 +85,16 @@ class TensorboardTest(unittest.TestCase):
         runner = click.testing.CliRunner()
         result = runner.invoke(
             tb.cli,
-            ["tensorboard-graphs",
-             "--c2-netdef", os.path.join(c2_dir, "init"),
-             "--c2-netdef", os.path.join(c2_dir, "net"),
-             "--tf-dir", tf_dir])
+            [
+                "tensorboard-graphs",
+                "--c2-netdef",
+                os.path.join(c2_dir, "init"),
+                "--c2-netdef",
+                os.path.join(c2_dir, "net"),
+                "--tf-dir",
+                tf_dir,
+            ],
+        )
         self.assertEqual(result.exit_code, 0)
         entries = list(os.walk(tf_dir))
         self.assertEqual(len(entries), 1)
@@ -109,9 +109,7 @@ class TensorboardTest(unittest.TestCase):
             self.assertEqual(event.wall_time, i)
             g = GraphDef()
             g.ParseFromString(event.graph_def)
-            self.assertMultiLineEqual(
-                str(g),
-                str(tb_exporter.nets_to_graph_def([net])))
+            self.assertMultiLineEqual(str(g), str(tb_exporter.nets_to_graph_def([net])))
 
 
 if __name__ == "__main__":

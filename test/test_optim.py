@@ -43,11 +43,14 @@ from torch.testing._internal.common_utils import (
     instantiate_parametrized_tests,
     gradcheck,
     skipIfRocm,
-    skipIfTorchDynamo
+    skipIfTorchDynamo,
 )
 from torch.testing._internal.common_cuda import TEST_MULTIGPU, TEST_CUDA
 from typing import Dict, Any, Tuple
-from torch.optim.optimizer import register_optimizer_step_pre_hook, register_optimizer_step_post_hook
+from torch.optim.optimizer import (
+    register_optimizer_step_pre_hook,
+    register_optimizer_step_post_hook,
+)
 from unittest.mock import patch
 
 # load_tests from common_utils is used to automatically filter tests for
@@ -662,15 +665,17 @@ class TestOptim(TestCase):
         # GPU) because fused adam only works on GPUs. (Thus we only run the tests
         # that call into this helper when TEST_MULTIGPU.)
         params = [
-            torch.rand(2, 3, dtype=torch.float64, device='cuda:0', requires_grad=True),
-            torch.rand(2, 3, dtype=torch.float32, device='cuda:0', requires_grad=True),
-            torch.rand(2, 3, dtype=torch.float16, device='cuda:0', requires_grad=True),
-            torch.rand(2, 3, dtype=torch.bfloat16, device='cuda:0', requires_grad=True),
-            torch.rand(2, 3, dtype=torch.float64, device='cuda:1', requires_grad=True),
-            torch.rand(2, 3, dtype=torch.float32, device='cuda:1', requires_grad=True),
-            torch.rand(2, 3, dtype=torch.float16, device='cuda:1', requires_grad=True),
-            torch.rand(2, 3, dtype=torch.bfloat16, device='cuda:1', requires_grad=True),
-            torch.randint(1024, (2, 3), dtype=torch.int64, device='cuda:1', requires_grad=False),
+            torch.rand(2, 3, dtype=torch.float64, device="cuda:0", requires_grad=True),
+            torch.rand(2, 3, dtype=torch.float32, device="cuda:0", requires_grad=True),
+            torch.rand(2, 3, dtype=torch.float16, device="cuda:0", requires_grad=True),
+            torch.rand(2, 3, dtype=torch.bfloat16, device="cuda:0", requires_grad=True),
+            torch.rand(2, 3, dtype=torch.float64, device="cuda:1", requires_grad=True),
+            torch.rand(2, 3, dtype=torch.float32, device="cuda:1", requires_grad=True),
+            torch.rand(2, 3, dtype=torch.float16, device="cuda:1", requires_grad=True),
+            torch.rand(2, 3, dtype=torch.bfloat16, device="cuda:1", requires_grad=True),
+            torch.randint(
+                1024, (2, 3), dtype=torch.int64, device="cuda:1", requires_grad=False
+            ),
         ]
 
         for p in params:
@@ -862,32 +867,40 @@ class TestOptim(TestCase):
             (optim.Adagrad, dict(weight_decay=0)),
             (optim.Adagrad, dict(weight_decay=1)),
         ]
-        self._test_derived_optimizers_varying_tensors(optimizer_pairs_with_flags, "foreach")
+        self._test_derived_optimizers_varying_tensors(
+            optimizer_pairs_with_flags, "foreach"
+        )
 
     def test_fused_optimizers(self):
-        optimizer_pairs_with_flags = tuple(itertools.product(
-            (optim.Adam, optim.AdamW),
-            (
-                dict(weight_decay=1., amsgrad=False),
-                dict(weight_decay=1., amsgrad=True),
-                dict(weight_decay=0., amsgrad=False),
-                dict(weight_decay=0., amsgrad=True),
-            ),
-        ))
+        optimizer_pairs_with_flags = tuple(
+            itertools.product(
+                (optim.Adam, optim.AdamW),
+                (
+                    dict(weight_decay=1.0, amsgrad=False),
+                    dict(weight_decay=1.0, amsgrad=True),
+                    dict(weight_decay=0.0, amsgrad=False),
+                    dict(weight_decay=0.0, amsgrad=True),
+                ),
+            )
+        )
         self._test_derived_optimizers(optimizer_pairs_with_flags, "fused")
 
     @unittest.skipIf(not TEST_MULTIGPU, "only one GPU detected")
     def test_fused_optimizers_with_varying_tensors(self):
-        optimizer_pairs_with_flags = tuple(itertools.product(
-            (optim.Adam, optim.AdamW),
-            (
-                dict(weight_decay=1., amsgrad=False),
-                dict(weight_decay=1., amsgrad=True),
-                dict(weight_decay=0., amsgrad=False),
-                dict(weight_decay=0., amsgrad=True),
-            ),
-        ))
-        self._test_derived_optimizers_varying_tensors(optimizer_pairs_with_flags, "fused")
+        optimizer_pairs_with_flags = tuple(
+            itertools.product(
+                (optim.Adam, optim.AdamW),
+                (
+                    dict(weight_decay=1.0, amsgrad=False),
+                    dict(weight_decay=1.0, amsgrad=True),
+                    dict(weight_decay=0.0, amsgrad=False),
+                    dict(weight_decay=0.0, amsgrad=True),
+                ),
+            )
+        )
+        self._test_derived_optimizers_varying_tensors(
+            optimizer_pairs_with_flags, "fused"
+        )
 
     def test_adam(self):
         self._test_basic_cases(
@@ -1609,13 +1622,28 @@ class TestOptim(TestCase):
         from torch.optim import adam, adamw
 
         num_tensors = 5
-        for functional_optim, amsgrad, no_grad_scale in itertools.product((adam.adam, adamw.adamw), (False, True), (False, True)):
+        for functional_optim, amsgrad, no_grad_scale in itertools.product(
+            (adam.adam, adamw.adamw), (False, True), (False, True)
+        ):
             params, grads, exp_avgs, exp_avg_sqs = [
-                [torch.ones((1,), device="cuda") for _ in range(num_tensors)] for _ in range(4)]
+                [torch.ones((1,), device="cuda") for _ in range(num_tensors)]
+                for _ in range(4)
+            ]
             prev_params = [t.clone().detach() for t in params]
-            max_exp_avg_sqs = [torch.ones((1,), device="cuda") for _ in range(num_tensors)] if amsgrad else []
-            state_steps = [torch.ones((), dtype=torch.float32, device="cuda") for _ in range(num_tensors)]
-            grad_scale = None if no_grad_scale else torch.ones((1,), dtype=torch.float32, device="cuda")
+            max_exp_avg_sqs = (
+                [torch.ones((1,), device="cuda") for _ in range(num_tensors)]
+                if amsgrad
+                else []
+            )
+            state_steps = [
+                torch.ones((), dtype=torch.float32, device="cuda")
+                for _ in range(num_tensors)
+            ]
+            grad_scale = (
+                None
+                if no_grad_scale
+                else torch.ones((1,), dtype=torch.float32, device="cuda")
+            )
             found_inf = torch.ones((), dtype=torch.float32, device="cuda")
 
             functional_optim(
@@ -1781,10 +1809,18 @@ class TestOptim(TestCase):
         if not torch.cuda.is_available():
             self.skipTest("Requires CUDA devices")
         for optimizer_ctor in (torch.optim.Adam, torch.optim.AdamW):
-            with self.assertRaisesRegex(RuntimeError, "`fused` and `foreach` cannot be `True` together."):
-                optimizer_ctor([torch.empty((), device="cuda")], foreach=True, fused=True)
-            with self.assertRaisesRegex(RuntimeError, "`fused` does not support `differentiable`"):
-                optimizer_ctor([torch.empty((), device="cuda")], differentiable=True, fused=True)
+            with self.assertRaisesRegex(
+                RuntimeError, "`fused` and `foreach` cannot be `True` together."
+            ):
+                optimizer_ctor(
+                    [torch.empty((), device="cuda")], foreach=True, fused=True
+                )
+            with self.assertRaisesRegex(
+                RuntimeError, "`fused` does not support `differentiable`"
+            ):
+                optimizer_ctor(
+                    [torch.empty((), device="cuda")], differentiable=True, fused=True
+                )
 
 
 class SchedulerTestNet(torch.nn.Module):
@@ -1859,7 +1895,9 @@ class TestLRScheduler(TestCase):
         with self.assertRaises(TypeError):
             scheduler = MultiStepLR(optimizer, gamma=1, milestones=[10, 20])
 
-    @skipIfTorchDynamo("Torchdynamo keeps references to optim in the guards and the stack of the graph break frames")
+    @skipIfTorchDynamo(
+        "Torchdynamo keeps references to optim in the guards and the stack of the graph break frames"
+    )
     def test_no_cyclic_references(self):
         import gc
 
@@ -1879,7 +1917,9 @@ class TestLRScheduler(TestCase):
             gc.collect(), 0, msg="Optimizer should be garbage-collected on __del__"
         )
 
-    @skipIfTorchDynamo("Torchdynamo keeps references to optim in the guards and the stack of the graph break frames")
+    @skipIfTorchDynamo(
+        "Torchdynamo keeps references to optim in the guards and the stack of the graph break frames"
+    )
     def test_no_cyclic_references_in_step(self):
         import gc
         import weakref
@@ -3287,11 +3327,17 @@ class TestLRScheduler(TestCase):
         adam_opt = optim.Adam(self.net.parameters())
 
         # Case 1: Built-in mode
-        scheduler = CyclicLR(adam_opt, base_lr=1, max_lr=5, cycle_momentum=False, mode="triangular2")
-        restored_scheduler = CyclicLR(adam_opt, base_lr=1, max_lr=5, cycle_momentum=False)
+        scheduler = CyclicLR(
+            adam_opt, base_lr=1, max_lr=5, cycle_momentum=False, mode="triangular2"
+        )
+        restored_scheduler = CyclicLR(
+            adam_opt, base_lr=1, max_lr=5, cycle_momentum=False
+        )
         restored_scheduler.load_state_dict(scheduler.state_dict())
         self.assertTrue(restored_scheduler.mode == scheduler.mode == "triangular2")
-        self.assertIsNotNone(restored_scheduler._scale_fn_ref) and self.assertIsNotNone(scheduler._scale_fn_ref)
+        self.assertIsNotNone(restored_scheduler._scale_fn_ref) and self.assertIsNotNone(
+            scheduler._scale_fn_ref
+        )
         self.assertIs(restored_scheduler._scale_fn_custom, None)
         self.assertIs(scheduler._scale_fn_custom, None)
 
@@ -3299,8 +3345,12 @@ class TestLRScheduler(TestCase):
         def scale_fn(_):
             return 0.5
 
-        scheduler = CyclicLR(adam_opt, base_lr=1, max_lr=5, cycle_momentum=False, scale_fn=scale_fn)
-        restored_scheduler = CyclicLR(adam_opt, base_lr=1, max_lr=5, cycle_momentum=False, scale_fn=scale_fn)
+        scheduler = CyclicLR(
+            adam_opt, base_lr=1, max_lr=5, cycle_momentum=False, scale_fn=scale_fn
+        )
+        restored_scheduler = CyclicLR(
+            adam_opt, base_lr=1, max_lr=5, cycle_momentum=False, scale_fn=scale_fn
+        )
         restored_scheduler.load_state_dict(scheduler.state_dict())
         self.assertIs(scheduler._scale_fn_custom, scale_fn)
         self.assertIs(restored_scheduler._scale_fn_custom, scale_fn)
@@ -4425,8 +4475,10 @@ class TestDifferentiableOptimizer(TestCase):
             ),
         )
 
-    @skipIfTorchDynamo("The inplace mu update fails with dynamo, "
-                       "since this is only happening when differentiable is enabled, skipping for now")
+    @skipIfTorchDynamo(
+        "The inplace mu update fails with dynamo, "
+        "since this is only happening when differentiable is enabled, skipping for now"
+    )
     def test_asgd(self):
         state = {}
         p = torch.rand(10, requires_grad=True, dtype=torch.float64)
@@ -4542,22 +4594,35 @@ class TestDifferentiableOptimizer(TestCase):
             ),
         )
 
-
     @unittest.skipIf(not TEST_CUDA, "test requires CUDA")
     def test_defaults_changed_to_foreach(self):
-        from torch.optim import (adam, adamw, nadam, sgd, radam, rmsprop, rprop,
-                                 asgd, adamax, adadelta, adagrad)
-        multi_optims = ((optim.Adam, adam, "_multi_tensor_adam"),
-                        (optim.AdamW, adamw, "_multi_tensor_adamw"),
-                        (optim.NAdam, nadam, "_multi_tensor_nadam"),
-                        (optim.SGD, sgd, "_multi_tensor_sgd"),
-                        (optim.RAdam, radam, "_multi_tensor_radam"),
-                        (optim.RMSprop, rmsprop, "_multi_tensor_rmsprop"),
-                        (optim.Rprop, rprop, "_multi_tensor_rprop"),
-                        (optim.ASGD, asgd, "_multi_tensor_asgd"),
-                        (optim.Adamax, adamax, "_multi_tensor_adamax"),
-                        (optim.Adadelta, adadelta, "_multi_tensor_adadelta"),
-                        (optim.Adagrad, adagrad, "_multi_tensor_adagrad"),)
+        from torch.optim import (
+            adam,
+            adamw,
+            nadam,
+            sgd,
+            radam,
+            rmsprop,
+            rprop,
+            asgd,
+            adamax,
+            adadelta,
+            adagrad,
+        )
+
+        multi_optims = (
+            (optim.Adam, adam, "_multi_tensor_adam"),
+            (optim.AdamW, adamw, "_multi_tensor_adamw"),
+            (optim.NAdam, nadam, "_multi_tensor_nadam"),
+            (optim.SGD, sgd, "_multi_tensor_sgd"),
+            (optim.RAdam, radam, "_multi_tensor_radam"),
+            (optim.RMSprop, rmsprop, "_multi_tensor_rmsprop"),
+            (optim.Rprop, rprop, "_multi_tensor_rprop"),
+            (optim.ASGD, asgd, "_multi_tensor_asgd"),
+            (optim.Adamax, adamax, "_multi_tensor_adamax"),
+            (optim.Adadelta, adadelta, "_multi_tensor_adadelta"),
+            (optim.Adagrad, adagrad, "_multi_tensor_adagrad"),
+        )
 
         model = torch.nn.Linear(5, 5)
         model.to(dtype=torch.float64, device="cuda")

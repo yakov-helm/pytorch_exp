@@ -12,13 +12,21 @@ if not dist.is_available():
     print("Distributed not available, skipping tests", file=sys.stderr)
     sys.exit(0)
 
-from torch.testing._internal.common_utils import run_tests, TEST_WITH_DEV_DBG_ASAN, NO_MULTIPROCESSING_SPAWN
+from torch.testing._internal.common_utils import (
+    run_tests,
+    TEST_WITH_DEV_DBG_ASAN,
+    NO_MULTIPROCESSING_SPAWN,
+)
 from torch.testing._internal.distributed.distributed_test import (
-    DistributedTest, TestDistBackend
+    DistributedTest,
+    TestDistBackend,
 )
 
 if TEST_WITH_DEV_DBG_ASAN:
-    print("Skip dev-asan as torch + multiprocessing spawn have known issues", file=sys.stderr)
+    print(
+        "Skip dev-asan as torch + multiprocessing spawn have known issues",
+        file=sys.stderr,
+    )
     sys.exit(0)
 
 if NO_MULTIPROCESSING_SPAWN:
@@ -28,8 +36,8 @@ if NO_MULTIPROCESSING_SPAWN:
 BACKEND = os.environ["BACKEND"]
 
 if BACKEND == "gloo" or BACKEND == "nccl" or BACKEND == "ucc":
-    class TestDistBackendWithSpawn(TestDistBackend, DistributedTest._DistTestBase):
 
+    class TestDistBackendWithSpawn(TestDistBackend, DistributedTest._DistTestBase):
         def setUp(self):
             super().setUp()
             self._spawn_processes()

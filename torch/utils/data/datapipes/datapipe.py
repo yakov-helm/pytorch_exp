@@ -13,6 +13,7 @@ from torch.utils.data.dataset import Dataset, IterableDataset
 
 try:
     import dill
+
     # XXX: By default, dill writes the Pickler dispatch table to inject its
     # own logic there. This globally affects the behavior of the standard library
     # pickler for any user who transitively depends on this module!
@@ -29,14 +30,15 @@ __all__ = [
     "MapDataPipe",
 ]
 
-T = TypeVar('T')
-T_co = TypeVar('T_co', covariant=True)
+T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)
 
-UNTRACABLE_DATAFRAME_PIPES = ['batch',  # As it returns DataChunks
-                              'groupby',   # As it returns DataChunks
-                              '_dataframes_as_tuples',  # As it unpacks DF
-                              'trace_as_dataframe',  # As it used to mark DF for tracing
-                              ]
+UNTRACABLE_DATAFRAME_PIPES = [
+    "batch",  # As it returns DataChunks
+    "groupby",  # As it returns DataChunks
+    "_dataframes_as_tuples",  # As it unpacks DF
+    "trace_as_dataframe",  # As it used to mark DF for tracing
+]
 
 
 class IterDataPipe(IterableDataset[T_co], metaclass=_IterDataPipeMeta):
@@ -124,16 +126,26 @@ class IterDataPipe(IterableDataset[T_co], metaclass=_IterDataPipeMeta):
             function = functools.partial(IterDataPipe.functions[attribute_name], self)
             return function
         else:
-            raise AttributeError("'{0}' object has no attribute '{1}".format(self.__class__.__name__, attribute_name))
+            raise AttributeError(
+                "'{0}' object has no attribute '{1}".format(
+                    self.__class__.__name__, attribute_name
+                )
+            )
 
     @classmethod
     def register_function(cls, function_name, function):
         cls.functions[function_name] = function
 
     @classmethod
-    def register_datapipe_as_function(cls, function_name, cls_to_register, enable_df_api_tracing=False):
+    def register_datapipe_as_function(
+        cls, function_name, cls_to_register, enable_df_api_tracing=False
+    ):
         if function_name in cls.functions:
-            raise Exception("Unable to add DataPipe function name {} as it is already taken".format(function_name))
+            raise Exception(
+                "Unable to add DataPipe function name {} as it is already taken".format(
+                    function_name
+                )
+            )
 
         def class_function(cls, enable_df_api_tracing, source_dp, *args, **kwargs):
             result_pipe = cls(source_dp, *args, **kwargs)
@@ -144,7 +156,9 @@ class IterDataPipe(IterableDataset[T_co], metaclass=_IterDataPipeMeta):
 
             return result_pipe
 
-        function = functools.partial(class_function, cls_to_register, enable_df_api_tracing)
+        function = functools.partial(
+            class_function, cls_to_register, enable_df_api_tracing
+        )
         cls.functions[function_name] = function
 
     def __getstate__(self):
@@ -256,7 +270,11 @@ class MapDataPipe(Dataset[T_co], metaclass=_DataPipeMeta):
             function = functools.partial(MapDataPipe.functions[attribute_name], self)
             return function
         else:
-            raise AttributeError("'{0}' object has no attribute '{1}".format(self.__class__.__name__, attribute_name))
+            raise AttributeError(
+                "'{0}' object has no attribute '{1}".format(
+                    self.__class__.__name__, attribute_name
+                )
+            )
 
     @classmethod
     def register_function(cls, function_name, function):
@@ -265,7 +283,11 @@ class MapDataPipe(Dataset[T_co], metaclass=_DataPipeMeta):
     @classmethod
     def register_datapipe_as_function(cls, function_name, cls_to_register):
         if function_name in cls.functions:
-            raise Exception("Unable to add DataPipe function name {} as it is already taken".format(function_name))
+            raise Exception(
+                "Unable to add DataPipe function name {} as it is already taken".format(
+                    function_name
+                )
+            )
 
         def class_function(cls, source_dp, *args, **kwargs):
             result_pipe = cls(source_dp, *args, **kwargs)
@@ -320,7 +342,6 @@ class MapDataPipe(Dataset[T_co], metaclass=_DataPipeMeta):
     def __dir__(self):
         # for auto-completion in a REPL (e.g. Jupyter notebook)
         return list(super().__dir__()) + list(self.functions.keys())
-
 
 
 class _DataPipeSerializationWrapper:
@@ -379,7 +400,7 @@ class DataChunk(list, Generic[T]):
         super().__init__(items)
         self.items = items
 
-    def as_str(self, indent=''):
+    def as_str(self, indent=""):
         res = indent + "[" + ", ".join(str(i) for i in iter(self)) + "]"
         return res
 

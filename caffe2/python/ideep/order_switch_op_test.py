@@ -1,8 +1,3 @@
-
-
-
-
-
 import unittest
 import numpy as np
 import hypothesis.strategies as st
@@ -15,11 +10,13 @@ from caffe2.python import core, workspace
 
 @unittest.skipIf(not workspace.C.use_mkldnn, "No MKLDNN support.")
 class OrderSwitchTest(hu.HypothesisTestCase):
-    @given(n=st.integers(1, 128),
-           c=st.integers(1, 64),
-           h=st.integers(1, 128),
-           w=st.integers(1, 128),
-           **mu.gcs)
+    @given(
+        n=st.integers(1, 128),
+        c=st.integers(1, 64),
+        h=st.integers(1, 128),
+        w=st.integers(1, 128),
+        **mu.gcs,
+    )
     @settings(max_examples=10, deadline=None)
     def test_nchw2nhwc(self, n, c, h, w, gc, dc):
         op = core.CreateOperator(
@@ -31,11 +28,13 @@ class OrderSwitchTest(hu.HypothesisTestCase):
 
         self.assertDeviceChecks(dc, op, [X], [0])
 
-    @given(n=st.integers(1, 128),
-           c=st.integers(1, 64),
-           h=st.integers(1, 128),
-           w=st.integers(1, 128),
-           **mu.gcs)
+    @given(
+        n=st.integers(1, 128),
+        c=st.integers(1, 64),
+        h=st.integers(1, 128),
+        w=st.integers(1, 128),
+        **mu.gcs,
+    )
     @settings(deadline=None, max_examples=50)
     def test_nhwc2nchw(self, n, c, h, w, gc, dc):
         op0 = core.CreateOperator(
@@ -53,7 +52,7 @@ class OrderSwitchTest(hu.HypothesisTestCase):
 
         old_ws_name = workspace.CurrentWorkspace()
         workspace.SwitchWorkspace("_device_check_", True)
-        workspace.FeedBlob('X', X, dc[0])
+        workspace.FeedBlob("X", X, dc[0])
         op0.device_option.CopyFrom(dc[0])
         op1.device_option.CopyFrom(dc[0])
         workspace.RunOperatorOnce(op0)
@@ -61,7 +60,7 @@ class OrderSwitchTest(hu.HypothesisTestCase):
         Z0 = workspace.FetchBlob("Z")
 
         workspace.ResetWorkspace()
-        workspace.FeedBlob('X', X, dc[1])
+        workspace.FeedBlob("X", X, dc[1])
         op0.device_option.CopyFrom(dc[1])
         op1.device_option.CopyFrom(dc[1])
         workspace.RunOperatorOnce(op0)

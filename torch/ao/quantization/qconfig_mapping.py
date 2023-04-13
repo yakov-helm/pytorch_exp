@@ -22,7 +22,7 @@ from .qconfig import (
     get_default_qconfig,
     get_default_qat_qconfig,
     QConfig,
-    QConfigAny
+    QConfigAny,
 )
 
 
@@ -58,7 +58,9 @@ _FIXED_QPARAMS_OP_TO_OBSERVER: Dict[Union[Callable, str], _PartialWrapper] = {
 }
 
 
-def _get_default_qconfig_mapping(is_qat: bool, backend: str, version: int) -> QConfigMapping:
+def _get_default_qconfig_mapping(
+    is_qat: bool, backend: str, version: int
+) -> QConfigMapping:
     """
     Return the default QConfigMapping for the given quantization type and backend.
     """
@@ -73,26 +75,31 @@ def _get_default_qconfig_mapping(is_qat: bool, backend: str, version: int) -> QC
     # per tensor supported observer.
     # see https://github.com/pytorch/pytorch/issues/47535
     if backend in ("fbgemm", "x86"):
-        qconfig_transpose = QConfig(activation=qconfig.activation, weight=default_weight)
+        qconfig_transpose = QConfig(
+            activation=qconfig.activation, weight=default_weight
+        )
     else:
         qconfig_transpose = qconfig
 
     # currently layernorm only supports float weights
     # we have to add this because otherwise there will be a extra quantize-dequantize pair
-    qconfig_layernorm = QConfig(activation=qconfig.activation, weight=default_placeholder_observer)
+    qconfig_layernorm = QConfig(
+        activation=qconfig.activation, weight=default_placeholder_observer
+    )
 
-    qconfig_mapping = QConfigMapping() \
-        .set_global(qconfig) \
-        .set_object_type("reshape", default_reuse_input_qconfig) \
-        .set_object_type(torch.nn.ConvTranspose1d, qconfig_transpose) \
-        .set_object_type(torch.nn.ConvTranspose2d, qconfig_transpose) \
-        .set_object_type(torch.nn.ConvTranspose3d, qconfig_transpose) \
-        .set_object_type(torch.nn.functional.conv_transpose1d, qconfig_transpose) \
-        .set_object_type(torch.nn.functional.conv_transpose2d, qconfig_transpose) \
-        .set_object_type(torch.nn.functional.conv_transpose3d, qconfig_transpose) \
-        .set_object_type(torch.nn.functional.layer_norm, qconfig_layernorm) \
-        .set_object_type(torch.nn.LayerNorm, qconfig_layernorm) \
-
+    qconfig_mapping = (
+        QConfigMapping()
+        .set_global(qconfig)
+        .set_object_type("reshape", default_reuse_input_qconfig)
+        .set_object_type(torch.nn.ConvTranspose1d, qconfig_transpose)
+        .set_object_type(torch.nn.ConvTranspose2d, qconfig_transpose)
+        .set_object_type(torch.nn.ConvTranspose3d, qconfig_transpose)
+        .set_object_type(torch.nn.functional.conv_transpose1d, qconfig_transpose)
+        .set_object_type(torch.nn.functional.conv_transpose2d, qconfig_transpose)
+        .set_object_type(torch.nn.functional.conv_transpose3d, qconfig_transpose)
+        .set_object_type(torch.nn.functional.layer_norm, qconfig_layernorm)
+        .set_object_type(torch.nn.LayerNorm, qconfig_layernorm)
+    )
     # Use special observers for ops with fixed qparams
     fixed_qparams_observer_to_qconfig: Dict[Any, QConfigAny] = {}
     for fixed_qparams_op, observer in _FIXED_QPARAMS_OP_TO_OBSERVER.items():
@@ -103,7 +110,9 @@ def _get_default_qconfig_mapping(is_qat: bool, backend: str, version: int) -> QC
                 activation = FixedQParamsFakeQuantize.with_args(observer=observer)
             else:
                 activation = observer
-            fixed_qparams_qconfig = QConfig(activation=activation, weight=default_weight)
+            fixed_qparams_qconfig = QConfig(
+                activation=activation, weight=default_weight
+            )
             fixed_qparams_observer_to_qconfig[observer] = fixed_qparams_qconfig
         qconfig_mapping.set_object_type(fixed_qparams_op, fixed_qparams_qconfig)
 
@@ -111,6 +120,7 @@ def _get_default_qconfig_mapping(is_qat: bool, backend: str, version: int) -> QC
     #      Need to be able to support fusion of ops with different qconfigs
 
     return qconfig_mapping
+
 
 def get_default_qconfig_mapping(backend="x86", version=0) -> QConfigMapping:
     """
@@ -124,6 +134,7 @@ def get_default_qconfig_mapping(backend="x86", version=0) -> QConfigMapping:
     # TODO: add assert for backend choices
     return _get_default_qconfig_mapping(False, backend, version)
 
+
 def get_default_qat_qconfig_mapping(backend="x86", version=1) -> QConfigMapping:
     """
     Return the default QConfigMapping for quantization aware training.
@@ -135,28 +146,34 @@ def get_default_qat_qconfig_mapping(backend="x86", version=1) -> QConfigMapping:
     """
     return _get_default_qconfig_mapping(True, backend, version)
 
+
 def _get_symmetric_qnnpack_qconfig_mapping():
     """
     Return a QConfigMapping that uses `torch.ao.quantization.default_symmetric_qnnpack_qconfig`
     as the default QConfig.
     """
-    qconfig_mapping = get_default_qconfig_mapping("qnnpack") \
-        .set_global(default_symmetric_qnnpack_qconfig)
+    qconfig_mapping = get_default_qconfig_mapping("qnnpack").set_global(
+        default_symmetric_qnnpack_qconfig
+    )
     for pattern in qconfig_mapping.object_type_qconfigs.keys():
         if pattern not in _FIXED_QPARAMS_OP_TO_OBSERVER:
             qconfig_mapping.set_object_type(pattern, default_symmetric_qnnpack_qconfig)
     return qconfig_mapping
+
 
 def _get_symmetric_qnnpack_qat_qconfig_mapping():
     """
     Return a QConfigMapping that uses `torch.ao.quantization.default_symmetric_qnnpack_qat_qconfig`
     as the default QConfig.
     """
-    qconfig_mapping = get_default_qconfig_mapping("qnnpack") \
-        .set_global(default_symmetric_qnnpack_qat_qconfig)
+    qconfig_mapping = get_default_qconfig_mapping("qnnpack").set_global(
+        default_symmetric_qnnpack_qat_qconfig
+    )
     for pattern in qconfig_mapping.object_type_qconfigs.keys():
         if pattern not in _FIXED_QPARAMS_OP_TO_OBSERVER:
-            qconfig_mapping.set_object_type(pattern, default_symmetric_qnnpack_qat_qconfig)
+            qconfig_mapping.set_object_type(
+                pattern, default_symmetric_qnnpack_qat_qconfig
+            )
     return qconfig_mapping
 
 
@@ -167,6 +184,7 @@ _QCONFIG_STYLE_ORDER: List[str] = [
     "module_name_qconfigs",
     "module_name_object_type_order_qconfigs",
 ]
+
 
 class QConfigMapping:
     """
@@ -202,11 +220,14 @@ class QConfigMapping:
     def __init__(self):
         # In increasing match priority:
         self.global_qconfig: QConfigAny = None
-        self.object_type_qconfigs: OrderedDict[Union[Callable, str], QConfigAny] = OrderedDict()
+        self.object_type_qconfigs: OrderedDict[
+            Union[Callable, str], QConfigAny
+        ] = OrderedDict()
         self.module_name_regex_qconfigs: OrderedDict[str, QConfigAny] = OrderedDict()
         self.module_name_qconfigs: OrderedDict[str, QConfigAny] = OrderedDict()
-        self.module_name_object_type_order_qconfigs: OrderedDict[Tuple[str, Callable, int], QConfigAny] =\
-            OrderedDict()
+        self.module_name_object_type_order_qconfigs: OrderedDict[
+            Tuple[str, Callable, int], QConfigAny
+        ] = OrderedDict()
 
     def set_global(self, global_qconfig: QConfigAny) -> QConfigMapping:
         """
@@ -215,7 +236,9 @@ class QConfigMapping:
         self.global_qconfig = global_qconfig
         return self
 
-    def set_object_type(self, object_type: Union[Callable, str], qconfig: QConfigAny) -> QConfigMapping:
+    def set_object_type(
+        self, object_type: Union[Callable, str], qconfig: QConfigAny
+    ) -> QConfigMapping:
         """
         Set the QConfig for a given module type, function, or method name.
         If the QConfig for an existing object type was already set, the new QConfig will override the old one.
@@ -223,7 +246,9 @@ class QConfigMapping:
         self.object_type_qconfigs[object_type] = qconfig
         return self
 
-    def set_module_name_regex(self, module_name_regex: str, qconfig: QConfigAny) -> QConfigMapping:
+    def set_module_name_regex(
+        self, module_name_regex: str, qconfig: QConfigAny
+    ) -> QConfigMapping:
         """
         Set the QConfig for modules matching the given regex string.
 
@@ -253,11 +278,8 @@ class QConfigMapping:
         return self
 
     def set_module_name_object_type_order(
-            self,
-            module_name: str,
-            object_type: Callable,
-            index: int,
-            qconfig: QConfigAny) -> QConfigMapping:
+        self, module_name: str, object_type: Callable, index: int, qconfig: QConfigAny
+    ) -> QConfigMapping:
         """
         Set the QConfig for modules matching a combination of the given module name, object type,
         and the index at which the module appears.
@@ -265,7 +287,9 @@ class QConfigMapping:
         If the QConfig for an existing (module name, object type, index)  was already set, the new QConfig
         will override the old one.
         """
-        self.module_name_object_type_order_qconfigs[(module_name, object_type, index)] = qconfig
+        self.module_name_object_type_order_qconfigs[
+            (module_name, object_type, index)
+        ] = qconfig
         return self
 
     def __repr__(self) -> str:
@@ -330,10 +354,16 @@ class QConfigMapping:
             conf.set_global(qconfig_dict[_GLOBAL_DICT_KEY])
         for object_type, qconfig in qconfig_dict.get(_OBJECT_TYPE_DICT_KEY, []):
             conf.set_object_type(object_type, qconfig)
-        for module_name_regex, qconfig in qconfig_dict.get(_MODULE_NAME_REGEX_DICT_KEY, []):
+        for module_name_regex, qconfig in qconfig_dict.get(
+            _MODULE_NAME_REGEX_DICT_KEY, []
+        ):
             conf.set_module_name_regex(module_name_regex, qconfig)
         for module_name, qconfig in qconfig_dict.get(_MODULE_NAME_DICT_KEY, []):
             conf.set_module_name(module_name, qconfig)
-        for module_name, object_type, index, qconfig in qconfig_dict.get(_MODULE_NAME_OBJECT_TYPE_ORDER_DICT_KEY, []):
-            conf.set_module_name_object_type_order(module_name, object_type, index, qconfig)
+        for module_name, object_type, index, qconfig in qconfig_dict.get(
+            _MODULE_NAME_OBJECT_TYPE_ORDER_DICT_KEY, []
+        ):
+            conf.set_module_name_object_type_order(
+                module_name, object_type, index, qconfig
+            )
         return conf

@@ -71,7 +71,6 @@ class DropoutResBiasScalar:
         return args
 
 
-
 # LightSeq pattern 2
 class BiasReluDropout:
     @staticmethod
@@ -157,7 +156,13 @@ class LayerNormSigmoid:
         return args
 
 
-for cl in [DropoutResBias, BiasReluDropout, DropoutResBiasScalar, BiasDropoutResLayerNorm, LayerNormSigmoid]:
+for cl in [
+    DropoutResBias,
+    BiasReluDropout,
+    DropoutResBiasScalar,
+    BiasDropoutResLayerNorm,
+    LayerNormSigmoid,
+]:
     # Clear the compile cache
 
     # Get the function and inputs

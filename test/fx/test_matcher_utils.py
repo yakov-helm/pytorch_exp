@@ -12,6 +12,7 @@ sys.path.append(pytorch_test_dir)
 from torch.fx.passes.utils.matcher_utils import SubgraphMatcher
 from torch.testing._internal.jit_utils import JitTestCase
 
+
 class TestMatcher(JitTestCase):
     def test_subgraph_matcher_with_attributes(self):
         class LargeModel(torch.nn.Module):
@@ -51,10 +52,12 @@ class TestMatcher(JitTestCase):
     def test_subgraph_matcher_with_list(self):
         def original(x, y):
             return torch.ops.aten.view(x, [5, y.shape[0]])
+
         original_graph = torch.fx.symbolic_trace(original).graph
 
         def pattern(x, y, z):
             return torch.ops.aten.view(x, [z, y.shape[0]])
+
         pattern_graph = torch.fx.symbolic_trace(pattern).graph
 
         subgraph_matcher = SubgraphMatcher(pattern_graph)
@@ -63,11 +66,17 @@ class TestMatcher(JitTestCase):
 
     def test_subgraph_matcher_with_list_bad(self):
         def original(x, y):
-            return torch.ops.aten._reshape_alias_copy.default(x, [1, y.shape[0]], [y.shape[1], y.shape[1]])
+            return torch.ops.aten._reshape_alias_copy.default(
+                x, [1, y.shape[0]], [y.shape[1], y.shape[1]]
+            )
+
         original_graph = torch.fx.symbolic_trace(original).graph
 
         def pattern(x, y, b):
-            return torch.ops.aten._reshape_alias_copy.default(x, [b, y.shape[0], y.shape[1]], [y.shape[1]])
+            return torch.ops.aten._reshape_alias_copy.default(
+                x, [b, y.shape[0], y.shape[1]], [y.shape[1]]
+            )
+
         pattern_graph = torch.fx.symbolic_trace(pattern).graph
 
         subgraph_matcher = SubgraphMatcher(pattern_graph)
@@ -83,6 +92,7 @@ class TestMatcher(JitTestCase):
 
         def pattern(x):
             return x + 2
+
         pattern_graph = make_fx(pattern)(torch.ones(4, 4)).graph
         pattern_graph.eliminate_dead_code()
 

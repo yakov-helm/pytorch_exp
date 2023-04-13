@@ -1,8 +1,15 @@
 import torch
 from torch import Tensor
 
-from .optimizer import (Optimizer, _use_grad_for_differentiable, _get_value,
-                        _default_to_fused_or_foreach, _differentiable_doc, _foreach_doc, _maximize_doc)
+from .optimizer import (
+    Optimizer,
+    _use_grad_for_differentiable,
+    _get_value,
+    _default_to_fused_or_foreach,
+    _differentiable_doc,
+    _foreach_doc,
+    _maximize_doc,
+)
 from torch.utils._foreach_utils import _group_tensors_by_device_and_dtype
 from typing import List, Optional
 
@@ -118,7 +125,9 @@ class Adagrad(Optimizer):
             state_sums = []
             state_steps = []
 
-            has_sparse_grad = self._init_group(group, params_with_grad, grads, state_sums, state_steps)
+            has_sparse_grad = self._init_group(
+                group, params_with_grad, grads, state_sums, state_steps
+            )
 
             adagrad(
                 params_with_grad,
@@ -179,7 +188,9 @@ Adagrad.__doc__ = r"""Implements Adagrad algorithm.
     .. _Adaptive Subgradient Methods for Online Learning and Stochastic
         Optimization: http://jmlr.org/papers/v12/duchi11a.html
 
-    """.format(foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc)
+    """.format(
+    foreach=_foreach_doc, maximize=_maximize_doc, differentiable=_differentiable_doc
+)
 
 
 def adagrad(
@@ -210,7 +221,9 @@ def adagrad(
         )
 
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
+        _, foreach = _default_to_fused_or_foreach(
+            params, differentiable, use_fused=False
+        )
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")
@@ -321,8 +334,15 @@ def _multi_tensor_adagrad(
     if len(params) == 0:
         return
 
-    grouped_tensorlists = _group_tensors_by_device_and_dtype([params, grads, state_sums, state_steps])
-    for device_params, device_grads, device_state_sums, device_state_steps in grouped_tensorlists.values():
+    grouped_tensorlists = _group_tensors_by_device_and_dtype(
+        [params, grads, state_sums, state_steps]
+    )
+    for (
+        device_params,
+        device_grads,
+        device_state_sums,
+        device_state_steps,
+    ) in grouped_tensorlists.values():
 
         if maximize:
             device_grads = torch._foreach_neg(device_grads)
@@ -348,13 +368,18 @@ def _multi_tensor_adagrad(
         torch._foreach_add_(device_state_steps, 1)
 
         if weight_decay != 0:
-            device_grads = torch._foreach_add(device_grads, device_params, alpha=weight_decay)
+            device_grads = torch._foreach_add(
+                device_grads, device_params, alpha=weight_decay
+            )
 
         minus_clr = [-lr / (1 + (step - 1) * lr_decay) for step in device_state_steps]
 
-        device_grads = [torch.view_as_real(x) if torch.is_complex(x) else x for x in device_grads]
+        device_grads = [
+            torch.view_as_real(x) if torch.is_complex(x) else x for x in device_grads
+        ]
         device_state_sums = [
-            torch.view_as_real(x) if torch.is_complex(x) else x for x in device_state_sums
+            torch.view_as_real(x) if torch.is_complex(x) else x
+            for x in device_state_sums
         ]
         torch._foreach_addcmul_(device_state_sums, device_grads, device_grads, value=1)
         std = torch._foreach_add(torch._foreach_sqrt(device_state_sums), eps)

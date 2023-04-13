@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 
 
-
-
-
-
 from hypothesis import given, settings
 import hypothesis.strategies as st
 from multiprocessing import Process, Queue
@@ -25,7 +21,8 @@ dyndep.InitOpsLibrary("@/caffe2/caffe2/distributed:store_ops")
 dyndep.InitOpsLibrary("@/caffe2/caffe2/contrib/gloo:gloo_ops")
 dyndep.InitOpsLibrary("@/caffe2/caffe2/contrib/gloo:gloo_ops_gpu")
 
-op_engine = 'GLOO'
+op_engine = "GLOO"
+
 
 class TemporaryDirectory:
     def __enter__(self):
@@ -56,11 +53,9 @@ class TestCase(hu.HypothesisTestCase):
 
         # Start N processes in the background
         procs = []
-        for i in range(kwargs['comm_size']):
-            kwargs['comm_rank'] = i
-            proc = Process(
-                target=run_fn,
-                kwargs=kwargs)
+        for i in range(kwargs["comm_size"]):
+            kwargs["comm_rank"] = i
+            proc = Process(target=run_fn, kwargs=kwargs)
             proc.start()
             procs.append(proc)
 
@@ -83,12 +78,12 @@ class TestCase(hu.HypothesisTestCase):
                 self.assertTrue(o)
 
     def run_test_distributed(self, fn, device_option=None, **kwargs):
-        comm_rank = os.getenv('COMM_RANK')
+        comm_rank = os.getenv("COMM_RANK")
         self.assertIsNotNone(comm_rank)
-        comm_size = os.getenv('COMM_SIZE')
+        comm_size = os.getenv("COMM_SIZE")
         self.assertIsNotNone(comm_size)
-        kwargs['comm_rank'] = int(comm_rank)
-        kwargs['comm_size'] = int(comm_size)
+        kwargs["comm_rank"] = int(comm_rank)
+        kwargs["comm_size"] = int(comm_size)
         with core.DeviceScope(device_option):
             fn(**kwargs)
             workspace.ResetWorkspace()
@@ -108,14 +103,15 @@ class TestCase(hu.HypothesisTestCase):
                         [store_handler],
                         prefix=str(TestCase.test_counter) + "/",
                         host=redis_host,
-                        port=redis_port))
+                        port=redis_port,
+                    )
+                )
             else:
                 workspace.RunOperatorOnce(
                     core.CreateOperator(
-                        "FileStoreHandlerCreate",
-                        [],
-                        [store_handler],
-                        path=tmpdir))
+                        "FileStoreHandlerCreate", [], [store_handler], path=tmpdir
+                    )
+                )
             common_world = "common_world"
         else:
             common_world = str(existing_cw) + ".forked"
@@ -127,7 +123,9 @@ class TestCase(hu.HypothesisTestCase):
                     [existing_cw],
                     [common_world],
                     sync=True,
-                    engine=op_engine))
+                    engine=op_engine,
+                )
+            )
         else:
             workspace.RunOperatorOnce(
                 core.CreateOperator(
@@ -137,7 +135,9 @@ class TestCase(hu.HypothesisTestCase):
                     size=comm_size,
                     rank=comm_rank,
                     sync=True,
-                    engine=op_engine))
+                    engine=op_engine,
+                )
+            )
         return (store_handler, common_world)
 
     def synchronize(self, store_handler, value, comm_rank=None):
@@ -146,87 +146,78 @@ class TestCase(hu.HypothesisTestCase):
         if comm_rank == 0:
             workspace.FeedBlob(blob, pickle.dumps(value))
             workspace.RunOperatorOnce(
-                core.CreateOperator(
-                    "StoreSet",
-                    [store_handler, blob],
-                    []))
+                core.CreateOperator("StoreSet", [store_handler, blob], [])
+            )
         else:
             workspace.RunOperatorOnce(
-                core.CreateOperator(
-                    "StoreGet",
-                    [store_handler],
-                    [blob]))
+                core.CreateOperator("StoreGet", [store_handler], [blob])
+            )
         return pickle.loads(workspace.FetchBlob(blob))
 
-    def _test_broadcast(self,
-                        comm_rank=None,
-                        comm_size=None,
-                        blob_size=None,
-                        num_blobs=None,
-                        tmpdir=None,
-                        use_float16=False,
-                        ):
+    def _test_broadcast(
+        self,
+        comm_rank=None,
+        comm_size=None,
+        blob_size=None,
+        num_blobs=None,
+        tmpdir=None,
+        use_float16=False,
+    ):
         store_handler, common_world = self.create_common_world(
-            comm_rank=comm_rank,
-            comm_size=comm_size,
-            tmpdir=tmpdir)
+            comm_rank=comm_rank, comm_size=comm_size, tmpdir=tmpdir
+        )
 
-        blob_size = self.synchronize(
-            store_handler,
-            blob_size,
-            comm_rank=comm_rank)
+        blob_size = self.synchronize(store_handler, blob_size, comm_rank=comm_rank)
 
-        num_blobs = self.synchronize(
-            store_handler,
-            num_blobs,
-            comm_rank=comm_rank)
+        num_blobs = self.synchronize(store_handler, num_blobs, comm_rank=comm_rank)
 
         for i in range(comm_size):
             blobs = []
             for j in range(num_blobs):
                 blob = "blob_{}".format(j)
                 offset = (comm_rank * num_blobs) + j
-                value = np.full(blob_size, offset,
-                                np.float16 if use_float16 else np.float32)
+                value = np.full(
+                    blob_size, offset, np.float16 if use_float16 else np.float32
+                )
                 workspace.FeedBlob(blob, value)
                 blobs.append(blob)
 
             net = core.Net("broadcast")
-            net.Broadcast(
-                [common_world] + blobs,
-                blobs,
-                root=i,
-                engine=op_engine)
+            net.Broadcast([common_world] + blobs, blobs, root=i, engine=op_engine)
 
             workspace.CreateNet(net)
             workspace.RunNet(net.Name())
 
             for j in range(num_blobs):
                 np.testing.assert_array_equal(
-                    workspace.FetchBlob(blobs[j]),
-                    i * num_blobs)
+                    workspace.FetchBlob(blobs[j]), i * num_blobs
+                )
 
             # Run the net a few more times to check the operator
             # works not just the first time it's called
             for _tmp in range(4):
                 workspace.RunNet(net.Name())
 
-    @given(comm_size=st.integers(min_value=2, max_value=8),
-           blob_size=st.integers(min_value=int(1e3), max_value=int(1e6)),
-           num_blobs=st.integers(min_value=1, max_value=4),
-           device_option=st.sampled_from([hu.cpu_do]),
-           use_float16=st.booleans())
+    @given(
+        comm_size=st.integers(min_value=2, max_value=8),
+        blob_size=st.integers(min_value=int(1e3), max_value=int(1e6)),
+        num_blobs=st.integers(min_value=1, max_value=4),
+        device_option=st.sampled_from([hu.cpu_do]),
+        use_float16=st.booleans(),
+    )
     @settings(deadline=10000)
-    def test_broadcast(self, comm_size, blob_size, num_blobs, device_option,
-                       use_float16):
+    def test_broadcast(
+        self, comm_size, blob_size, num_blobs, device_option, use_float16
+    ):
         TestCase.test_counter += 1
-        if os.getenv('COMM_RANK') is not None:
+        if os.getenv("COMM_RANK") is not None:
             self.run_test_distributed(
                 self._test_broadcast,
                 blob_size=blob_size,
                 num_blobs=num_blobs,
                 use_float16=use_float16,
-                device_option=device_option)
+                device_option=device_option,
+            )
         else:
             with TemporaryDirectory() as tmpdir:
                 self.run_test_locally(
@@ -236,44 +227,39 @@ class TestCase(hu.HypothesisTestCase):
                     num_blobs=num_blobs,
                     device_option=device_option,
                     tmpdir=tmpdir,
-                    use_float16=use_float16)
+                    use_float16=use_float16,
+                )
 
-    def _test_allreduce(self,
-                        comm_rank=None,
-                        comm_size=None,
-                        blob_size=None,
-                        num_blobs=None,
-                        tmpdir=None,
-                        use_float16=False
-                        ):
+    def _test_allreduce(
+        self,
+        comm_rank=None,
+        comm_size=None,
+        blob_size=None,
+        num_blobs=None,
+        tmpdir=None,
+        use_float16=False,
+    ):
         store_handler, common_world = self.create_common_world(
-            comm_rank=comm_rank,
-            comm_size=comm_size,
-            tmpdir=tmpdir)
+            comm_rank=comm_rank, comm_size=comm_size, tmpdir=tmpdir
+        )
 
-        blob_size = self.synchronize(
-            store_handler,
-            blob_size,
-            comm_rank=comm_rank)
+        blob_size = self.synchronize(store_handler, blob_size, comm_rank=comm_rank)
 
-        num_blobs = self.synchronize(
-            store_handler,
-            num_blobs,
-            comm_rank=comm_rank)
+        num_blobs = self.synchronize(store_handler, num_blobs, comm_rank=comm_rank)
 
         blobs = []
         for i in range(num_blobs):
             blob = "blob_{}".format(i)
-            value = np.full(blob_size, (comm_rank * num_blobs) + i,
-                            np.float16 if use_float16 else np.float32)
+            value = np.full(
+                blob_size,
+                (comm_rank * num_blobs) + i,
+                np.float16 if use_float16 else np.float32,
+            )
             workspace.FeedBlob(blob, value)
             blobs.append(blob)
 
         net = core.Net("allreduce")
-        net.Allreduce(
-            [common_world] + blobs,
-            blobs,
-            engine=op_engine)
+        net.Allreduce([common_world] + blobs, blobs, engine=op_engine)
 
         workspace.CreateNet(net)
         workspace.RunNet(net.Name())
@@ -281,28 +267,25 @@ class TestCase(hu.HypothesisTestCase):
         for i in range(num_blobs):
             np.testing.assert_array_equal(
                 workspace.FetchBlob(blobs[i]),
-                (num_blobs * comm_size) * (num_blobs * comm_size - 1) / 2)
+                (num_blobs * comm_size) * (num_blobs * comm_size - 1) / 2,
+            )
 
         # Run the net a few more times to check the operator
         # works not just the first time it's called
         for _tmp in range(4):
             workspace.RunNet(net.Name())
 
-    def _test_allreduce_multicw(self,
-                                comm_rank=None,
-                                comm_size=None,
-                                tmpdir=None
-                                ):
+    def _test_allreduce_multicw(self, comm_rank=None, comm_size=None, tmpdir=None):
         _store_handler, common_world = self.create_common_world(
-            comm_rank=comm_rank,
-            comm_size=comm_size,
-            tmpdir=tmpdir)
+            comm_rank=comm_rank, comm_size=comm_size, tmpdir=tmpdir
+        )
 
         _, common_world2 = self.create_common_world(
             comm_rank=comm_rank,
             comm_size=comm_size,
             tmpdir=tmpdir,
-            existing_cw=common_world)
+            existing_cw=common_world,
+        )
 
         blob_size = int(1e4)
         num_blobs = 4
@@ -316,33 +299,35 @@ class TestCase(hu.HypothesisTestCase):
                 blobs.append(blob)
 
             net = core.Net("allreduce_multicw")
-            net.Allreduce(
-                [cw] + blobs,
-                blobs,
-                engine=op_engine)
+            net.Allreduce([cw] + blobs, blobs, engine=op_engine)
 
             workspace.RunNetOnce(net)
             for i in range(num_blobs):
                 np.testing.assert_array_equal(
                     workspace.FetchBlob(blobs[i]),
-                    (num_blobs * comm_size) * (num_blobs * comm_size - 1) / 2)
+                    (num_blobs * comm_size) * (num_blobs * comm_size - 1) / 2,
+                )
 
-    @given(comm_size=st.integers(min_value=2, max_value=8),
-           blob_size=st.integers(min_value=int(1e3), max_value=int(1e6)),
-           num_blobs=st.integers(min_value=1, max_value=4),
-           device_option=st.sampled_from([hu.cpu_do]),
-           use_float16=st.booleans())
+    @given(
+        comm_size=st.integers(min_value=2, max_value=8),
+        blob_size=st.integers(min_value=int(1e3), max_value=int(1e6)),
+        num_blobs=st.integers(min_value=1, max_value=4),
+        device_option=st.sampled_from([hu.cpu_do]),
+        use_float16=st.booleans(),
+    )
     @settings(deadline=10000)
-    def test_allreduce(self, comm_size, blob_size, num_blobs, device_option,
-                       use_float16):
+    def test_allreduce(
+        self, comm_size, blob_size, num_blobs, device_option, use_float16
+    ):
         TestCase.test_counter += 1
-        if os.getenv('COMM_RANK') is not None:
+        if os.getenv("COMM_RANK") is not None:
             self.run_test_distributed(
                 self._test_allreduce,
                 blob_size=blob_size,
                 num_blobs=num_blobs,
                 use_float16=use_float16,
-                device_option=device_option)
+                device_option=device_option,
+            )
         else:
             with TemporaryDirectory() as tmpdir:
                 self.run_test_locally(
@@ -352,36 +337,34 @@ class TestCase(hu.HypothesisTestCase):
                     num_blobs=num_blobs,
                     device_option=device_option,
                     tmpdir=tmpdir,
-                    use_float16=use_float16)
+                    use_float16=use_float16,
+                )
 
-    def _test_reduce_scatter(self,
-                             comm_rank=None,
-                             comm_size=None,
-                             blob_size=None,
-                             num_blobs=None,
-                             tmpdir=None,
-                             use_float16=False
-                             ):
+    def _test_reduce_scatter(
+        self,
+        comm_rank=None,
+        comm_size=None,
+        blob_size=None,
+        num_blobs=None,
+        tmpdir=None,
+        use_float16=False,
+    ):
         store_handler, common_world = self.create_common_world(
-            comm_rank=comm_rank,
-            comm_size=comm_size,
-            tmpdir=tmpdir)
+            comm_rank=comm_rank, comm_size=comm_size, tmpdir=tmpdir
+        )
 
-        blob_size = self.synchronize(
-            store_handler,
-            blob_size,
-            comm_rank=comm_rank)
+        blob_size = self.synchronize(store_handler, blob_size, comm_rank=comm_rank)
 
-        num_blobs = self.synchronize(
-            store_handler,
-            num_blobs,
-            comm_rank=comm_rank)
+        num_blobs = self.synchronize(store_handler, num_blobs, comm_rank=comm_rank)
 
         blobs = []
         for i in range(num_blobs):
             blob = "blob_{}".format(i)
-            value = np.full(blob_size, (comm_rank * num_blobs) + i,
-                            np.float16 if use_float16 else np.float32)
+            value = np.full(
+                blob_size,
+                (comm_rank * num_blobs) + i,
+                np.float16 if use_float16 else np.float32,
+            )
             workspace.FeedBlob(blob, value)
             blobs.append(blob)
 
@@ -398,10 +381,7 @@ class TestCase(hu.HypothesisTestCase):
         blobs.append(recv_counts_blob)
 
         net = core.Net("reduce_scatter")
-        net.ReduceScatter(
-            [common_world] + blobs,
-            blobs,
-            engine=op_engine)
+        net.ReduceScatter([common_world] + blobs, blobs, engine=op_engine)
 
         workspace.CreateNet(net)
         workspace.RunNet(net.Name())
@@ -409,29 +389,34 @@ class TestCase(hu.HypothesisTestCase):
         for i in range(num_blobs):
             np.testing.assert_array_equal(
                 np.resize(workspace.FetchBlob(blobs[i]), recv_counts[comm_rank]),
-                (num_blobs * comm_size) * (num_blobs * comm_size - 1) / 2)
+                (num_blobs * comm_size) * (num_blobs * comm_size - 1) / 2,
+            )
 
         # Run the net a few more times to check the operator
         # works not just the first time it's called
         for _tmp in range(4):
             workspace.RunNet(net.Name())
 
-    @given(comm_size=st.integers(min_value=2, max_value=8),
-           blob_size=st.integers(min_value=int(1e3), max_value=int(1e6)),
-           num_blobs=st.integers(min_value=1, max_value=4),
-           device_option=st.sampled_from([hu.cpu_do]),
-           use_float16=st.booleans())
+    @given(
+        comm_size=st.integers(min_value=2, max_value=8),
+        blob_size=st.integers(min_value=int(1e3), max_value=int(1e6)),
+        num_blobs=st.integers(min_value=1, max_value=4),
+        device_option=st.sampled_from([hu.cpu_do]),
+        use_float16=st.booleans(),
+    )
     @settings(deadline=10000)
-    def test_reduce_scatter(self, comm_size, blob_size, num_blobs,
-                            device_option, use_float16):
+    def test_reduce_scatter(
+        self, comm_size, blob_size, num_blobs, device_option, use_float16
+    ):
         TestCase.test_counter += 1
-        if os.getenv('COMM_RANK') is not None:
+        if os.getenv("COMM_RANK") is not None:
             self.run_test_distributed(
                 self._test_reduce_scatter,
                 blob_size=blob_size,
                 num_blobs=num_blobs,
                 use_float16=use_float16,
-                device_option=device_option)
+                device_option=device_option,
+            )
         else:
             with TemporaryDirectory() as tmpdir:
                 self.run_test_locally(
@@ -441,44 +426,39 @@ class TestCase(hu.HypothesisTestCase):
                     num_blobs=num_blobs,
                     device_option=device_option,
                     tmpdir=tmpdir,
-                    use_float16=use_float16)
+                    use_float16=use_float16,
+                )
 
-    def _test_allgather(self,
-                        comm_rank=None,
-                        comm_size=None,
-                        blob_size=None,
-                        num_blobs=None,
-                        tmpdir=None,
-                        use_float16=False
-                        ):
+    def _test_allgather(
+        self,
+        comm_rank=None,
+        comm_size=None,
+        blob_size=None,
+        num_blobs=None,
+        tmpdir=None,
+        use_float16=False,
+    ):
         store_handler, common_world = self.create_common_world(
-            comm_rank=comm_rank,
-            comm_size=comm_size,
-            tmpdir=tmpdir)
+            comm_rank=comm_rank, comm_size=comm_size, tmpdir=tmpdir
+        )
 
-        blob_size = self.synchronize(
-            store_handler,
-            blob_size,
-            comm_rank=comm_rank)
+        blob_size = self.synchronize(store_handler, blob_size, comm_rank=comm_rank)
 
-        num_blobs = self.synchronize(
-            store_handler,
-            num_blobs,
-            comm_rank=comm_rank)
+        num_blobs = self.synchronize(store_handler, num_blobs, comm_rank=comm_rank)
 
         blobs = []
         for i in range(num_blobs):
             blob = "blob_{}".format(i)
-            value = np.full(blob_size, (comm_rank * num_blobs) + i,
-                            np.float16 if use_float16 else np.float32)
+            value = np.full(
+                blob_size,
+                (comm_rank * num_blobs) + i,
+                np.float16 if use_float16 else np.float32,
+            )
             workspace.FeedBlob(blob, value)
             blobs.append(blob)
 
         net = core.Net("allgather")
-        net.Allgather(
-            [common_world] + blobs,
-            ["Gathered"],
-            engine=op_engine)
+        net.Allgather([common_world] + blobs, ["Gathered"], engine=op_engine)
 
         workspace.CreateNet(net)
         workspace.RunNet(net.Name())
@@ -486,33 +466,39 @@ class TestCase(hu.HypothesisTestCase):
         expected_output = np.array([])
         for i in range(comm_size):
             for j in range(num_blobs):
-                value = np.full(blob_size, (i * num_blobs) + j,
-                                np.float16 if use_float16 else np.float32)
+                value = np.full(
+                    blob_size,
+                    (i * num_blobs) + j,
+                    np.float16 if use_float16 else np.float32,
+                )
                 expected_output = np.concatenate((expected_output, value))
-        np.testing.assert_array_equal(
-            workspace.FetchBlob("Gathered"), expected_output)
+        np.testing.assert_array_equal(workspace.FetchBlob("Gathered"), expected_output)
 
         # Run the net a few more times to check the operator
         # works not just the first time it's called
         for _tmp in range(4):
             workspace.RunNet(net.Name())
 
-    @given(comm_size=st.integers(min_value=2, max_value=8),
-           blob_size=st.integers(min_value=int(1e3), max_value=int(1e6)),
-           num_blobs=st.integers(min_value=1, max_value=4),
-           device_option=st.sampled_from([hu.cpu_do]),
-           use_float16=st.booleans())
+    @given(
+        comm_size=st.integers(min_value=2, max_value=8),
+        blob_size=st.integers(min_value=int(1e3), max_value=int(1e6)),
+        num_blobs=st.integers(min_value=1, max_value=4),
+        device_option=st.sampled_from([hu.cpu_do]),
+        use_float16=st.booleans(),
+    )
     @settings(max_examples=10, deadline=None)
-    def test_allgather(self, comm_size, blob_size, num_blobs, device_option,
-                       use_float16):
+    def test_allgather(
+        self, comm_size, blob_size, num_blobs, device_option, use_float16
+    ):
         TestCase.test_counter += 1
-        if os.getenv('COMM_RANK') is not None:
+        if os.getenv("COMM_RANK") is not None:
             self.run_test_distributed(
                 self._test_allgather,
                 blob_size=blob_size,
                 num_blobs=num_blobs,
                 use_float16=use_float16,
-                device_option=device_option)
+                device_option=device_option,
+            )
         else:
             with TemporaryDirectory() as tmpdir:
                 self.run_test_locally(
@@ -522,16 +508,17 @@ class TestCase(hu.HypothesisTestCase):
                     num_blobs=num_blobs,
                     device_option=device_option,
                     tmpdir=tmpdir,
-                    use_float16=use_float16)
+                    use_float16=use_float16,
+                )
 
     @given(device_option=st.sampled_from([hu.cpu_do]))
     @settings(deadline=10000)
     def test_forked_cw(self, device_option):
         TestCase.test_counter += 1
-        if os.getenv('COMM_RANK') is not None:
+        if os.getenv("COMM_RANK") is not None:
             self.run_test_distributed(
-                self._test_allreduce_multicw,
-                device_option=device_option)
+                self._test_allreduce_multicw, device_option=device_option
+            )
         else:
             # Note: this test exercises the path where we fork a common world.
             # We therefore don't need a comm size larger than 2. It used to be
@@ -544,7 +531,8 @@ class TestCase(hu.HypothesisTestCase):
                     self._test_allreduce_multicw,
                     comm_size=2,
                     device_option=device_option,
-                    tmpdir=tmpdir)
+                    tmpdir=tmpdir,
+                )
 
     def _test_barrier(
         self,
@@ -557,10 +545,7 @@ class TestCase(hu.HypothesisTestCase):
         )
 
         net = core.Net("barrier")
-        net.Barrier(
-            [common_world],
-            [],
-            engine=op_engine)
+        net.Barrier([common_world], [], engine=op_engine)
 
         workspace.CreateNet(net)
         workspace.RunNet(net.Name())
@@ -570,22 +555,23 @@ class TestCase(hu.HypothesisTestCase):
         for _tmp in range(4):
             workspace.RunNet(net.Name())
 
-    @given(comm_size=st.integers(min_value=2, max_value=8),
-           device_option=st.sampled_from([hu.cpu_do]))
+    @given(
+        comm_size=st.integers(min_value=2, max_value=8),
+        device_option=st.sampled_from([hu.cpu_do]),
+    )
     @settings(deadline=10000)
     def test_barrier(self, comm_size, device_option):
         TestCase.test_counter += 1
-        if os.getenv('COMM_RANK') is not None:
-            self.run_test_distributed(
-                self._test_barrier,
-                device_option=device_option)
+        if os.getenv("COMM_RANK") is not None:
+            self.run_test_distributed(self._test_barrier, device_option=device_option)
         else:
             with TemporaryDirectory() as tmpdir:
                 self.run_test_locally(
                     self._test_barrier,
                     comm_size=comm_size,
                     device_option=device_option,
-                    tmpdir=tmpdir)
+                    tmpdir=tmpdir,
+                )
 
     def _test_close_connection(
         self,
@@ -593,13 +579,13 @@ class TestCase(hu.HypothesisTestCase):
         comm_size=None,
         tmpdir=None,
     ):
-        '''
+        """
         One node calls close connection, others wait it on barrier.
         Test will check that all will exit eventually.
-        '''
+        """
         # Caffe's for closers only:
         # https://www.youtube.com/watch?v=QMFwFgG9NE8
-        closer = comm_rank == comm_size // 2,
+        closer = (comm_rank == comm_size // 2,)
 
         store_handler, common_world = self.create_common_world(
             comm_rank=comm_rank, comm_size=comm_size, tmpdir=tmpdir
@@ -607,38 +593,39 @@ class TestCase(hu.HypothesisTestCase):
 
         net = core.Net("barrier_or_close")
         if not closer:
-            net.Barrier(
-                [common_world],
-                [],
-                engine=op_engine)
+            net.Barrier([common_world], [], engine=op_engine)
         else:
-            net.DestroyCommonWorld(
-                [common_world], [common_world], engine=op_engine)
+            net.DestroyCommonWorld([common_world], [common_world], engine=op_engine)
             # Sleep a bit to ensure others start the barrier
             import time
+
             time.sleep(0.1)
 
         workspace.CreateNet(net)
         workspace.RunNet(net.Name())
 
-    @given(comm_size=st.integers(min_value=2, max_value=8),
-           device_option=st.sampled_from([hu.cpu_do]))
+    @given(
+        comm_size=st.integers(min_value=2, max_value=8),
+        device_option=st.sampled_from([hu.cpu_do]),
+    )
     @settings(deadline=10000)
     def test_close_connection(self, comm_size, device_option):
         import time
+
         start_time = time.time()
         TestCase.test_counter += 1
-        if os.getenv('COMM_RANK') is not None:
+        if os.getenv("COMM_RANK") is not None:
             self.run_test_distributed(
-                self._test_close_connection,
-                device_option=device_option)
+                self._test_close_connection, device_option=device_option
+            )
         else:
             with TemporaryDirectory() as tmpdir:
                 self.run_test_locally(
                     self._test_close_connection,
                     comm_size=comm_size,
                     device_option=device_option,
-                    tmpdir=tmpdir)
+                    tmpdir=tmpdir,
+                )
         # Check that test finishes quickly because connections get closed.
         # This assert used to check that the end to end runtime was less
         # than 2 seconds, but this may not always be the case if there
@@ -653,13 +640,12 @@ class TestCase(hu.HypothesisTestCase):
         comm_size=None,
         tmpdir=None,
     ):
-        '''
+        """
         Only one node will participate in allreduce, resulting in an IoError
-        '''
+        """
         store_handler, common_world = self.create_common_world(
-            comm_rank=comm_rank,
-            comm_size=comm_size,
-            tmpdir=tmpdir)
+            comm_rank=comm_rank, comm_size=comm_size, tmpdir=tmpdir
+        )
 
         if comm_rank == 0:
             blob_size = 1000
@@ -668,39 +654,39 @@ class TestCase(hu.HypothesisTestCase):
             blobs = []
             for i in range(num_blobs):
                 blob = "blob_{}".format(i)
-                value = np.full(
-                    blob_size, (comm_rank * num_blobs) + i, np.float32
-                )
+                value = np.full(blob_size, (comm_rank * num_blobs) + i, np.float32)
                 workspace.FeedBlob(blob, value)
                 blobs.append(blob)
 
             net = core.Net("allreduce")
-            net.Allreduce(
-                [common_world] + blobs,
-                blobs,
-                engine=op_engine)
+            net.Allreduce([common_world] + blobs, blobs, engine=op_engine)
 
             workspace.CreateNet(net)
             workspace.RunNet(net.Name())
 
-    @given(comm_size=st.integers(min_value=2, max_value=8),
-           device_option=st.sampled_from([hu.cpu_do]))
+    @given(
+        comm_size=st.integers(min_value=2, max_value=8),
+        device_option=st.sampled_from([hu.cpu_do]),
+    )
     @settings(deadline=10000)
     def test_io_error(self, comm_size, device_option):
         TestCase.test_counter += 1
         with self.assertRaises(IoError):
-            if os.getenv('COMM_RANK') is not None:
+            if os.getenv("COMM_RANK") is not None:
                 self.run_test_distributed(
-                    self._test_io_error,
-                    device_option=device_option)
+                    self._test_io_error, device_option=device_option
+                )
             else:
                 with TemporaryDirectory() as tmpdir:
                     self.run_test_locally(
                         self._test_io_error,
                         comm_size=comm_size,
                         device_option=device_option,
-                        tmpdir=tmpdir)
+                        tmpdir=tmpdir,
+                    )
+
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

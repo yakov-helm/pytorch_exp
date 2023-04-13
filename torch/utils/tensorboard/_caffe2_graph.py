@@ -15,6 +15,7 @@ from typing import Set, Dict, Tuple, List
 
 log = logging.getLogger(__name__)
 
+
 def _make_unique_name(seen: Set[str], name: str, min_version: int = 0):
     """
     Make the name unique by appending a unique number to the name. Used for SSA.

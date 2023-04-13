@@ -39,7 +39,9 @@ from torch.distributed._tensor import (
 from torch.distributed._tensor.api import DTensor
 from torch.distributed._tensor.placement_types import Placement
 
-DEVICE_TYPE = "cuda" if torch.cuda.is_available() and torch.cuda.device_count() > 1 else "cpu"
+DEVICE_TYPE = (
+    "cuda" if torch.cuda.is_available() and torch.cuda.device_count() > 1 else "cpu"
+)
 NUM_DEVICES = 4
 
 # We use this as a proxy for "multiple GPUs exist"
@@ -141,9 +143,7 @@ class DTensorTestBase(MultiProcessTestCase):
                 self.assertEqual(dtc.successful(), True)
                 d_out = op_call(*d_args, **d_kwargs)
                 self.assertEqual(
-                    d_out.redistribute(
-                        mesh, [Replicate()] * mesh.ndim
-                    ).to_local(),
+                    d_out.redistribute(mesh, [Replicate()] * mesh.ndim).to_local(),
                     out,
                 )
 
@@ -164,9 +164,7 @@ def with_comms(func: TestFunc) -> TestFunc:
         else:
             self.device_type = "cpu"
 
-        pg_backend = (
-            "nccl" if self.device_type == "cuda" else "gloo"
-        )
+        pg_backend = "nccl" if self.device_type == "cuda" else "gloo"
         if pg_backend == "nccl" and torch.cuda.device_count() < self.world_size:
             sys.exit(TEST_SKIPS[f"multi-gpu-{self.world_size}"].exit_code)
 
@@ -254,9 +252,7 @@ class DTensorConverter:
             ]
         )
 
-    def gen_sharding_choices_for_arg(
-        self, arg: torch.Tensor
-    ) -> Sequence[Placement]:
+    def gen_sharding_choices_for_arg(self, arg: torch.Tensor) -> Sequence[Placement]:
         mesh_size = self.mesh.size()
         sharding_choices: List[Placement] = [Replicate()]
         # c10d collective does not support bool tensor
@@ -332,7 +328,7 @@ class DTensorConverter:
                         size=t.size(),
                         dtype=torch.bool,
                         requires_grad=t.requires_grad,
-                        stride=t.stride()
+                        stride=t.stride(),
                     )
                 else:
                     r = distribute_tensor(t, mesh, placements)
@@ -352,6 +348,4 @@ class DTensorConverter:
             self.miss += 1
             return t
         else:
-            raise RuntimeError(
-                f"Trying to convert to DTensor, but got {type(t)}"
-            )
+            raise RuntimeError(f"Trying to convert to DTensor, but got {type(t)}")

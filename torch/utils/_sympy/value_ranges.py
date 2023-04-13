@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 
 __all__ = ["ValueRanges", "ValueRangeAnalysis"]
 
+
 class ValueRangeError(RuntimeError):
     pass
 
@@ -83,7 +84,9 @@ class ValueRanges:
 
     # Intersection
     def __and__(self, other):
-        return ValueRanges(lower=max(self.lower, other.lower), upper=min(self.upper, other.upper))
+        return ValueRanges(
+            lower=max(self.lower, other.lower), upper=min(self.upper, other.upper)
+        )
 
     def is_singleton(self) -> bool:
         return self.lower == self.upper

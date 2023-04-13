@@ -70,7 +70,6 @@ class TestSparse(JitTestCase):
                 self.a = torch.rand(4, 4).to_sparse_csr()
                 self.b = torch.rand(4, 4).to_sparse_csr()
 
-
             def forward(self, x):
 
                 return x.matmul(self.a).matmul(self.b)

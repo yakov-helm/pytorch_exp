@@ -15,6 +15,7 @@ import torch.utils.cpp_extension
 
 try:
     import pytest
+
     HAS_PYTEST = True
 except ImportError as e:
     HAS_PYTEST = False
@@ -127,11 +128,15 @@ class TestCppExtensionAOT(common.TestCase):
     @common.skipIfRocm
     @unittest.skipIf(common.IS_WINDOWS, "Windows not supported")
     @unittest.skipIf(not TEST_CUDA, "CUDA not found")
-    @unittest.skipIf(os.getenv('USE_NINJA', '0') == '0', "cuda extension with dlink requires ninja to build")
+    @unittest.skipIf(
+        os.getenv("USE_NINJA", "0") == "0",
+        "cuda extension with dlink requires ninja to build",
+    )
     def test_cuda_dlink_libs(self):
         from torch_test_cpp_extension import cuda_dlink
-        a = torch.randn(8, dtype=torch.float, device='cuda')
-        b = torch.randn(8, dtype=torch.float, device='cuda')
+
+        a = torch.randn(8, dtype=torch.float, device="cuda")
+        b = torch.randn(8, dtype=torch.float, device="cuda")
         ref = a + b
         test = cuda_dlink.add(a, b)
         self.assertEqual(test, ref)
@@ -149,6 +154,7 @@ class TestPybindTypeCasters(common.TestCase):
     second argument to `PYBIND11_TYPE_CASTER` should be the type we expect to
     receive in python, in these tests we verify this at run-time.
     """
+
     @staticmethod
     def expected_return_type(func):
         """
@@ -204,7 +210,9 @@ class TestPybindTypeCasters(common.TestCase):
                     break
             else:
                 raise AssertionError(f"{val} is not an instance of {expected_types}")
-        self.assertFalse(expected_types, f"Missing functions for types {expected_types}")
+        self.assertFalse(
+            expected_types, f"Missing functions for types {expected_types}"
+        )
 
     def test_pybind_return_types(self):
         functions = [
@@ -231,28 +239,28 @@ class TestPybindTypeCasters(common.TestCase):
 
 class TestORTTensor(common.TestCase):
     def test_unregistered(self):
-        a = torch.arange(0, 10, device='cpu')
+        a = torch.arange(0, 10, device="cpu")
         with self.assertRaisesRegex(RuntimeError, "Could not run"):
-            b = torch.arange(0, 10, device='ort')
+            b = torch.arange(0, 10, device="ort")
 
     def test_zeros(self):
-        a = torch.empty(5, 5, device='cpu')
-        self.assertEqual(a.device, torch.device('cpu'))
+        a = torch.empty(5, 5, device="cpu")
+        self.assertEqual(a.device, torch.device("cpu"))
 
-        b = torch.empty(5, 5, device='ort')
-        self.assertEqual(b.device, torch.device('ort', 0))
+        b = torch.empty(5, 5, device="ort")
+        self.assertEqual(b.device, torch.device("ort", 0))
         self.assertEqual(ort_extension.get_test_int(), 0)
         self.assertEqual(torch.get_default_dtype(), b.dtype)
 
-        c = torch.empty((5, 5), dtype=torch.int64, device='ort')
+        c = torch.empty((5, 5), dtype=torch.int64, device="ort")
         self.assertEqual(ort_extension.get_test_int(), 0)
         self.assertEqual(torch.int64, c.dtype)
 
     def test_add(self):
-        a = torch.empty(5, 5, device='ort', requires_grad=True)
+        a = torch.empty(5, 5, device="ort", requires_grad=True)
         self.assertEqual(ort_extension.get_test_int(), 0)
 
-        b = torch.empty(5, 5, device='ort')
+        b = torch.empty(5, 5, device="ort")
         self.assertEqual(ort_extension.get_test_int(), 0)
 
         c = a + b
@@ -261,9 +269,9 @@ class TestORTTensor(common.TestCase):
     def test_conv_backend_override(self):
         # To simplify tests, we use 4d input here to avoid doing view4d( which
         # needs more overrides) in _convolution.
-        input = torch.empty(2, 4, 10, 2, device='ort', requires_grad=True)
-        weight = torch.empty(6, 4, 2, 2, device='ort', requires_grad=True)
-        bias = torch.empty(6, device='ort')
+        input = torch.empty(2, 4, 10, 2, device="ort", requires_grad=True)
+        weight = torch.empty(6, 4, 2, 2, device="ort", requires_grad=True)
+        bias = torch.empty(6, device="ort")
 
         # Make sure forward is overriden
         out = torch.nn.functional.conv2d(input, weight, bias, 2, 0, 1, 1)
@@ -280,7 +288,6 @@ class TestORTTensor(common.TestCase):
 
 
 class TestRNGExtension(common.TestCase):
-
     def setUp(self):
         super().setUp()
 
@@ -291,7 +298,7 @@ class TestRNGExtension(common.TestCase):
         t = torch.empty(10, dtype=torch.int64).random_()
         self.assertNotEqual(t, fourty_two)
 
-        gen = torch.Generator(device='cpu')
+        gen = torch.Generator(device="cpu")
         t = torch.empty(10, dtype=torch.int64).random_(generator=gen)
         self.assertNotEqual(t, fourty_two)
 
@@ -317,7 +324,6 @@ class TestRNGExtension(common.TestCase):
 
 @unittest.skipIf(not TEST_CUDA, "CUDA not found")
 class TestTorchLibrary(common.TestCase):
-
     def test_torch_library(self):
         import torch_test_cpp_extension.torch_library  # noqa: F401
 
@@ -333,7 +339,7 @@ class TestTorchLibrary(common.TestCase):
         self.assertFalse(s(True, False))
         self.assertFalse(s(False, True))
         self.assertFalse(s(False, False))
-        self.assertIn('torch_library::logical_and', str(s.graph))
+        self.assertIn("torch_library::logical_and", str(s.graph))
 
 
 if __name__ == "__main__":

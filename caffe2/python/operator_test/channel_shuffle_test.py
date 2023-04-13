@@ -1,5 +1,3 @@
-
-
 import caffe2.python.hypothesis_test_util as hu
 import caffe2.python.serialized_test.serialized_test_util as serial
 import hypothesis.strategies as st
@@ -35,7 +33,7 @@ class ChannelShuffleOpsTest(serial.SerializedTestCase):
         H=st.integers(1, 5),
         W=st.integers(1, 5),
         order=st.sampled_from(["NCHW", "NHWC"]),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_channel_shuffle(self, N, G, K, H, W, order, gc, dc):
         C = G * K

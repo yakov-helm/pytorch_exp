@@ -647,13 +647,16 @@ def determine_local_world_size(nproc_per_node: str):
                 num_proc = os.cpu_count()
                 device_type = "cpu"
         else:
-            raise ValueError(f"Unsupported nproc_per_node value: {nproc_per_node}") from e
+            raise ValueError(
+                f"Unsupported nproc_per_node value: {nproc_per_node}"
+            ) from e
 
         log.info(
-            "Using nproc_per_node=%s,"
-            " setting to %s since the instance "
-            "has %s %s",
-            nproc_per_node, num_proc, os.cpu_count(), device_type
+            "Using nproc_per_node=%s," " setting to %s since the instance " "has %s %s",
+            nproc_per_node,
+            num_proc,
+            os.cpu_count(),
+            device_type,
         )
         return num_proc
 
@@ -699,7 +702,7 @@ def config_from_args(args) -> Tuple[LaunchConfig, Union[Callable, str], List[str
             "please further tune the variable for optimal performance in "
             "your application as needed. \n"
             "*****************************************",
-            omp_num_threads
+            omp_num_threads,
         )
         # This env variable will be passed down to the subprocesses
         os.environ["OMP_NUM_THREADS"] = str(omp_num_threads)
@@ -781,7 +784,9 @@ def run(args):
             "--rdzv-endpoint=%s "
             "--rdzv-id=%s\n"
             "**************************************\n",
-            args.rdzv_backend, args.rdzv_endpoint, args.rdzv_id
+            args.rdzv_backend,
+            args.rdzv_endpoint,
+            args.rdzv_id,
         )
 
     config, cmd, cmd_args = config_from_args(args)

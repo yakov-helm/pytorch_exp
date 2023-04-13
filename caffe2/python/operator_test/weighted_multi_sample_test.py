@@ -1,8 +1,3 @@
-
-
-
-
-
 import numpy as np
 
 from hypothesis import given
@@ -17,7 +12,7 @@ class TestWeightedMultiSample(hu.HypothesisTestCase):
     @given(
         num_samples=st.integers(min_value=0, max_value=128),
         data_len=st.integers(min_value=0, max_value=10000),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_weighted_multi_sample(self, num_samples, data_len, gc, dc):
         weights = np.zeros((data_len))
@@ -37,20 +32,13 @@ class TestWeightedMultiSample(hu.HypothesisTestCase):
         workspace.RunOperatorOnce(op)
         result_indices = workspace.FetchBlob("sample_indices")
         np.testing.assert_allclose(expected_indices, result_indices)
-        self.assertDeviceChecks(
-            dc,
-            op,
-            [weights.astype(np.float32)],
-            [0]
-        )
+        self.assertDeviceChecks(dc, op, [weights.astype(np.float32)], [0])
 
         # test shape input
         shape = np.zeros((num_samples))
         workspace.FeedBlob("shape", shape)
         op2 = core.CreateOperator(
-            "WeightedMultiSampling",
-            ["weights", "shape"],
-            ["sample_indices_2"]
+            "WeightedMultiSampling", ["weights", "shape"], ["sample_indices_2"]
         )
         workspace.RunOperatorOnce(op2)
         result_indices_2 = workspace.FetchBlob("sample_indices_2")
@@ -66,4 +54,5 @@ class TestWeightedMultiSample(hu.HypothesisTestCase):
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

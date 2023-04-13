@@ -8,6 +8,7 @@ from torch.testing._internal.common_utils import TestCase, run_tests, load_tests
 # sharding on sandcastle. This line silences flake warnings
 load_tests = load_tests
 
+
 @unittest.skipIf(not torch.profiler.itt.is_available(), "ITT is required")
 class TestItt(TestCase):
     def test_itt(self):
@@ -16,5 +17,6 @@ class TestItt(TestCase):
         torch.profiler.itt.mark("bar")
         torch.profiler.itt.range_pop()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_tests()

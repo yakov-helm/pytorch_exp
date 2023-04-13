@@ -13,14 +13,19 @@ import typing_extensions
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
 
 global___LegacyPadding = LegacyPadding
-class _LegacyPadding(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[LegacyPadding], type):
+
+class _LegacyPadding(
+    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[LegacyPadding], type
+):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
     NOTSET = LegacyPadding.V(0)
     VALID = LegacyPadding.V(1)
     SAME = LegacyPadding.V(2)
     CAFFE_LEGACY_POOLING = LegacyPadding.V(3)
+
 class LegacyPadding(metaclass=_LegacyPadding):
-    V = typing.NewType('V', int)
+    V = typing.NewType("V", int)
+
 NOTSET = LegacyPadding.V(0)
 VALID = LegacyPadding.V(1)
 SAME = LegacyPadding.V(2)
@@ -40,19 +45,57 @@ class CaffeDatum(google.protobuf.message.Message):
     width: int = ...
     data: bytes = ...
     label: int = ...
-    float_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[float] = ...
+    float_data: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        float
+    ] = ...
     encoded: bool = ...
 
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        channels : typing.Optional[int] = ...,
-        height : typing.Optional[int] = ...,
-        width : typing.Optional[int] = ...,
-        data : typing.Optional[bytes] = ...,
-        label : typing.Optional[int] = ...,
-        float_data : typing.Optional[typing.Iterable[float]] = ...,
-        encoded : typing.Optional[bool] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"channels",b"channels",u"data",b"data",u"encoded",b"encoded",u"height",b"height",u"label",b"label",u"width",b"width"]) -> bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"channels",b"channels",u"data",b"data",u"encoded",b"encoded",u"float_data",b"float_data",u"height",b"height",u"label",b"label",u"width",b"width"]) -> None: ...
+        channels: typing.Optional[int] = ...,
+        height: typing.Optional[int] = ...,
+        width: typing.Optional[int] = ...,
+        data: typing.Optional[bytes] = ...,
+        label: typing.Optional[int] = ...,
+        float_data: typing.Optional[typing.Iterable[float]] = ...,
+        encoded: typing.Optional[bool] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "channels",
+            b"channels",
+            "data",
+            b"data",
+            "encoded",
+            b"encoded",
+            "height",
+            b"height",
+            "label",
+            b"label",
+            "width",
+            b"width",
+        ],
+    ) -> bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "channels",
+            b"channels",
+            "data",
+            b"data",
+            "encoded",
+            b"encoded",
+            "float_data",
+            b"float_data",
+            "height",
+            b"height",
+            "label",
+            b"label",
+            "width",
+            b"width",
+        ],
+    ) -> None: ...
+
 global___CaffeDatum = CaffeDatum

@@ -41,6 +41,7 @@ def ret_work(ret):
     fut.set_result(ret)
     return _create_work_from_future(fut)
 
+
 def binop_reduce(tensors, op):
     res = op(torch.stack(tensors), dim=0)
     if isinstance(res, torch.Tensor):
@@ -48,8 +49,10 @@ def binop_reduce(tensors, op):
     # min/max return a namedtuple
     return res.values
 
+
 def bitwise_reduce(tensors, op):
     return reduce(op, tensors)
+
 
 _reduce_ops = {
     ReduceOp.SUM: partial(binop_reduce, op=torch.sum),
@@ -62,6 +65,7 @@ _reduce_ops = {
     ReduceOp.BXOR: partial(bitwise_reduce, op=torch.bitwise_xor),
 }
 
+
 class AllToAll:
     @torch.no_grad()
     def work(self, data):
@@ -71,6 +75,7 @@ class AllToAll:
             for src_rank in range(world_size):
                 _, input_tensor_list = data[src_rank]
                 output_tensor_list[src_rank].copy_(input_tensor_list[dest_rank])
+
 
 class AllReduce:
     def __init__(self, op):
@@ -102,6 +107,7 @@ class AllGather:
             for dest in data:
                 dest_tensor = dest[0][0][src_rank]
                 dest_tensor.copy_(src_tensor)
+
 
 class Scatter:
     def __init__(self, src):
@@ -138,10 +144,13 @@ class Gather:
             dest_tensor = out_tensor_list[rank]
             dest_tensor.copy_(src_in_tensor_list[0])
 
+
 class ReduceScatter:
     def __init__(self, op):
         if op != dist.ReduceOp.SUM:
-            raise NotImplementedError("ReduceScatter only supports SUM on threaded pg for now.")
+            raise NotImplementedError(
+                "ReduceScatter only supports SUM on threaded pg for now."
+            )
         self.op = op
 
     @torch.no_grad()
@@ -160,6 +169,7 @@ class ReduceScatter:
                     start_reduction[i] = True
                 else:
                     dest_tensor_on_rank_i[0].add_(to_scatter[i])
+
 
 class Broadcast:
     def __init__(self, src):
@@ -200,7 +210,8 @@ class Collective:
 
             if rank == 0:
                 self._start_cond.wait_for(
-                    lambda: self._count == self._world_size or self._pg._terminate.is_set()
+                    lambda: self._count == self._world_size
+                    or self._pg._terminate.is_set()
                 )
                 # SystemExit is not a subclass of Exception but BaseException
                 # and can be distinguished from normal exception raised from program errors
@@ -211,7 +222,9 @@ class Collective:
         with self._done_cond:
             # wait for rank 0 to finish
             if rank > 0:
-                self._done_cond.wait_for(lambda: self._done or self._pg._terminate.is_set())
+                self._done_cond.wait_for(
+                    lambda: self._done or self._pg._terminate.is_set()
+                )
                 if self._pg._terminate.is_set():
                     sys.exit("Test termination event occurs.")
             else:
@@ -252,14 +265,19 @@ class ProcessLocalGroup(dist.ProcessGroup):
                 )
             # pg_name is unique, we use that to record the mapping between pg and collective
             if pg.pg_name not in cls._cur_coll_on_pgs:
-                cls._cur_coll_on_pgs[pg.pg_name] = Collective(pg.size(), collective, cls)
+                cls._cur_coll_on_pgs[pg.pg_name] = Collective(
+                    pg.size(), collective, cls
+                )
             return cls._cur_coll_on_pgs[pg.pg_name]
 
     @classmethod
     def _end_coll(cls, collective, pg):
         # This is racily called by all ranks, so only one will work
         with cls._coll_lock:
-            if pg.pg_name in cls._cur_coll_on_pgs and cls._cur_coll_on_pgs[pg.pg_name] == collective:
+            if (
+                pg.pg_name in cls._cur_coll_on_pgs
+                and cls._cur_coll_on_pgs[pg.pg_name] == collective
+            ):
                 cls._cur_coll_on_pgs.pop(pg.pg_name)
 
     @classmethod
@@ -323,7 +341,9 @@ class ProcessLocalGroup(dist.ProcessGroup):
         ProcessLocalGroup._end_coll(coll, self)
         return res
 
-    def _reduce_scatter_base(self, output_tensor, input_tensor, opts=AllgatherOptions()):
+    def _reduce_scatter_base(
+        self, output_tensor, input_tensor, opts=AllgatherOptions()
+    ):
         tensor_list = list(torch.chunk(input_tensor, self._world_size))
         return self.reduce_scatter([output_tensor], [tensor_list], opts)
 
@@ -371,6 +391,7 @@ class WorldData:
     group_count: int
     tags_to_pg: Dict[str, List[dist.ProcessGroup]]
     pg_to_tag: Dict[dist.ProcessGroup, str]
+
 
 class ThreadLocalWorld:
     _world = threading.local()

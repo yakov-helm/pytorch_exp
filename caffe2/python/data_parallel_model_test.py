@@ -1,7 +1,3 @@
-
-
-
-
 from multiprocessing import Process, Queue
 import numpy as np
 import os
@@ -14,8 +10,17 @@ from hypothesis import assume, given, settings
 import hypothesis.strategies as st
 
 from caffe2.proto import caffe2_pb2
-from caffe2.python import brew, core, cnn, data_parallel_model, dyndep, \
-    model_helper, optimizer, rnn_cell, workspace
+from caffe2.python import (
+    brew,
+    core,
+    cnn,
+    data_parallel_model,
+    dyndep,
+    model_helper,
+    optimizer,
+    rnn_cell,
+    workspace,
+)
 from caffe2.python.test_util import TestCase
 
 
@@ -30,6 +35,7 @@ class TemporaryDirectory:
     def __exit__(self, type, value, traceback):
         shutil.rmtree(self.tmpdir)
 
+
 # Note(jiayq): we are yet to find out why Travis gives out an error in gloo
 # like:
 # RuntimeError: [enforce fail at /home/travis/build/caffe2/caffe2/third_party/gloo/gloo/transport/tcp/device.cc:113] ifa != nullptr. Unable to find interface for: [127.0.1.1]
@@ -37,17 +43,18 @@ class TemporaryDirectory:
 # As a result, we will check if this is travis, and if yes, disable it.
 @unittest.skipIf(os.environ.get("TRAVIS"), "DPMTest has a known issue with Travis.")
 class DataParallelModelTest(TestCase):
-
     def run_model(self, devices, gpu):
-        '''
+        """
         Helper function for test_equiv
-        '''
+        """
+
         def input_builder_fun(model):
             return None
 
         def model_build_fun(model, loss_scale):
-            fc = model.FC("data", "fc", 16, 1,
-                          ("ConstantFill", {}), ("ConstantFill", {}))
+            fc = model.FC(
+                "data", "fc", 16, 1, ("ConstantFill", {}), ("ConstantFill", {})
+            )
             fc_fl = model.FlattenToVec(fc, "fc_fl")
             sigm = model.Sigmoid(fc_fl, "sigm")
             sq = model.SquaredL2Distance([sigm, "label"], "sq")
@@ -117,13 +124,15 @@ class DataParallelModelTest(TestCase):
             workspace.FeedBlob(
                 model._device_prefix + "_0/sync_num",
                 np.array([i * 2]).astype(np.float32),
-                device_option=core.DeviceOption(model._device_type, 0))
+                device_option=core.DeviceOption(model._device_type, 0),
+            )
             workspace.RunNet(model.net.Proto().name)
 
             # Test AddBlobSync
             for j in model._devices:
                 sync = workspace.FetchBlob(
-                    model._device_prefix + "_{}/sync_num".format(j))[0]
+                    model._device_prefix + "_{}/sync_num".format(j)
+                )[0]
                 self.assertTrue(abs(sync - i * 2) < 0.01)
 
         return workspace.FetchBlob("{}_0/fc_w".format(model._device_prefix))
@@ -147,11 +156,9 @@ class DataParallelModelTest(TestCase):
 
         # Start N processes in the background
         procs = []
-        for i in range(kwargs['comm_size']):
-            kwargs['comm_rank'] = i
-            proc = Process(
-                target=run_fn,
-                kwargs=kwargs)
+        for i in range(kwargs["comm_size"]):
+            kwargs["comm_rank"] = i
+            proc = Process(target=run_fn, kwargs=kwargs)
             proc.start()
             procs.append(proc)
 
@@ -169,13 +176,14 @@ class DataParallelModelTest(TestCase):
                     raise queue.get()
 
     def test_equiv(self):
-        '''
+        """
         Test that the model produces exactly same results given
         total batchsize, independent of number of GPUs.
-        '''
+        """
         for gpu in [True, False]:
-            if gpu and (not workspace.has_gpu_support or
-                        workspace.NumCudaDevices() < 2):
+            if gpu and (
+                not workspace.has_gpu_support or workspace.NumCudaDevices() < 2
+            ):
                 continue
             result_2gpus = self.run_model([0, 1], gpu=gpu)
             result_1gpus = self.run_model([0], gpu=gpu)
@@ -200,17 +208,27 @@ class DataParallelModelTest(TestCase):
 
         def add_model_ops(model, loss_scale):
             model.NHWC2NCHW("data", "data_nchw")
-            model.Conv("data_nchw", 'conv1', 3, 64,
-                       weight_init=("MSRAFill", {}), kernel=7,
-                       stride=2, pad=3, no_bias=0)
-            model.SpatialBN('conv1', 'conv1_spatbn_relu', 64, epsilon=1e-3, is_test=False)
-            model.Relu('conv1_spatbn_relu', 'conv1_spatbn_relu')
-            model.MaxPool('conv1_spatbn_relu', 'pool1', kernel=3, stride=2)
-            model.FC('pool1', 'fc', dim_in=(64 * 56 * 56), dim_out=100)
-            model.Sigmoid('fc', 'fc_sigm')
-            model.Softmax('fc_sigm', 'softmax')
-            model.LabelCrossEntropy(['softmax', 'label'], 'xent')
-            loss = model.AveragedLoss('xent', 'loss')
+            model.Conv(
+                "data_nchw",
+                "conv1",
+                3,
+                64,
+                weight_init=("MSRAFill", {}),
+                kernel=7,
+                stride=2,
+                pad=3,
+                no_bias=0,
+            )
+            model.SpatialBN(
+                "conv1", "conv1_spatbn_relu", 64, epsilon=1e-3, is_test=False
+            )
+            model.Relu("conv1_spatbn_relu", "conv1_spatbn_relu")
+            model.MaxPool("conv1_spatbn_relu", "pool1", kernel=3, stride=2)
+            model.FC("pool1", "fc", dim_in=(64 * 56 * 56), dim_out=100)
+            model.Sigmoid("fc", "fc_sigm")
+            model.Softmax("fc_sigm", "softmax")
+            model.LabelCrossEntropy(["softmax", "label"], "xent")
+            loss = model.AveragedLoss("xent", "loss")
 
             # Add a duplicate param init to ensure it does not cause issues
             model.param_init_net.ConstantFill(
@@ -240,8 +258,7 @@ class DataParallelModelTest(TestCase):
             self.assertTrue(p + "_momentum" in checkpoint_params)
         for p in model.GetParams("cpu_2/"):
             self.assertFalse(p in checkpoint_params)
-        self.assertTrue(
-            core.BlobReference("cpu_1/fc_w_momentum") in checkpoint_params)
+        self.assertTrue(core.BlobReference("cpu_1/fc_w_momentum") in checkpoint_params)
         for c in model.GetComputedParams("cpu_1/"):
             self.assertTrue(c in checkpoint_params)
         for c in model.GetComputedParams("cpu_2/"):
@@ -251,7 +268,7 @@ class DataParallelModelTest(TestCase):
 
     def test_net_conversion_and_append_net(self):
         other = model_helper.ModelHelper()
-        fc1 = brew.fc(other, "data", "other_fc1", dim_in=3*227*227, dim_out=10)
+        fc1 = brew.fc(other, "data", "other_fc1", dim_in=3 * 227 * 227, dim_out=10)
         fc2 = brew.fc(other, fc1, "other_fc2", dim_in=10, dim_out=10)
         brew.fc(other, fc2, "other_fc3", dim_in=10, dim_out=10)
 
@@ -261,24 +278,35 @@ class DataParallelModelTest(TestCase):
 
         def add_model_ops(model, loss_scale):
             model.NHWC2NCHW("data", "data_nchw")
-            model.Conv("data_nchw", 'conv1', 3, 64,
-                       weight_init=("MSRAFill", {}), kernel=7,
-                       stride=2, pad=3, no_bias=0)
-            model.SpatialBN('conv1', 'conv1_spatbn_relu', 64, epsilon=1e-3, is_test=False)
-            model.Relu('conv1_spatbn_relu', 'conv1_spatbn_relu')
-            model.MaxPool('conv1_spatbn_relu', 'pool1', kernel=3, stride=2)
-            model.FC('pool1', 'fc', dim_in=(64 * 56 * 56), dim_out=10)
+            model.Conv(
+                "data_nchw",
+                "conv1",
+                3,
+                64,
+                weight_init=("MSRAFill", {}),
+                kernel=7,
+                stride=2,
+                pad=3,
+                no_bias=0,
+            )
+            model.SpatialBN(
+                "conv1", "conv1_spatbn_relu", 64, epsilon=1e-3, is_test=False
+            )
+            model.Relu("conv1_spatbn_relu", "conv1_spatbn_relu")
+            model.MaxPool("conv1_spatbn_relu", "pool1", kernel=3, stride=2)
+            model.FC("pool1", "fc", dim_in=(64 * 56 * 56), dim_out=10)
 
             # Append the net and param_init_net of the other model
             appendnet = data_parallel_model.ConvertNetForDevice(other.net)
             model.net.AppendNet(appendnet)
 
             model.param_init_net.AppendNet(
-                data_parallel_model.ConvertNetForDevice(other.param_init_net))
+                data_parallel_model.ConvertNetForDevice(other.param_init_net)
+            )
 
-            model.Sigmoid('fc', 'fc_sigm')
-            model.Softmax('fc_sigm', 'softmax')
-            loss = model.AveragedLoss('softmax', 'loss')
+            model.Sigmoid("fc", "fc_sigm")
+            model.Softmax("fc_sigm", "softmax")
+            loss = model.AveragedLoss("softmax", "loss")
             return [loss]
 
         def add_optimizer(model):
@@ -293,7 +321,7 @@ class DataParallelModelTest(TestCase):
             input_builder_fun=add_input_ops,
             forward_pass_builder_fun=add_model_ops,
             optimizer_builder_fun=add_optimizer,
-            devices=range(4)
+            devices=range(4),
         )
 
         # Just create and run net and confirm no exception is thrown
@@ -316,15 +344,14 @@ class DataParallelModelTest(TestCase):
             store_handler = "store_handler"
             workspace.RunOperatorOnce(
                 core.CreateOperator(
-                    "FileStoreHandlerCreate",
-                    [],
-                    [store_handler],
-                    path=tmpdir))
+                    "FileStoreHandlerCreate", [], [store_handler], path=tmpdir
+                )
+            )
             rendezvous = dict(
                 kv_handler=store_handler,
                 shard_id=comm_rank,
                 num_shards=comm_size,
-                engine='GLOO',
+                engine="GLOO",
             )
 
             model = cnn.CNNModelHelper(
@@ -337,7 +364,7 @@ class DataParallelModelTest(TestCase):
                 forward_pass_builder_fun=add_model_ops,
                 optimizer_builder_fun=add_optimizer,
                 devices=[1, 2, 3],
-                rendezvous=rendezvous
+                rendezvous=rendezvous,
             )
             data_parallel_model.RunInitNet(model)
 
@@ -345,11 +372,7 @@ class DataParallelModelTest(TestCase):
                 data_parallel_model.Synchronize(model)
 
         with TemporaryDirectory() as tmpdir:
-            self.run_test_locally(
-                run,
-                comm_size=2,
-                device_option=None,
-                tmpdir=tmpdir)
+            self.run_test_locally(run, comm_size=2, device_option=None, tmpdir=tmpdir)
 
     @unittest.skip("Test fails on GPU/RE")
     def test_pre_train_synchronization_barrier(self):
@@ -367,15 +390,14 @@ class DataParallelModelTest(TestCase):
             store_handler = "store_handler"
             workspace.RunOperatorOnce(
                 core.CreateOperator(
-                    "FileStoreHandlerCreate",
-                    [],
-                    [store_handler],
-                    path=tmpdir))
+                    "FileStoreHandlerCreate", [], [store_handler], path=tmpdir
+                )
+            )
             rendezvous = dict(
                 kv_handler=store_handler,
                 shard_id=comm_rank,
                 num_shards=comm_size,
-                engine='GLOO',
+                engine="GLOO",
             )
 
             model = cnn.CNNModelHelper(
@@ -393,7 +415,7 @@ class DataParallelModelTest(TestCase):
                 optimizer_builder_fun=add_optimizer,
                 devices=[1, 2, 3],
                 rendezvous=rendezvous,
-                barrier_net_timeout_sec=5
+                barrier_net_timeout_sec=5,
             )
             data_parallel_model.RunInitNet(model)
             data_parallel_model.RunNet(model, 2)
@@ -402,11 +424,7 @@ class DataParallelModelTest(TestCase):
             data_parallel_model.RunNet(model, 2)
 
         with TemporaryDirectory() as tmpdir:
-            self.run_test_locally(
-                run,
-                comm_size=2,
-                device_option=None,
-                tmpdir=tmpdir)
+            self.run_test_locally(run, comm_size=2, device_option=None, tmpdir=tmpdir)
 
     def test_device_scope_check(self):
         with self.assertRaises(AssertionError):
@@ -427,22 +445,22 @@ class DataParallelModelTest(TestCase):
             return [fc1]
 
         kwargs = {
-            'input_builder_fun': add_input_ops,
-            'forward_pass_builder_fun': add_model_ops,
-            'devices': devices,
+            "input_builder_fun": add_input_ops,
+            "forward_pass_builder_fun": add_model_ops,
+            "devices": devices,
         }
 
         # assert that the transformer is called for both train and test cases
         transform = Mock()
-        kwargs['net_transformer_fun'] = transform
+        kwargs["net_transformer_fun"] = transform
         model = model_helper.ModelHelper(name="r", init_params=False)
         data_parallel_model.Parallelize_CPU(model, **kwargs)
         self.assertTrue(transform.called)
         self.assertEqual(transform.call_count, 1)
 
         transform = Mock()
-        kwargs['net_transformer_fun'] = transform
-        kwargs['optimizer_builder_fun'] = add_optimizer
+        kwargs["net_transformer_fun"] = transform
+        kwargs["optimizer_builder_fun"] = add_optimizer
         model = model_helper.ModelHelper(name="r", init_params=True)
         data_parallel_model.Parallelize_CPU(model, **kwargs)
         self.assertTrue(transform.called)
@@ -461,12 +479,12 @@ class DataParallelModelTest(TestCase):
         self._bn_check_op_level("gpu", seed, batch_size)
 
     def _bn_check_op_level(self, device_type, seed, batch_size):
-        '''
+        """
         Test multi device batch normalization at the operation level. This is
         done by checking the outputs of batch normalization and its gradient
         operator. We compare values produced with our manually calculated
         batch normalization values and gradients.
-        '''
+        """
         devices = [0, 1]
         epsilon = 1e-3
         tolerance = 1e-3
@@ -480,9 +498,11 @@ class DataParallelModelTest(TestCase):
                 x_hat = (x_i - mean) / (np.sqrt(var + epsilon))
                 expected_out = scale * x_hat + bias
                 spatial_out = workspace.FetchBlob(
-                    "{}_{}/bn_out".format(device_type, device))
-                rel_error = np.linalg.norm(spatial_out - expected_out) \
-                            / np.linalg.norm(expected_out)
+                    "{}_{}/bn_out".format(device_type, device)
+                )
+                rel_error = np.linalg.norm(spatial_out - expected_out) / np.linalg.norm(
+                    expected_out
+                )
                 self.assertTrue(rel_error < 0.005)
 
         def _test_backward_pass(x, devices, device_type, scale, tolerance):
@@ -490,46 +510,63 @@ class DataParallelModelTest(TestCase):
             dY_arr = []
             dGamma_arr = []
             num_devices = len(devices)
-            mean = np.array(workspace.FetchBlob(
-                "{}_0/bn_out_sm".format(device_type)), dtype=np.float32)
-            inv_var = np.array(workspace.FetchBlob(
-                "{}_0/bn_out_siv".format(device_type)), dtype=np.float32)
+            mean = np.array(
+                workspace.FetchBlob("{}_0/bn_out_sm".format(device_type)),
+                dtype=np.float32,
+            )
+            inv_var = np.array(
+                workspace.FetchBlob("{}_0/bn_out_siv".format(device_type)),
+                dtype=np.float32,
+            )
 
             # dBias
             # Sum dBias values over all devices to find the average gradient
             for device in devices:
                 dY_blob = workspace.FetchBlob(
-                    "{}_{}/bn_out_grad".format(device_type, device))
+                    "{}_{}/bn_out_grad".format(device_type, device)
+                )
                 dY = np.array(dY_blob, dtype=np.float32)
                 dY_arr.append(dY)
                 dBias_arr.append(np.array(np.sum(dY, axis=0), dtype=np.float32))
             dBias = np.sum(dBias_arr, dtype=np.float32)
             dBias_avg = dBias / num_devices
             for device in devices:
-                dBiasActual = np.sum(workspace.FetchBlob("{}_{}/bn_out_b_grad"
-                    .format(device_type, device)), dtype=np.float32)
+                dBiasActual = np.sum(
+                    workspace.FetchBlob(
+                        "{}_{}/bn_out_b_grad".format(device_type, device)
+                    ),
+                    dtype=np.float32,
+                )
                 self.assertTrue(np.isclose([dBiasActual], [dBias], atol=tolerance))
 
             # dGamma
             # Sum dGamma values over all devices to find the average gradient
             for device in devices:
-                dGamma = np.sum((x[device] - mean) * inv_var * dY_arr[device],
-                    axis=0, dtype=np.float32)
+                dGamma = np.sum(
+                    (x[device] - mean) * inv_var * dY_arr[device],
+                    axis=0,
+                    dtype=np.float32,
+                )
                 dGamma_arr.append(dGamma)
             dGamma = np.sum(dGamma_arr, axis=0, dtype=np.float32)
             dGamma_avg = dGamma / num_devices
             for device in devices:
                 dGammaActual = workspace.FetchBlob(
-                    "{}_{}/bn_out_s_grad".format(device_type, device))
+                    "{}_{}/bn_out_s_grad".format(device_type, device)
+                )
                 self.assertTrue(np.isclose([dGamma], [dGammaActual], atol=tolerance))
 
             # dX
             scale_inv_var = scale * inv_var / batch_size
             for device in devices:
-                dX = scale_inv_var * (dY_arr[device] * batch_size - dBias_avg
-                    - (x[device] - mean) * dGamma_avg * inv_var)
+                dX = scale_inv_var * (
+                    dY_arr[device] * batch_size
+                    - dBias_avg
+                    - (x[device] - mean) * dGamma_avg * inv_var
+                )
                 dX_actual = workspace.FetchBlob(
-                    "{}_{}/tanh_grad".format(device_type, device))
+                    "{}_{}/tanh_grad".format(device_type, device)
+                )
                 self.assertTrue(np.isclose([dX], [dX_actual], atol=tolerance).all())
 
         def add_input_ops(model):
@@ -553,10 +590,7 @@ class DataParallelModelTest(TestCase):
 
         np.random.seed(seed)
         workspace.ResetWorkspace()
-        model = cnn.CNNModelHelper(
-            order="NCHW",
-            name="test"
-        )
+        model = cnn.CNNModelHelper(order="NCHW", name="test")
         data_parallel_model.Parallelize(
             model,
             input_builder_fun=add_input_ops,
@@ -599,12 +633,12 @@ class DataParallelModelTest(TestCase):
         self._test_multi_device_bn_net_lvl("gpu", seed, batch_size)
 
     def _test_multi_device_bn_net_lvl(self, device_type, seed, batch_size):
-        '''
+        """
         Test multi device batch normalization at the net level. This is done
         by verifying that the final batch normalization outputs and the
         gradient outputs from multiple devices are the same as those produced
         from a single device
-        '''
+        """
 
         # Verify that the gradients calculated over multiple devices are the
         # same as the gradients calculated over one device. These values should
@@ -619,8 +653,11 @@ class DataParallelModelTest(TestCase):
             two_device_grads,
         ):
             two_device_bn_out = np.concatenate(two_device_bn_out_vals)
-            self.assertTrue(np.isclose(
-                [single_device_bn_out], [two_device_bn_out], atol=tolerance).all())
+            self.assertTrue(
+                np.isclose(
+                    [single_device_bn_out], [two_device_bn_out], atol=tolerance
+                ).all()
+            )
 
             # Scalar and Bias gradients should be the same across devices
             gradient_names = ["bn_out_s_grad", "bn_out_b_grad"]
@@ -629,7 +666,8 @@ class DataParallelModelTest(TestCase):
                 for device in devices:
                     actual_grad = two_device_grads[device][name]
                     self.assertTrue(
-                        np.isclose([actual_grad], [expected_grad], atol=tolerance))
+                        np.isclose([actual_grad], [expected_grad], atol=tolerance)
+                    )
 
             # Expected tanh_grad should be the combined tanh_grad vectors
             # across the devices
@@ -637,8 +675,9 @@ class DataParallelModelTest(TestCase):
             second_grad = two_device_grads[1]["tanh_grad"]
             actual_grad = np.concatenate([first_grad, second_grad])
             expected_grad = single_device_grads["tanh_grad"]
-            rel_error = np.linalg.norm(actual_grad - expected_grad) \
-                / np.linalg.norm(expected_grad)
+            rel_error = np.linalg.norm(actual_grad - expected_grad) / np.linalg.norm(
+                expected_grad
+            )
             self.assertTrue(rel_error < 1e-3)
 
         def _create_model(multiple_devices):
@@ -672,10 +711,7 @@ class DataParallelModelTest(TestCase):
                 input_fun = add_input_ops_no_combine
                 devices = [0]
                 combine_spatial_bn = False
-            model = cnn.CNNModelHelper(
-                order="NCHW",
-                name="test"
-            )
+            model = cnn.CNNModelHelper(order="NCHW", name="test")
             data_parallel_model.Parallelize(
                 model,
                 input_builder_fun=input_fun,
@@ -704,11 +740,14 @@ class DataParallelModelTest(TestCase):
         single_device_bn_out = workspace.FetchBlob("{}_0/bn_out".format(device_type))
         single_device_grads = {}
         single_device_grads["bn_out_s_grad"] = workspace.FetchBlob(
-            "{}_0/bn_out_s_grad".format(device_type))
+            "{}_0/bn_out_s_grad".format(device_type)
+        )
         single_device_grads["bn_out_b_grad"] = workspace.FetchBlob(
-            "{}_0/bn_out_b_grad".format(device_type))
+            "{}_0/bn_out_b_grad".format(device_type)
+        )
         single_device_grads["tanh_grad"] = workspace.FetchBlob(
-            "{}_0/tanh_grad".format(device_type))
+            "{}_0/tanh_grad".format(device_type)
+        )
 
         # Get values calculated over multiple devices with combine_spatial_bn true
         workspace.ResetWorkspace()
@@ -722,11 +761,14 @@ class DataParallelModelTest(TestCase):
             two_device_bn_out_vals.append(workspace.FetchBlob(bn_out_blob))
             two_device_grads[device] = {}
             two_device_grads[device]["bn_out_s_grad"] = workspace.FetchBlob(
-                "{}_{}/bn_out_s_grad".format(device_type, device))
+                "{}_{}/bn_out_s_grad".format(device_type, device)
+            )
             two_device_grads[device]["bn_out_b_grad"] = workspace.FetchBlob(
-                "{}_{}/bn_out_b_grad".format(device_type, device))
+                "{}_{}/bn_out_b_grad".format(device_type, device)
+            )
             two_device_grads[device]["tanh_grad"] = workspace.FetchBlob(
-                "{}_{}/tanh_grad".format(device_type, device))
+                "{}_{}/tanh_grad".format(device_type, device)
+            )
 
         # Check to see if the combined values are equivalent
         _verify_bn_outputs(
@@ -736,35 +778,36 @@ class DataParallelModelTest(TestCase):
             single_device_bn_out,
             two_device_bn_out_vals,
             single_device_grads,
-            two_device_grads
+            two_device_grads,
         )
 
-class RecurrentNetworkParallelTest(TestCase):
 
+class RecurrentNetworkParallelTest(TestCase):
     def run_model(self, devices, gpu):
 
-        '''
+        """
         Helper function for test_equiv
-        '''
+        """
+
         def input_builder_fun(model):
             return None
 
         def model_build_fun(model, loss_scale):
             workspace.FeedBlob(
                 core.ScopedBlobReference("seq_lengths"),
-                np.array([self.T] * self.batch_per_device, dtype=np.int32)
+                np.array([self.T] * self.batch_per_device, dtype=np.int32),
             )
             model.param_init_net.ConstantFill(
                 [],
                 "hidden_init",
                 value=0.0,
-                shape=[1, self.batch_per_device, self.hidden_dim]
+                shape=[1, self.batch_per_device, self.hidden_dim],
             )
             model.param_init_net.ConstantFill(
                 [],
                 "cell_init",
                 value=0.0,
-                shape=[1, self.batch_per_device, self.hidden_dim]
+                shape=[1, self.batch_per_device, self.hidden_dim],
             )
 
             output, _last_hidden, _, _last_state, = rnn_cell.LSTM(
@@ -794,7 +837,10 @@ class RecurrentNetworkParallelTest(TestCase):
                 policy="fixed",
             )
             ONE = model.param_init_net.ConstantFill(
-                [], "ONE", shape=[1], value=1.0,
+                [],
+                "ONE",
+                shape=[1],
+                value=1.0,
             )
             for param in model.GetParams():
                 param_grad = model.param_to_grad[param]
@@ -826,16 +872,14 @@ class RecurrentNetworkParallelTest(TestCase):
         # Change all initialization to be ConstantFills so that
         # the everything is deterministic
         for op in model.param_init_net.Proto().op:
-            if op.type.endswith('Fill'):
-                op.type = 'ConstantFill'
+            if op.type.endswith("Fill"):
+                op.type = "ConstantFill"
 
         # Each run has same input, independent of number of gpus
         np.random.seed(20150210)
         for i in range(0, 10):
             full_data = np.random.rand(self.T, self.batch_size, self.input_dim)
-            full_target = np.random.rand(
-                self.T, self.batch_size, self.hidden_dim
-            )
+            full_target = np.random.rand(self.T, self.batch_size, self.hidden_dim)
 
             for (j, g) in enumerate(devices):
                 st = j * self.batch_per_device
@@ -860,10 +904,10 @@ class RecurrentNetworkParallelTest(TestCase):
 
     @unittest.skip("Test is flaky: https://github.com/pytorch/pytorch/issues/10322")
     def test_equiv_recurrent(self):
-        '''
+        """
         Test that the model produces exactly same results given
         total batchsize, independent of number of GPUs/CPUs.
-        '''
+        """
         for gpu in [True, False]:
             if gpu and not workspace.has_gpu_support:
                 continue
@@ -885,12 +929,12 @@ class RecurrentNetworkParallelTest(TestCase):
 @unittest.skipIf(workspace.NumCudaDevices() < 2, "Need at least 2 GPUs.")
 class SparseDataParallelModelTest(TestCase):
 
-    '''
+    """
     Create and run the model. We try with both storing indices for gather
     on CPU and on GPU
-    '''
-    def run_model(self, V, gpu_devices, cpu_indices):
+    """
 
+    def run_model(self, V, gpu_devices, cpu_indices):
         def input_builder_fun(model):
             return None
 
@@ -898,18 +942,21 @@ class SparseDataParallelModelTest(TestCase):
             if cpu_indices:
                 with core.DeviceScope(core.DeviceOption(caffe2_pb2.CPU)):
                     gathered_cpu = model.net.Gather(
-                        [self.vecs, 'indices'], 'gathered_cpu')
+                        [self.vecs, "indices"], "gathered_cpu"
+                    )
 
                 gathered = model.CopyCPUToGPU(gathered_cpu, "gathered")
             else:
                 gpu_vecs = model.param_init_net.CopyCPUToGPU(
-                    self.vecs, "gpuvecs",
+                    self.vecs,
+                    "gpuvecs",
                 )
                 model.params.append(gpu_vecs)
-                gathered = model.net.Gather([gpu_vecs, 'indices'], 'gathered')
+                gathered = model.net.Gather([gpu_vecs, "indices"], "gathered")
             flattened = model.Flatten(gathered, "flattened")
-            fc = model.FC(flattened, "fc", 16 * 16, 1,
-                          ("ConstantFill", {}), ("ConstantFill", {}))
+            fc = model.FC(
+                flattened, "fc", 16 * 16, 1, ("ConstantFill", {}), ("ConstantFill", {})
+            )
             fc_fl = model.FlattenToVec(fc, "fc_fl")
             sigm = model.Sigmoid(fc_fl, "sigm")
             sq = model.SquaredL2Distance([sigm, "label"], "sq")
@@ -919,7 +966,10 @@ class SparseDataParallelModelTest(TestCase):
 
         def param_update_fun(model):
             ONE = model.param_init_net.ConstantFill(
-                [], "ONE", shape=[1], value=1.0,
+                [],
+                "ONE",
+                shape=[1],
+                value=1.0,
             )
             LR = model.CopyCPUToGPU(self.LR, "LR")
             for param in model.GetParams():
@@ -929,7 +979,7 @@ class SparseDataParallelModelTest(TestCase):
                 else:
                     param_momentum = model.param_init_net.ConstantFill(
                         [param],
-                        param + '_momentum',
+                        param + "_momentum",
                         value=0.0,
                     )
                     model.net.SparseMomentumSGDUpdate(
@@ -940,9 +990,7 @@ class SparseDataParallelModelTest(TestCase):
                             param,
                             param_grad.indices,
                         ],
-                        [
-                            param_grad.values, param_momentum, param
-                        ],
+                        [param_grad.values, param_momentum, param],
                         momentum=0.1,
                         nesterov=0,
                     )
@@ -962,12 +1010,14 @@ class SparseDataParallelModelTest(TestCase):
                     base_lr=(-0.1),
                     policy="fixed",
                 )
-                self.vecs = model.param_init_net.UniformFill(
-                    [], "vecs", shape=[V, 16])
+                self.vecs = model.param_init_net.UniformFill([], "vecs", shape=[V, 16])
                 if cpu_indices:
                     model.params.append(self.vecs)
                 self.ONE_CPU = model.param_init_net.ConstantFill(
-                    [], "ONE_CPU", shape=[1], value=1.0,
+                    [],
+                    "ONE_CPU",
+                    shape=[1],
+                    value=1.0,
                 )
 
         data_parallel_model.Parallelize_GPU(
@@ -984,11 +1034,16 @@ class SparseDataParallelModelTest(TestCase):
                 with core.DeviceScope(core.DeviceOption(caffe2_pb2.CPU)):
                     for param in model.GetParams():
                         param_grad = model.param_to_grad[param]
-                        model.ScatterWeightedSum([param, self.ONE_CPU,
-                                                  param_grad.indices,
-                                                  param_grad.values,
-                                                  self.LR],
-                                                  self.vecs)
+                        model.ScatterWeightedSum(
+                            [
+                                param,
+                                self.ONE_CPU,
+                                param_grad.indices,
+                                param_grad.values,
+                                self.LR,
+                            ],
+                            self.vecs,
+                        )
         else:
             with core.DeviceScope(core.DeviceOption(workspace.GpuDeviceType, 0)):
                 model.CopyGPUToCPU("gpu_0/gpuvecs", self.vecs)
@@ -998,7 +1053,7 @@ class SparseDataParallelModelTest(TestCase):
         # Each run has same input, independent of number of gpus
         batch_size = 64
         for i in range(0, 10):
-            full_indices = np.random.permutation(V)[:batch_size * 16].reshape(
+            full_indices = np.random.permutation(V)[: batch_size * 16].reshape(
                 batch_size, 16
             )
             full_labels = full_indices[:, 0] % 2
@@ -1024,10 +1079,7 @@ class SparseDataParallelModelTest(TestCase):
                 workspace.RunNetOnce(model.param_init_net)
                 # Force vecs to be same on all runs
                 orig_vecs = np.random.rand(V, 16).astype(np.float32)
-                workspace.FeedBlob(
-                    self.vecs,
-                    orig_vecs
-                )
+                workspace.FeedBlob(self.vecs, orig_vecs)
                 if not cpu_indices:
                     for g in gpu_devices:
                         workspace.FeedBlob(
@@ -1047,16 +1099,17 @@ class SparseDataParallelModelTest(TestCase):
                     assert n == nu, "We cannot have duplicate indices"
 
         # Sanity check to see the vecs were updated
-        self.assertFalse(
-            np.allclose(workspace.FetchBlob(self.vecs), orig_vecs))
-        return [workspace.FetchBlob(self.vecs if cpu_indices else "gpu_0/gpuvecs"),
-                workspace.FetchBlob("gpu_0/fc_w")]
+        self.assertFalse(np.allclose(workspace.FetchBlob(self.vecs), orig_vecs))
+        return [
+            workspace.FetchBlob(self.vecs if cpu_indices else "gpu_0/gpuvecs"),
+            workspace.FetchBlob("gpu_0/fc_w"),
+        ]
 
     def _test_equiv_sparse(self, cpu_indices):
-        '''
-            Test that the model produces exactly same results given
-            total batchsize, independent of number of GPUs.
-        '''
+        """
+        Test that the model produces exactly same results given
+        total batchsize, independent of number of GPUs.
+        """
         V = 10000
         result_2gpus = self.run_model(V, [0, 1], cpu_indices)
         result_1gpus = self.run_model(V, [0], cpu_indices)
@@ -1082,18 +1135,16 @@ class SparseDataParallelModelTest(TestCase):
 @unittest.skipIf(not workspace.has_gpu_support, "No gpu support.")
 @unittest.skipIf(workspace.NumGpuDevices() < 2, "Need at least 2 GPUs.")
 class ParallelizeBMUFTest(TestCase):
-
     def _run_model(self, gpu_devices):
-        '''
+        """
         Helper function for test_equiv
-        '''
+        """
+
         def input_builder_fun(model):
             return None
 
     def _model_build_fun(self, model, loss_scale):
-        fc = model.FC(
-            "data", "fc", 16, 1, ("ConstantFill", {}), ("ConstantFill", {})
-        )
+        fc = model.FC("data", "fc", 16, 1, ("ConstantFill", {}), ("ConstantFill", {}))
         fc_fl = model.FlattenToVec(fc, "fc_fl")
         sigm = model.Sigmoid(fc_fl, "sigm")
         sq = model.SquaredL2Distance([sigm, "label"], "sq")
@@ -1111,7 +1162,10 @@ class ParallelizeBMUFTest(TestCase):
             policy="fixed",
         )
         ONE = model.param_init_net.ConstantFill(
-            [], "ONE", shape=[1], value=1.0,
+            [],
+            "ONE",
+            shape=[1],
+            value=1.0,
         )
         for param in model.GetParams():
             grad = model.param_to_grad[param]
@@ -1135,19 +1189,14 @@ class ParallelizeBMUFTest(TestCase):
                     workspace.FeedBlob("{}_{}/data".format(device_prefix, g), data)
                     workspace.FeedBlob("{}_{}/label".format(device_prefix, g), labels)
 
-    @given(
-        cpu_device=st.booleans()
-    )
+    @given(cpu_device=st.booleans())
     @settings(deadline=2000)
     def test_parallelize_bmuf(self, cpu_device):
         assume(cpu_device or workspace.has_gpu_support or workspace.has_hip_support)
 
         workspace.ResetWorkspace()
 
-        model = cnn.CNNModelHelper(
-            order="NHWC",
-            name="test"
-        )
+        model = cnn.CNNModelHelper(order="NHWC", name="test")
         devices = [0, 1]
 
         def input_builder_fun(model):
@@ -1167,51 +1216,49 @@ class ParallelizeBMUFTest(TestCase):
             self._model_build_fun,
             self._param_update_fun,
             devices=devices,
-            cpu_device=cpu_device
+            cpu_device=cpu_device,
         )
 
         data_parallel_model.RunInitNet(model)
 
         # Check initial momentum params are zeros
-        self.assertEqual(
-            list(model._device_grouped_blobs.keys()), ['fc_w', 'fc_b']
-        )
-        self.assertEqual(workspace.FetchBlob('{}_0/fc_b_v'.format(device_prefix)), 0)
+        self.assertEqual(list(model._device_grouped_blobs.keys()), ["fc_w", "fc_b"])
+        self.assertEqual(workspace.FetchBlob("{}_0/fc_b_v".format(device_prefix)), 0)
         np.testing.assert_equal(
-            workspace.FetchBlob('{}_0/fc_w_v'.format(device_prefix)),
-            np.zeros(16).astype(np.float32).reshape(1, 16)
+            workspace.FetchBlob("{}_0/fc_w_v".format(device_prefix)),
+            np.zeros(16).astype(np.float32).reshape(1, 16),
         )
 
         # Run the algorithm for one iteration to have non-zero params.
         data_parallel_model.RunNet(model, 1)
 
         # Save iteration momentum and post local update params
-        v_b_ = workspace.FetchBlob('{}_0/fc_b_v'.format(device_prefix))
-        v_w_ = workspace.FetchBlob('{}_0/fc_w_v'.format(device_prefix))
+        v_b_ = workspace.FetchBlob("{}_0/fc_b_v".format(device_prefix))
+        v_w_ = workspace.FetchBlob("{}_0/fc_w_v".format(device_prefix))
 
         workspace.RunNetOnce(model.net)
 
-        b_0_ = workspace.FetchBlob('{}_0/fc_b'.format(device_prefix))
-        w_0_ = workspace.FetchBlob('{}_0/fc_w'.format(device_prefix))
-        b_1_ = workspace.FetchBlob('{}_1/fc_b'.format(device_prefix))
-        w_1_ = workspace.FetchBlob('{}_1/fc_w'.format(device_prefix))
+        b_0_ = workspace.FetchBlob("{}_0/fc_b".format(device_prefix))
+        w_0_ = workspace.FetchBlob("{}_0/fc_w".format(device_prefix))
+        b_1_ = workspace.FetchBlob("{}_1/fc_b".format(device_prefix))
+        w_1_ = workspace.FetchBlob("{}_1/fc_w".format(device_prefix))
 
         # Compute block gradients.
-        b_g_ = workspace.FetchBlob('{}_0/fc_b_g'.format(device_prefix))
-        w_g_ = workspace.FetchBlob('{}_0/fc_w_g'.format(device_prefix))
+        b_g_ = workspace.FetchBlob("{}_0/fc_b_g".format(device_prefix))
+        w_g_ = workspace.FetchBlob("{}_0/fc_w_g".format(device_prefix))
         workspace.RunNetOnce(model._global_model_param_updates_net)
 
         g_b = (b_0_ + b_1_) / 2 - b_g_
         g_w = (w_0_ + w_1_) / 2 - w_g_
-        v_b = workspace.FetchBlob('{}_0/fc_b_v'.format(device_prefix))
-        v_w = workspace.FetchBlob('{}_0/fc_w_v'.format(device_prefix))
+        v_b = workspace.FetchBlob("{}_0/fc_b_v".format(device_prefix))
+        v_w = workspace.FetchBlob("{}_0/fc_w_v".format(device_prefix))
 
-        w_g = workspace.FetchBlob('{}_0/fc_w_g'.format(device_prefix))
-        b_g = workspace.FetchBlob('{}_0/fc_b_g'.format(device_prefix))
-        w_0 = workspace.FetchBlob('{}_0/fc_w'.format(device_prefix))
-        b_0 = workspace.FetchBlob('{}_0/fc_b'.format(device_prefix))
-        w_1 = workspace.FetchBlob('{}_1/fc_w'.format(device_prefix))
-        b_1 = workspace.FetchBlob('{}_1/fc_b'.format(device_prefix))
+        w_g = workspace.FetchBlob("{}_0/fc_w_g".format(device_prefix))
+        b_g = workspace.FetchBlob("{}_0/fc_b_g".format(device_prefix))
+        w_0 = workspace.FetchBlob("{}_0/fc_w".format(device_prefix))
+        b_0 = workspace.FetchBlob("{}_0/fc_b".format(device_prefix))
+        w_1 = workspace.FetchBlob("{}_1/fc_w".format(device_prefix))
+        b_1 = workspace.FetchBlob("{}_1/fc_b".format(device_prefix))
 
         # Check momentum update step
         np.testing.assert_equal(v_b, 0.5 * v_b_ + g_b)
@@ -1231,12 +1278,12 @@ class ParallelizeBMUFTest(TestCase):
 @unittest.skipIf(workspace.NumGpuDevices() < 2, "Need at least 2 GPUs.")
 class SparseDataParallelModelTestWithSharedIndices(TestCase):
 
-    '''
+    """
     Create and run the model. We try with both storing indices for gather
     on CPU and on GPU
-    '''
-    def run_model(self, V, gpu_devices):
+    """
 
+    def run_model(self, V, gpu_devices):
         def input_builder_fun(model):
             return None
 
@@ -1245,15 +1292,15 @@ class SparseDataParallelModelTestWithSharedIndices(TestCase):
             gpu_vecs = []
             for num, vec in enumerate(self.vecs):
                 gpu_vec = model.param_init_net.CopyCPUToGPU(
-                    vec, 'gpuvec_{}'.format(num),
+                    vec,
+                    "gpuvec_{}".format(num),
                 )
                 if num != 2:
                     model.params.append(gpu_vec)
                 gpu_vecs.append(gpu_vec)
             for num, gpu_vec in enumerate(gpu_vecs):
                 gpu_vec_gathered = model.net.Gather(
-                    [gpu_vec, 'indices'],
-                    ['gpu_vec_gathered_{}'.format(num)]
+                    [gpu_vec, "indices"], ["gpu_vec_gathered_{}".format(num)]
                 )
                 gpu_vecs_gathered.append(gpu_vec_gathered)
 
@@ -1265,11 +1312,11 @@ class SparseDataParallelModelTestWithSharedIndices(TestCase):
                     gpu_vecs_gathered[0],
                     gpu_vecs_gathered[1],
                 ],
-                ['fc'],
+                ["fc"],
             )
             _, loss = model.net.SoftmaxWithLoss(
-                [fc, 'label'],
-                ['ce_loss', 'avg_loss'],
+                [fc, "label"],
+                ["ce_loss", "avg_loss"],
                 only_loss=True,
             )
             loss = model.Scale(loss, scale=loss_scale)
@@ -1278,7 +1325,10 @@ class SparseDataParallelModelTestWithSharedIndices(TestCase):
 
         def param_update_fun(model):
             ONE = model.param_init_net.ConstantFill(
-                [], "ONE", shape=[1], value=1.0,
+                [],
+                "ONE",
+                shape=[1],
+                value=1.0,
             )
             LR = model.CopyCPUToGPU(self.LR, "LR")
             for param in model.GetParams():
@@ -1314,25 +1364,28 @@ class SparseDataParallelModelTestWithSharedIndices(TestCase):
                     base_lr=(-0.1),
                     policy="fixed",
                 )
-                '''
+                """
                 self.vecs consists of 3 big blobs on which we call Gather:
                 1) FC weights, shape=(V, 16)
                 2) FC bias, shape=(V)
                 3) FC input, shape=(batch_per_device, 16)
-                '''
+                """
                 self.vecs = [
                     model.param_init_net.UniformFill(
-                        [], "vec_{}".format(num), shape=[V, 16])
+                        [], "vec_{}".format(num), shape=[V, 16]
+                    )
                     for num in range(2)
                 ]
                 self.vecs.append(
                     model.param_init_net.UniformFill(
-                        [],
-                        "vec_2", shape=[batch_per_device, 16]
+                        [], "vec_2", shape=[batch_per_device, 16]
                     )
                 )
                 self.ONE_CPU = model.param_init_net.ConstantFill(
-                    [], "ONE_CPU", shape=[1], value=1.0,
+                    [],
+                    "ONE_CPU",
+                    shape=[1],
+                    value=1.0,
                 )
 
         data_parallel_model.Parallelize_GPU(
@@ -1351,9 +1404,7 @@ class SparseDataParallelModelTestWithSharedIndices(TestCase):
         # Each run has same input, independent of number of gpus
         for i in range(0, 10):
             np.random.seed(2603)
-            full_indices = np.random.permutation(V)[:batch_size].reshape(
-                batch_size
-            )
+            full_indices = np.random.permutation(V)[:batch_size].reshape(batch_size)
             full_labels = full_indices[:] % batch_per_device
 
             for (j, g) in enumerate(gpu_devices):
@@ -1375,42 +1426,38 @@ class SparseDataParallelModelTestWithSharedIndices(TestCase):
                     np.random.rand(V, 16).astype(np.float32),
                 ]
                 for vec, orig_vec in zip(self.vecs, orig_vecs):
-                    workspace.FeedBlob(
-                        vec,
-                        orig_vec
-                    )
+                    workspace.FeedBlob(vec, orig_vec)
                 for g in gpu_devices:
                     for num, orig_vec in enumerate(orig_vecs):
                         workspace.FeedBlob(
                             "gpu_{}/gpuvec_{}".format(g, num),
                             orig_vec,
-                            device_option=core.DeviceOption(
-                                workspace.GpuDeviceType, g),
+                            device_option=core.DeviceOption(workspace.GpuDeviceType, g),
                         )
                 workspace.CreateNet(model.net)
 
             workspace.RunNet(model.net.Proto().name)
 
-            idx = workspace.FetchBlob('gpu_0/indices')
+            idx = workspace.FetchBlob("gpu_0/indices")
             grad_slices = [
-                workspace.FetchBlob(
-                    'gpu_{}/gpu_vec_gathered_{}_grad'.format(g, num))
-                for g in gpu_devices for num in range(2)
+                workspace.FetchBlob("gpu_{}/gpu_vec_gathered_{}_grad".format(g, num))
+                for g in gpu_devices
+                for num in range(2)
             ]
             for grad_slice in grad_slices:
                 # print (len(idx), len(grad_slice))
                 assert len(idx) == len(grad_slice), (
-                    'Number of indices {} is not same as number of gradient '
-                    'slices {}. This might lead to illegal memory access'.format(
+                    "Number of indices {} is not same as number of gradient "
+                    "slices {}. This might lead to illegal memory access".format(
                         len(idx), len(grad_slice)
                     )
                 )
 
     def test_sparse_shared_indices_gpu(self):
-        '''
-            Test that the model has same number of indices and gradient rows
-            given total batchsize, independent of number of GPUs.
-        '''
+        """
+        Test that the model has same number of indices and gradient rows
+        given total batchsize, independent of number of GPUs.
+        """
         V = 10000
         self.run_model(V, [0, 1])
         self.run_model(V, [0])
@@ -1424,4 +1471,5 @@ class SparseDataParallelModelTestWithSharedIndices(TestCase):
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

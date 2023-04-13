@@ -14,7 +14,6 @@
 ##############################################################################
 
 
-
 import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 import numpy as np
@@ -34,12 +33,12 @@ class TestInt8GenQuantParamsOperator(hu.HypothesisTestCase):
                 "MIN_MAX_QUANTIZATION",
                 "L2_MIN_QUANTIZATION_APPROX",
                 "L2_MIN_QUANTIZATION",
-                "P99_QUANTIZATION"
+                "P99_QUANTIZATION",
             ]
         ),
         preserve_sparsity=st.booleans(),
         rnd_seed=st.integers(1, 5),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_int8_gen_quant_params_op(
         self, n, m, k, quantization_kind, preserve_sparsity, rnd_seed, gc, dc
@@ -81,7 +80,7 @@ class TestInt8GenQuantParamsOperator(hu.HypothesisTestCase):
         shapes, types = workspace.InferShapesAndTypes(
             [gen_quant_params_net],
             blob_dimensions={"X": [n, m, k], "quant_scheme": [1]},
-            blob_types={"X": core.DataType.FLOAT, "quant_scheme": core.DataType.STRING}
+            blob_types={"X": core.DataType.FLOAT, "quant_scheme": core.DataType.STRING},
         )
         self.assertEqual(shapes["quant_param"], [1])
         self.assertEqual(types["quant_param"], core.DataType.FLOAT)

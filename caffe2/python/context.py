@@ -14,7 +14,7 @@ class _ContextInfo:
 
     @property
     def _stack(self):
-        if not hasattr(self._local_stack, 'obj'):
+        if not hasattr(self._local_stack, "obj"):
             self._local_stack.obj = []
         return self._local_stack.obj
 
@@ -22,7 +22,7 @@ class _ContextInfo:
         self._stack.append(value)
 
     def exit(self, value):
-        assert len(self._stack) > 0, 'Context %s is empty.' % self.cls
+        assert len(self._stack) > 0, "Context %s is empty." % self.cls
         assert self._stack.pop() == value
 
     def get_active(self, required=True):
@@ -30,7 +30,8 @@ class _ContextInfo:
             if not required:
                 return None
             assert self.allow_default, (
-                'Context %s is required but none is active.' % self.cls)
+                "Context %s is required but none is active." % self.cls
+            )
             self.enter(self.cls())
         return self._stack[-1]
 
@@ -41,8 +42,12 @@ class _ContextRegistry:
 
     def get(self, cls):
         if cls not in self._ctxs:
-            assert issubclass(cls, Managed), "must be a context managed class, got {}".format(cls)
-            self._ctxs[cls] = _ContextInfo(cls, allow_default=issubclass(cls, DefaultManaged))
+            assert issubclass(
+                cls, Managed
+            ), "must be a context managed class, got {}".format(cls)
+            self._ctxs[cls] = _ContextInfo(
+                cls, allow_default=issubclass(cls, DefaultManaged)
+            )
         return self._ctxs[cls]
 
 
@@ -56,10 +61,10 @@ def _context_registry():
 
 def _get_managed_classes(obj):
     return [
-        cls for cls in inspect.getmro(obj.__class__)
+        cls
+        for cls in inspect.getmro(obj.__class__)
         if issubclass(cls, Managed) and cls != Managed and cls != DefaultManaged
     ]
-
 
 
 class Managed:
@@ -76,8 +81,9 @@ class Managed:
     def current(cls, value=None, required=True):
         ctx_info = _context_registry().get(cls)
         if value is not None:
-            assert isinstance(value, cls), (
-                'Wrong context type. Expected: %s, got %s.' % (cls, type(value)))
+            assert isinstance(
+                value, cls
+            ), "Wrong context type. Expected: %s, got %s." % (cls, type(value))
             return value
         return ctx_info.get_active(required=required)
 
@@ -95,6 +101,7 @@ class Managed:
         def wrapper(*args, **kwargs):
             with self:
                 return func(*args, **kwargs)
+
         return wrapper
 
 
@@ -103,4 +110,5 @@ class DefaultManaged(Managed):
     DefaultManaged is similar to Managed but if there is no parent when
     current() is called it makes a new one.
     """
+
     pass

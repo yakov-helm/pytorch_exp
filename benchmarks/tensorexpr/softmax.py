@@ -8,9 +8,11 @@ class SoftmaxBench(benchmark.Benchmark):
         self.M = M
         self.N = N
         self.dtype = dtype
-        self.inputs = [self.randn(
-            [M, N], device=device, dtype=dtype, requires_grad=self.requires_grad
-        )]
+        self.inputs = [
+            self.randn(
+                [M, N], device=device, dtype=dtype, requires_grad=self.requires_grad
+            )
+        ]
 
     def forward(self, inputs):
         x = self.add(inputs, 0.001)

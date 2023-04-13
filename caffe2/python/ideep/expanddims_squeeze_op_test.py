@@ -1,8 +1,3 @@
-
-
-
-
-
 import unittest
 import hypothesis.strategies as st
 from hypothesis import given
@@ -17,12 +12,11 @@ class ExpandDimsSqueezeTest(hu.HypothesisTestCase):
     @given(
         squeeze_dims=st.lists(st.integers(0, 3), min_size=1, max_size=3),
         inplace=st.booleans(),
-        **mu.gcs
-        )
+        **mu.gcs,
+    )
     def test_squeeze(self, squeeze_dims, inplace, gc, dc):
         shape = [
-            1 if dim in squeeze_dims else np.random.randint(1, 5)
-            for dim in range(4)
+            1 if dim in squeeze_dims else np.random.randint(1, 5) for dim in range(4)
         ]
         X = np.random.rand(*shape).astype(np.float32)
         op = core.CreateOperator(
@@ -33,12 +27,11 @@ class ExpandDimsSqueezeTest(hu.HypothesisTestCase):
     @given(
         squeeze_dims=st.lists(st.integers(0, 3), min_size=1, max_size=3),
         inplace=st.booleans(),
-        **mu.gcs_cpu_ideep
-        )
+        **mu.gcs_cpu_ideep,
+    )
     def test_squeeze_fallback(self, squeeze_dims, inplace, gc, dc):
         shape = [
-            1 if dim in squeeze_dims else np.random.randint(1, 5)
-            for dim in range(4)
+            1 if dim in squeeze_dims else np.random.randint(1, 5) for dim in range(4)
         ]
         X = np.random.rand(*shape).astype(np.float32)
         op0 = core.CreateOperator(
@@ -46,9 +39,9 @@ class ExpandDimsSqueezeTest(hu.HypothesisTestCase):
             "X0",
             "X0" if inplace else "Y0",
             dims=squeeze_dims,
-            device_option=dc[0]
+            device_option=dc[0],
         )
-        workspace.FeedBlob('X0', X, dc[0])
+        workspace.FeedBlob("X0", X, dc[0])
         workspace.RunOperatorOnce(op0)
         Y0 = workspace.FetchBlob("X0" if inplace else "Y0")
 
@@ -57,9 +50,9 @@ class ExpandDimsSqueezeTest(hu.HypothesisTestCase):
             "X1",
             "X1" if inplace else "Y1",
             dims=squeeze_dims,
-            device_option=dc[1]
+            device_option=dc[1],
         )
-        workspace.FeedBlob('X1', X, dc[0])
+        workspace.FeedBlob("X1", X, dc[0])
         workspace.RunOperatorOnce(op1)
         Y1 = workspace.FetchBlob("X1" if inplace else "Y1")
 
@@ -69,19 +62,17 @@ class ExpandDimsSqueezeTest(hu.HypothesisTestCase):
             print(np.max(np.abs(Y1 - Y0)))
             self.assertTrue(False)
 
-
     @given(
         squeeze_dims=st.lists(st.integers(0, 3), min_size=1, max_size=3),
         inplace=st.booleans(),
-        **mu.gcs
-        )
+        **mu.gcs,
+    )
     def test_expand_dims(self, squeeze_dims, inplace, gc, dc):
         oshape = [
-            1 if dim in squeeze_dims else np.random.randint(2, 5)
-            for dim in range(4)
+            1 if dim in squeeze_dims else np.random.randint(2, 5) for dim in range(4)
         ]
-        nshape = [s for s in oshape if s!=1]
-        expand_dims = [i for i in range(len(oshape)) if oshape[i]==1]
+        nshape = [s for s in oshape if s != 1]
+        expand_dims = [i for i in range(len(oshape)) if oshape[i] == 1]
 
         X = np.random.rand(*nshape).astype(np.float32)
         op = core.CreateOperator(
@@ -92,15 +83,14 @@ class ExpandDimsSqueezeTest(hu.HypothesisTestCase):
     @given(
         squeeze_dims=st.lists(st.integers(0, 3), min_size=1, max_size=3),
         inplace=st.booleans(),
-        **mu.gcs_cpu_ideep
-        )
+        **mu.gcs_cpu_ideep,
+    )
     def test_expand_dims_fallback(self, squeeze_dims, inplace, gc, dc):
         oshape = [
-            1 if dim in squeeze_dims else np.random.randint(2, 5)
-            for dim in range(4)
+            1 if dim in squeeze_dims else np.random.randint(2, 5) for dim in range(4)
         ]
-        nshape = [s for s in oshape if s!=1]
-        expand_dims = [i for i in range(len(oshape)) if oshape[i]==1]
+        nshape = [s for s in oshape if s != 1]
+        expand_dims = [i for i in range(len(oshape)) if oshape[i] == 1]
 
         X = np.random.rand(*nshape).astype(np.float32)
         op0 = core.CreateOperator(
@@ -108,9 +98,9 @@ class ExpandDimsSqueezeTest(hu.HypothesisTestCase):
             "X0",
             "X0" if inplace else "Y0",
             dims=expand_dims,
-            device_option=dc[0]
+            device_option=dc[0],
         )
-        workspace.FeedBlob('X0', X, dc[0])
+        workspace.FeedBlob("X0", X, dc[0])
         workspace.RunOperatorOnce(op0)
         Y0 = workspace.FetchBlob("X0" if inplace else "Y0")
 
@@ -119,9 +109,9 @@ class ExpandDimsSqueezeTest(hu.HypothesisTestCase):
             "X1",
             "X1" if inplace else "Y1",
             dims=expand_dims,
-            device_option=dc[1]
+            device_option=dc[1],
         )
-        workspace.FeedBlob('X1', X, dc[0])
+        workspace.FeedBlob("X1", X, dc[0])
         workspace.RunOperatorOnce(op1)
         Y1 = workspace.FetchBlob("X1" if inplace else "Y1")
 

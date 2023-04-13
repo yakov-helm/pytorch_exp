@@ -39,7 +39,8 @@ from .summary import (
     hparams,
 )
 
-__all__ = ['FileWriter', 'SummaryWriter']
+__all__ = ["FileWriter", "SummaryWriter"]
+
 
 class FileWriter:
     """Writes protocol buffers to event files to be consumed by TensorBoard.

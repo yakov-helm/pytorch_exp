@@ -2,16 +2,12 @@
 # Module caffe2.python.onnx.tests.test_utils
 
 
-
-
-
-
 import unittest
 
 import numpy as np
 
-class TestCase(unittest.TestCase):
 
+class TestCase(unittest.TestCase):
     def setUp(self):
         np.random.seed(seed=0)
 
@@ -22,8 +18,8 @@ class TestCase(unittest.TestCase):
             np.testing.assert_almost_equal(o1, o2, decimal=decimal)
 
     def add_test_case(self, name, test_func):
-        if not name.startswith('test_'):
-            raise ValueError('Test name must start with test_: {}'.format(name))
+        if not name.startswith("test_"):
+            raise ValueError("Test name must start with test_: {}".format(name))
         if hasattr(self, name):
-            raise ValueError('Duplicated test name: {}'.format(name))
+            raise ValueError("Duplicated test name: {}".format(name))
         setattr(self, name, test_func)

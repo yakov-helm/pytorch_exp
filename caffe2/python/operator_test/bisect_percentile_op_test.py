@@ -12,21 +12,16 @@ import numpy as np
 
 class TestBisectPercentileOp(hu.HypothesisTestCase):
     def compare_reference(
-            self,
-            raw_data,
-            pct_raw_data,
-            pct_mapping,
-            pct_upper,
-            pct_lower,
-            lengths,
+        self,
+        raw_data,
+        pct_raw_data,
+        pct_mapping,
+        pct_upper,
+        pct_lower,
+        lengths,
     ):
         def bisect_percentile_op_ref(
-            raw_data,
-            pct_raw_data,
-            pct_mapping,
-            pct_lower,
-            pct_upper,
-            lengths
+            raw_data, pct_raw_data, pct_mapping, pct_lower, pct_upper, lengths
         ):
             results = np.zeros_like(raw_data)
             indices = [0]
@@ -47,7 +42,7 @@ class TestBisectPercentileOp(hu.HypothesisTestCase):
                         results[i][j] = 0
                         continue
                     if val > pct_raw_data_i[-1]:
-                        results[i][j] = 1.
+                        results[i][j] = 1.0
                         continue
 
                     # interpolation
@@ -56,10 +51,12 @@ class TestBisectPercentileOp(hu.HypothesisTestCase):
                         results[i][j] = pct_mapping_i[k]
                     else:
                         k = k - 1
-                        slope = ((pct_lower_i[k + 1] - pct_upper_i[k])
-                            / (pct_raw_data_i[k + 1] - pct_raw_data_i[k]))
-                        results[i][j] = pct_upper_i[k] + \
-                            slope * (val - pct_raw_data_i[k])
+                        slope = (pct_lower_i[k + 1] - pct_upper_i[k]) / (
+                            pct_raw_data_i[k + 1] - pct_raw_data_i[k]
+                        )
+                        results[i][j] = pct_upper_i[k] + slope * (
+                            val - pct_raw_data_i[k]
+                        )
 
             return results
 
@@ -74,41 +71,40 @@ class TestBisectPercentileOp(hu.HypothesisTestCase):
             percentile_mapping=pct_mapping,
             percentile_lower=pct_lower,
             percentile_upper=pct_upper,
-            lengths=lengths
+            lengths=lengths,
         )
         workspace.RunOperatorOnce(op)
 
         expected_output = bisect_percentile_op_ref(
-            raw_data,
-            pct_raw_data,
-            pct_mapping,
-            pct_lower,
-            pct_upper,
-            lengths
+            raw_data, pct_raw_data, pct_mapping, pct_lower, pct_upper, lengths
         )
-        output = workspace.blobs['pct_output']
+        output = workspace.blobs["pct_output"]
         np.testing.assert_array_almost_equal(output, expected_output)
 
     def test_bisect_percentil_op_simple(self):
-        raw_data = np.array([
-            [1, 1],
-            [2, 2],
-            [3, 3],
-            [3, 1],
-            [9, 10],
-            [1.5, 5],
-            [1.32, 2.4],
-            [2.9, 5.7],
-            [-1, -1],
-            [3, 7]
-        ], dtype=np.float32)
+        raw_data = np.array(
+            [
+                [1, 1],
+                [2, 2],
+                [3, 3],
+                [3, 1],
+                [9, 10],
+                [1.5, 5],
+                [1.32, 2.4],
+                [2.9, 5.7],
+                [-1, -1],
+                [3, 7],
+            ],
+            dtype=np.float32,
+        )
         pct_raw_data = np.array([1, 2, 3, 2, 7], dtype=np.float32)
         pct_lower = np.array([0.1, 0.2, 0.9, 0.1, 0.5], dtype=np.float32)
         pct_upper = np.array([0.1, 0.8, 1.0, 0.4, 1.0], dtype=np.float32)
         pct_mapping = np.array([0.1, 0.5, 0.95, 0.25, 0.75], dtype=np.float32)
         lengths = np.array([3, 2], dtype=np.int32)
         self.compare_reference(
-            raw_data, pct_raw_data, pct_mapping, pct_lower, pct_upper, lengths)
+            raw_data, pct_raw_data, pct_mapping, pct_lower, pct_upper, lengths
+        )
 
     @given(
         N=st.integers(min_value=20, max_value=100),
@@ -120,10 +116,17 @@ class TestBisectPercentileOp(hu.HypothesisTestCase):
         max_value=st.integers(min_value=100, max_value=1000),
         discrete=st.booleans(),
         p=st.floats(min_value=0, max_value=0.9),
-        **hu.gcs_cpu_only
+        **hu.gcs_cpu_only,
     )
     def test_bisect_percentil_op_large(
-        self, N: int, lengths_in: List[int], max_value: int, discrete: bool, p: float, gc, dc
+        self,
+        N: int,
+        lengths_in: List[int],
+        max_value: int,
+        discrete: bool,
+        p: float,
+        gc,
+        dc,
     ):
         lengths = np.array(lengths_in, dtype=np.int32)
         D = len(lengths)
@@ -138,14 +141,15 @@ class TestBisectPercentileOp(hu.HypothesisTestCase):
         pct_upper = []
         pct_raw_data = []
         for i in range(D):
-            pct_lower_val = 0.
-            pct_upper_val = 0.
+            pct_lower_val = 0.0
+            pct_upper_val = 0.0
             pct_lower_cur = []
             pct_upper_cur = []
             # There is no duplicated values in pct_raw_data
             if discrete:
                 pct_raw_data_cur = np.random.choice(
-                    np.arange(max_value), size=lengths[i], replace=False)
+                    np.arange(max_value), size=lengths[i], replace=False
+                )
             else:
                 pct_raw_data_cur = np.random.randn(lengths[i])
                 while len(set(pct_raw_data_cur)) < lengths[i]:
@@ -154,8 +158,9 @@ class TestBisectPercentileOp(hu.HypothesisTestCase):
             for _ in range(lengths[i]):
                 pct_lower_val = pct_upper_val + 0.01
                 pct_lower_cur.append(pct_lower_val)
-                pct_upper_val = pct_lower_val + \
-                    0.01 * np.random.randint(1, 20) * (np.random.uniform() < p)
+                pct_upper_val = pct_lower_val + 0.01 * np.random.randint(1, 20) * (
+                    np.random.uniform() < p
+                )
                 pct_upper_cur.append(pct_upper_val)
             # normalization
             pct_lower_cur = np.array(pct_lower_cur, np.float32) / pct_upper_val
@@ -166,14 +171,16 @@ class TestBisectPercentileOp(hu.HypothesisTestCase):
 
         pct_lower = np.array(pct_lower, dtype=np.float32)
         pct_upper = np.array(pct_upper, dtype=np.float32)
-        pct_mapping = (pct_lower + pct_upper) / 2.
+        pct_mapping = (pct_lower + pct_upper) / 2.0
         raw_data = np.array(raw_data, dtype=np.float32)
         pct_raw_data = np.array(pct_raw_data, dtype=np.float32)
 
         self.compare_reference(
-            raw_data, pct_raw_data, pct_mapping, pct_lower, pct_upper, lengths)
+            raw_data, pct_raw_data, pct_mapping, pct_lower, pct_upper, lengths
+        )
 
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

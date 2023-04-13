@@ -1,5 +1,3 @@
-
-
 import collections
 
 import numpy as np
@@ -325,7 +323,9 @@ def generate_convnd_inputs(
             X[..., g * input_channels_per_group : (g + 1) * input_channels_per_group],
             X_min,
             X_max,
-            W[g * output_channels_per_group : (g + 1) * output_channels_per_group,],
+            W[
+                g * output_channels_per_group : (g + 1) * output_channels_per_group,
+            ],
             W_min + (g if different_range_per_group else 0),
             W_max + (g if different_range_per_group else 0),
         )

@@ -299,7 +299,6 @@ ALLOW_LIST = [
     ("aten::_nested_tensor_layer_norm", datetime.date(2022, 10, 15)),
     ("aten::_torch_cuda_cu_linker_symbol_op", datetime.date(2022, 11, 1)),
     ("aten::_test_inductor_realize", datetime.date(2023, 1, 1)),
-
     ("aten::upsample_linear1d_backward", datetime.date(2022, 12, 15)),
     ("aten::upsample_bicubic2d_backward", datetime.date(2022, 12, 15)),
     ("aten::upsample_trilinear3d", datetime.date(2022, 12, 15)),
@@ -350,8 +349,7 @@ ALLOW_LIST = [
     ("prim::view_copy", datetime.date(2023, 2, 1)),
     # BetterTransformer 1.0 internal operators
     ("aten::_transformer_decoder_only_layer_fwd", datetime.date(9999, 1, 1)),
-    ("aten::_native_decoder_only_multi_head_attention",
-     datetime.date(9999, 1, 1)),
+    ("aten::_native_decoder_only_multi_head_attention", datetime.date(9999, 1, 1)),
     ("aten::_int_mm.out", datetime.date(2023, 4, 1)),
     ("aten::_int_mm", datetime.date(2023, 4, 1)),
     ("aten::_nested_view_from_buffer_copy.out", datetime.date(2023, 5, 1)),
@@ -362,7 +360,6 @@ ALLOW_LIST = [
     ("aten::reduce_scatter_tensor", datetime.date(9999, 1, 30)),
     ("aten::all_gather_into_tensor", datetime.date(9999, 1, 30)),
     ("aten::all_reduce", datetime.date(9999, 1, 30)),
-
 ]
 
 ALLOW_LIST_COMPILED = [
@@ -370,8 +367,11 @@ ALLOW_LIST_COMPILED = [
         re.compile(item[0]),
         item[1],
         re.compile(item[2]) if len(item) > 2 else None,
-    ) for item in ALLOW_LIST if item[1] >= datetime.date.today()
+    )
+    for item in ALLOW_LIST
+    if item[1] >= datetime.date.today()
 ]
+
 
 def allow_listed(schema):
     for item in ALLOW_LIST_COMPILED:
@@ -391,6 +391,7 @@ dont_parse_list = [
     ("dist_c10d", datetime.date(2099, 9, 17)),
     ("__backends__.nnc", datetime.date(2099, 9, 17)),
 ]
+
 
 def has_valid_upgraders(schema, version_map):
     # we want to parse through the map to find if
@@ -420,6 +421,7 @@ def has_valid_upgraders(schema, version_map):
 
     return False
 
+
 def dont_parse(schema_line):
     for item in dont_parse_list:
         if item[1] < datetime.date.today():
@@ -429,6 +431,7 @@ def dont_parse(schema_line):
             return True
     return False
 
+
 def load_schemas_to_dict():
     new_schemas = torch._C._jit_get_all_schemas()
     new_schemas += torch._C._jit_get_custom_class_schemas()
@@ -436,6 +439,7 @@ def load_schemas_to_dict():
     for s in new_schemas:
         new_schema_dict[s.name].append(s)
     return new_schema_dict
+
 
 def process_version_map(version_map):
     # version map maps full schema name to
@@ -451,6 +455,7 @@ def process_version_map(version_map):
         schema_entries = [parse_schema(entry.old_schema) for entry in entries]
         output[operator_name][key] = schema_entries
     return output
+
 
 def check_bc(existing_schemas):
     new_schema_dict = load_schemas_to_dict()
@@ -493,6 +498,7 @@ def check_bc(existing_schemas):
         )
     return is_bc
 
+
 def check_fc(existing_schemas):
     new_schema_dict = load_schemas_to_dict()
     is_fc = True
@@ -506,7 +512,9 @@ def check_fc(existing_schemas):
         found = False
         possible_failure_reasons = []
         for matching_new_schema in matching_new_schemas:
-            is_compatible, reason = matching_new_schema.check_forward_compatible_with(existing_schema)
+            is_compatible, reason = matching_new_schema.check_forward_compatible_with(
+                existing_schema
+            )
             if is_compatible:
                 found = True
                 break

@@ -14,7 +14,7 @@ from torch.testing._internal.common_distributed import (
     DynamoDistributedMultiProcTestCase,
     _dynamo_dist_per_rank_init,
     requires_nccl,
-    skip_if_lt_x_gpu
+    skip_if_lt_x_gpu,
 )
 from torch._inductor.compile_fx import compile_fx as inductor_compile_fx
 from torch._inductor.utils import has_triton, run_and_get_triton_code
@@ -30,6 +30,7 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
     """
     Run correctness checks in multi-proc runner, mark with minimum # GPUs to run under
     """
+
     def get_world_trs(self):
         return {
             "tag": "",
@@ -60,7 +61,7 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
             g = torch.matmul(e, f)
             ar = torch.ops.c10d_functional.wait_tensor(ar)
             out = torch.add(ar, g.repeat(2, 1))
-            return (out, )
+            return (out,)
 
         def compile(func, example_inputs):
             graph = make_fx(func)(*example_inputs)
@@ -84,7 +85,6 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
     # TODO: somehow inductor bg compile threads are causing hangs at exit with distributed work dtor
     @patch.object(torch._inductor.config, "compile_threads", 1)
     def test_eager_allreduce_inductor_wait(self):
-
         def eager_func(a, b, c, d, *, tag, ranks, group_size):
             x = torch.matmul(a, b)
             y = torch.matmul(c, d)
@@ -96,7 +96,7 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
             g = torch.matmul(e, f)
             ar = torch.ops.c10d_functional.wait_tensor(ar)
             out = torch.add(ar, g.repeat(2, 1))
-            return (out, )
+            return (out,)
 
         def compile(func, example_inputs):
             graph = make_fx(func)(*example_inputs)
@@ -112,8 +112,12 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
             inductor_inputs = (torch.ones(4, 4, device="cuda") + self.rank,) * 2
 
             eager_out = inductor_func(eager_func(*eager_inputs), *inductor_inputs)
-            compiled_inductor_func = compile(inductor_func, [eager_func(*eager_inputs)] + list(inductor_inputs))
-            inductor_out = compiled_inductor_func(eager_func(*eager_inputs), *inductor_inputs)
+            compiled_inductor_func = compile(
+                inductor_func, [eager_func(*eager_inputs)] + list(inductor_inputs)
+            )
+            inductor_out = compiled_inductor_func(
+                eager_func(*eager_inputs), *inductor_inputs
+            )
             print(f"eager_out, {eager_out}")
             print(f"inductor_out, {inductor_out}")
             assert same(eager_out, inductor_out, tol=0.001)
@@ -123,7 +127,6 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
     # TODO: somehow inductor bg compile threads are causing hangs at exit with distributed work dtor
     @patch.object(torch._inductor.config, "compile_threads", 1)
     def test_inductor_allreduce_eager_wait(self):
-
         def inductor_func(a, b, c, d, *, tag, ranks, group_size):
             x = torch.matmul(a, b)
             y = torch.matmul(c, d)
@@ -135,7 +138,7 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
             g = torch.matmul(e, f)
             ar = torch.ops.c10d_functional.wait_tensor(ar)
             out = torch.add(ar, g.repeat(2, 1))
-            return (out, )
+            return (out,)
 
         def compile(func, example_inputs):
             graph = make_fx(func)(*example_inputs)
@@ -152,7 +155,9 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
 
             eager_out = eager_func(inductor_func(*inductor_inputs), *eager_inputs)
             compiled_inductor_func = compile(inductor_func, inductor_inputs)
-            inductor_out = eager_func(compiled_inductor_func(*inductor_inputs), *eager_inputs)
+            inductor_out = eager_func(
+                compiled_inductor_func(*inductor_inputs), *eager_inputs
+            )
             assert same(eager_out, inductor_out, tol=0.001)
 
     @unittest.skipIf(not has_triton(), "Inductor+gpu needs triton and recent GPU arch")
@@ -166,9 +171,11 @@ class TestCollectivesMultiProc(DynamoDistributedMultiProcTestCase):
 
         def example(a, b, *, tag, ranks, group_size):
             c = torch.matmul(a, b)
-            ag = torch.ops.c10d_functional.all_gather_into_tensor(c, tag, ranks, group_size)
+            ag = torch.ops.c10d_functional.all_gather_into_tensor(
+                c, tag, ranks, group_size
+            )
             ag = torch.ops.c10d_functional.wait_tensor(ag)
-            return (ag, )
+            return (ag,)
 
         def compile(func, example_inputs):
             graph = make_fx(func)(*example_inputs)
@@ -222,6 +229,7 @@ class TestCollectivesInductor(DynamoDistributedSingleProcTestCase):
     """
     Prefer single-proc test runner for basic tests as it is easier to work with.
     """
+
     def get_world_trs(self, world_size=1):
         return {
             "tag": "",
@@ -234,7 +242,9 @@ class TestCollectivesInductor(DynamoDistributedSingleProcTestCase):
         torch._inductor.config.debug = True
 
         def func(inp, *, tag, ranks, group_size):
-            ar = torch.ops.c10d_functional.all_reduce(inp, "sum", tag, ranks, group_size)
+            ar = torch.ops.c10d_functional.all_reduce(
+                inp, "sum", tag, ranks, group_size
+            )
             ar = torch.ops.c10d_functional.wait_tensor(ar)
             return ar
 
@@ -243,14 +253,15 @@ class TestCollectivesInductor(DynamoDistributedSingleProcTestCase):
         compiled = torch.compile(func)
         out = compiled(inputs, **self.get_world_trs())
         code = run_and_get_triton_code(compiled, inputs, **self.get_world_trs())
-        FileCheck() \
-            .check("buf0 = empty_strided") \
-            .check("buf0.copy_(arg0_1)") \
-            .check("buf0_work = dist.all_reduce(buf0") \
-            .check("_register_tensor_work(buf0, buf0_work)") \
-            .check("_wait_tensor(buf0)") \
-            .check("return (buf1, )") \
-            .run(code)
+        FileCheck().check("buf0 = empty_strided").check("buf0.copy_(arg0_1)").check(
+            "buf0_work = dist.all_reduce(buf0"
+        ).check("_register_tensor_work(buf0, buf0_work)").check(
+            "_wait_tensor(buf0)"
+        ).check(
+            "return (buf1, )"
+        ).run(
+            code
+        )
         correct = func(inputs, **self.get_world_trs())
         assert same(out, correct)
 
@@ -274,16 +285,21 @@ class TestCollectivesInductor(DynamoDistributedSingleProcTestCase):
 
         compiled = torch.compile(func)
         code = run_and_get_triton_code(compiled, inputs, **self.get_world_trs())
-        FileCheck() \
-            .check("buf1 = buf0; del buf0  # reuse") \
-            .check_not("buf1.copy_(") \
-            .check("buf1_work = dist.all_reduce(buf1") \
-            .check("_register_tensor_work(buf1, buf1_work)") \
-            .check("_wait_tensor(buf1)") \
-            .check("buf2 = buf1") \
-            .check("buf3 = empty_strided") \
-            .check("return (buf2, buf3") \
-            .run(code)
+        FileCheck().check("buf1 = buf0; del buf0  # reuse").check_not(
+            "buf1.copy_("
+        ).check("buf1_work = dist.all_reduce(buf1").check(
+            "_register_tensor_work(buf1, buf1_work)"
+        ).check(
+            "_wait_tensor(buf1)"
+        ).check(
+            "buf2 = buf1"
+        ).check(
+            "buf3 = empty_strided"
+        ).check(
+            "return (buf2, buf3"
+        ).run(
+            code
+        )
         out = compiled(inputs, **self.get_world_trs())
         correct = func(inputs, **self.get_world_trs())
         assert same(out, correct)
@@ -309,25 +325,30 @@ class TestCollectivesInductor(DynamoDistributedSingleProcTestCase):
 
         compiled = torch.compile(func)
         code = run_and_get_triton_code(compiled, inputs, **self.get_world_trs())
-        FileCheck() \
-            .check("buf0 = empty_strided(") \
-            .check("buf2 = empty_strided") \
-            .check("triton_poi__0.run(arg0_1, buf0, buf2") \
-            .check_not("copy_(") \
-            .check("buf1 = buf0; del buf0  # reuse") \
-            .check("buf1_work = dist.all_reduce(buf1") \
-            .check("_register_tensor_work(buf1, buf1_work)") \
-            .check("_wait_tensor(buf1)") \
-            .check("buf3 = buf1") \
-            .check("return (buf3, buf2, buf4") \
-            .run(code)
+        FileCheck().check("buf0 = empty_strided(").check("buf2 = empty_strided").check(
+            "triton_poi__0.run(arg0_1, buf0, buf2"
+        ).check_not("copy_(").check("buf1 = buf0; del buf0  # reuse").check(
+            "buf1_work = dist.all_reduce(buf1"
+        ).check(
+            "_register_tensor_work(buf1, buf1_work)"
+        ).check(
+            "_wait_tensor(buf1)"
+        ).check(
+            "buf3 = buf1"
+        ).check(
+            "return (buf3, buf2, buf4"
+        ).run(
+            code
+        )
         out = compiled(inputs, **self.get_world_trs())
         correct = func(inputs, **self.get_world_trs())
         assert same(out, correct)
 
     def test_dynamo_trace_allreduce(self):
         def func(inp, *, tag, ranks, group_size):
-            ar = torch.ops.c10d_functional.all_reduce(inp, "sum", tag, ranks, group_size)
+            ar = torch.ops.c10d_functional.all_reduce(
+                inp, "sum", tag, ranks, group_size
+            )
             return ar
 
         inputs = torch.ones(4, 4, device="cuda")
@@ -345,14 +366,22 @@ class TestCollectivesInductor(DynamoDistributedSingleProcTestCase):
 
         However, I wanted to at least see if it was possible to support it as a design goal.
         """
+
         def func(inp, *, tag, ranks, group_size):
-            ar = torch.ops.c10d_functional.all_reduce(inp, "sum", tag, ranks, group_size)
+            ar = torch.ops.c10d_functional.all_reduce(
+                inp, "sum", tag, ranks, group_size
+            )
             return ar
 
         input = torch.ones(4, 4, device="cuda", requires_grad=True)
         # TODO implement backwards
-        with self.assertRaisesRegex(RuntimeError, "element 0 of tensors does not require grad and does not have a grad_fn"):
-            compiled = torch.compile(func, backend="aot_eager")  # inductor bug with single-op allreduce graph
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "element 0 of tensors does not require grad and does not have a grad_fn",
+        ):
+            compiled = torch.compile(
+                func, backend="aot_eager"
+            )  # inductor bug with single-op allreduce graph
             out = compiled(input, **self.get_world_trs())
             out.sum().backward()
 
@@ -366,6 +395,7 @@ class TestCollectivesInductor(DynamoDistributedSingleProcTestCase):
         x = torch.rand((2, 3, 4), device="meta")
         out = torch.ops.c10d_functional.all_reduce(x, "sum", **self.get_world_trs())
         assert x.size() == out.size()
+
 
 if __name__ == "__main__":
     from torch._dynamo.test_case import run_tests

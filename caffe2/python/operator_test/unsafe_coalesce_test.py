@@ -12,11 +12,13 @@ class TestUnsafeCoalesceOp(hu.HypothesisTestCase):
     @given(
         n=st.integers(1, 5),
         shape=st.lists(st.integers(0, 5), min_size=1, max_size=3),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_unsafe_coalesce_op(self, n, shape, dc, gc):
         workspace.ResetWorkspace()
-        test_inputs = [(100 * np.random.random(shape)).astype(np.float32) for _ in range(n)]
+        test_inputs = [
+            (100 * np.random.random(shape)).astype(np.float32) for _ in range(n)
+        ]
         test_input_blobs = ["x_{}".format(i) for i in range(n)]
 
         coalesce_op = core.CreateOperator(
@@ -36,7 +38,7 @@ class TestUnsafeCoalesceOp(hu.HypothesisTestCase):
         n=st.integers(1, 5),
         shape=st.lists(st.integers(1, 5), min_size=1, max_size=3),
         seed=st.integers(0, 65535),
-        **hu.gcs
+        **hu.gcs,
     )
     def test_unsafe_coalesce_op_blob_sharing(self, n, shape, seed, dc, gc):
         workspace.ResetWorkspace()
@@ -57,9 +59,7 @@ class TestUnsafeCoalesceOp(hu.HypothesisTestCase):
         workspace.RunOperatorOnce(coalesce_op)
         blob_value = workspace.blobs["shared_memory_blob"]
         npt.assert_almost_equal(
-            blob_value,
-            np.concatenate([x.flatten() for x in test_inputs]),
-            decimal=4
+            blob_value, np.concatenate([x.flatten() for x in test_inputs]), decimal=4
         )
         # np.random generates values in range [0, 1), so -2 is outside of range
         blob_value.fill(-2.0)

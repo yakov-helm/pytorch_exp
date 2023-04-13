@@ -2,16 +2,11 @@
 # Module caffe2.python.layers.batch_lr_loss
 
 
-
-
-
 from caffe2.python import core, schema
 from caffe2.python.layers.layers import (
     ModelLayer,
 )
-from caffe2.python.layers.tags import (
-    Tags
-)
+from caffe2.python.layers.tags import Tags
 import numpy as np
 
 
@@ -20,7 +15,7 @@ class BatchLRLoss(ModelLayer):
         self,
         model,
         input_record,
-        name='batch_lr_loss',
+        name="batch_lr_loss",
         average_loss=True,
         jsd_weight=0.0,
         pos_label_target=1.0,
@@ -33,24 +28,21 @@ class BatchLRLoss(ModelLayer):
         stop_grad_in_focal_factor=False,
         task_gamma=1.0,
         task_gamma_lb=0.1,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(model, name, input_record, **kwargs)
 
         self.average_loss = average_loss
 
-        assert (schema.is_schema_subset(
-            schema.Struct(
-                ('label', schema.Scalar()),
-                ('logit', schema.Scalar())
-            ),
-            input_record
-        ))
+        assert schema.is_schema_subset(
+            schema.Struct(("label", schema.Scalar()), ("logit", schema.Scalar())),
+            input_record,
+        )
 
         self.jsd_fuse = False
         assert jsd_weight >= 0 and jsd_weight <= 1
         if jsd_weight > 0 or homotopy_weighting:
-            assert 'prediction' in input_record
+            assert "prediction" in input_record
             self.init_weight(jsd_weight, homotopy_weighting)
             self.jsd_fuse = True
         self.homotopy_weighting = homotopy_weighting
@@ -70,8 +62,7 @@ class BatchLRLoss(ModelLayer):
         self.tags.update([Tags.EXCLUDE_FROM_PREDICTION])
 
         self.output_schema = schema.Scalar(
-            np.float32,
-            self.get_next_blob_reference('output')
+            np.float32, self.get_next_blob_reference("output")
         )
 
         self.focal_gamma = focal_gamma
@@ -81,37 +72,31 @@ class BatchLRLoss(ModelLayer):
         if task_gamma < 1.0:
             self.apply_exp_decay = True
             self.task_gamma_cur = self.create_param(
-                param_name=('%s_task_gamma_cur' % self.name),
+                param_name=("%s_task_gamma_cur" % self.name),
                 shape=[1],
                 initializer=(
-                    'ConstantFill', {
-                        'value': 1.0,
-                        'dtype': core.DataType.FLOAT
-                    }
+                    "ConstantFill",
+                    {"value": 1.0, "dtype": core.DataType.FLOAT},
                 ),
                 optimizer=self.model.NoOptim,
             )
 
             self.task_gamma = self.create_param(
-                param_name=('%s_task_gamma' % self.name),
+                param_name=("%s_task_gamma" % self.name),
                 shape=[1],
                 initializer=(
-                    'ConstantFill', {
-                        'value': task_gamma,
-                        'dtype': core.DataType.FLOAT
-                    }
+                    "ConstantFill",
+                    {"value": task_gamma, "dtype": core.DataType.FLOAT},
                 ),
                 optimizer=self.model.NoOptim,
             )
 
             self.task_gamma_lb = self.create_param(
-                param_name=('%s_task_gamma_lb' % self.name),
+                param_name=("%s_task_gamma_lb" % self.name),
                 shape=[1],
                 initializer=(
-                    'ConstantFill', {
-                        'value': task_gamma_lb,
-                        'dtype': core.DataType.FLOAT
-                    }
+                    "ConstantFill",
+                    {"value": task_gamma_lb, "dtype": core.DataType.FLOAT},
                 ),
                 optimizer=self.model.NoOptim,
             )
@@ -119,50 +104,44 @@ class BatchLRLoss(ModelLayer):
     def init_weight(self, jsd_weight, homotopy_weighting):
         if homotopy_weighting:
             self.mutex = self.create_param(
-                param_name=('%s_mutex' % self.name),
+                param_name=("%s_mutex" % self.name),
                 shape=None,
-                initializer=('CreateMutex', ),
+                initializer=("CreateMutex",),
                 optimizer=self.model.NoOptim,
             )
             self.counter = self.create_param(
-                param_name=('%s_counter' % self.name),
+                param_name=("%s_counter" % self.name),
                 shape=[1],
                 initializer=(
-                    'ConstantFill', {
-                        'value': 0,
-                        'dtype': core.DataType.INT64
-                    }
+                    "ConstantFill",
+                    {"value": 0, "dtype": core.DataType.INT64},
                 ),
                 optimizer=self.model.NoOptim,
             )
             self.xent_weight = self.create_param(
-                param_name=('%s_xent_weight' % self.name),
+                param_name=("%s_xent_weight" % self.name),
                 shape=[1],
                 initializer=(
-                    'ConstantFill', {
-                        'value': 1.,
-                        'dtype': core.DataType.FLOAT
-                    }
+                    "ConstantFill",
+                    {"value": 1.0, "dtype": core.DataType.FLOAT},
                 ),
                 optimizer=self.model.NoOptim,
             )
             self.jsd_weight = self.create_param(
-                param_name=('%s_jsd_weight' % self.name),
+                param_name=("%s_jsd_weight" % self.name),
                 shape=[1],
                 initializer=(
-                    'ConstantFill', {
-                        'value': 0.,
-                        'dtype': core.DataType.FLOAT
-                    }
+                    "ConstantFill",
+                    {"value": 0.0, "dtype": core.DataType.FLOAT},
                 ),
                 optimizer=self.model.NoOptim,
             )
         else:
             self.jsd_weight = self.model.add_global_constant(
-                '%s_jsd_weight' % self.name, jsd_weight
+                "%s_jsd_weight" % self.name, jsd_weight
             )
             self.xent_weight = self.model.add_global_constant(
-                '%s_xent_weight' % self.name, 1. - jsd_weight
+                "%s_xent_weight" % self.name, 1.0 - jsd_weight
             )
 
     def update_weight(self, net):
@@ -170,11 +149,16 @@ class BatchLRLoss(ModelLayer):
         # iter = 0: lr = 1;
         # iter = 1e6; lr = 0.5^0.1  = 0.93
         # iter = 1e9; lr = 1e-3^0.1 = 0.50
-        net.LearningRate([self.counter], [self.xent_weight], base_lr=1.0,
-                         policy='inv', gamma=1e-6, power=0.1,)
+        net.LearningRate(
+            [self.counter],
+            [self.xent_weight],
+            base_lr=1.0,
+            policy="inv",
+            gamma=1e-6,
+            power=0.1,
+        )
         net.Sub(
-            [self.model.global_constants['ONE'], self.xent_weight],
-            [self.jsd_weight]
+            [self.model.global_constants["ONE"], self.xent_weight], [self.jsd_weight]
         )
         return self.xent_weight, self.jsd_weight
 
@@ -185,30 +169,28 @@ class BatchLRLoss(ModelLayer):
         # self.input_record.label.field_type().base is np.float32 but
         # label type is actually int
         label = net.Cast(
-            label,
-            net.NextScopedBlob('label_float32'),
-            to=core.DataType.FLOAT)
-        label = net.ExpandDims(label, net.NextScopedBlob('expanded_label'),
-                                dims=[1])
+            label, net.NextScopedBlob("label_float32"), to=core.DataType.FLOAT
+        )
+        label = net.ExpandDims(label, net.NextScopedBlob("expanded_label"), dims=[1])
         if self.pos_label_target != 1.0 or self.neg_label_target != 0.0:
             label = net.StumpFunc(
                 label,
-                net.NextScopedBlob('smoothed_label'),
+                net.NextScopedBlob("smoothed_label"),
                 threshold=0.5,
                 low_value=self.neg_label_target,
                 high_value=self.pos_label_target,
             )
         xent = net.SigmoidCrossEntropyWithLogits(
             [self.input_record.logit(), label],
-            net.NextScopedBlob('cross_entropy'),
+            net.NextScopedBlob("cross_entropy"),
             log_D_trick=self.log_D_trick,
-            unjoined_lr_loss=self.unjoined_lr_loss
+            unjoined_lr_loss=self.unjoined_lr_loss,
         )
 
         if self.focal_gamma != 0:
             label = net.StopGradient(
                 [label],
-                [net.NextScopedBlob('label_stop_gradient')],
+                [net.NextScopedBlob("label_stop_gradient")],
             )
 
             prediction = self.input_record.prediction()
@@ -233,19 +215,14 @@ class BatchLRLoss(ModelLayer):
                     [focal_factor],
                     [net.NextScopedBlob("focal_factor_stop_gradient")],
                 )
-            xent = net.Mul(
-                [xent, focal_factor], net.NextScopedBlob("focallossxent")
-            )
+            xent = net.Mul([xent, focal_factor], net.NextScopedBlob("focallossxent"))
 
         if self.apply_exp_decay:
-            net.Mul(
-                [self.task_gamma_cur, self.task_gamma],
-                self.task_gamma_cur
-            )
+            net.Mul([self.task_gamma_cur, self.task_gamma], self.task_gamma_cur)
 
             task_gamma_multiplier = net.Max(
                 [self.task_gamma_cur, self.task_gamma_lb],
-                net.NextScopedBlob("task_gamma_cur_multiplier")
+                net.NextScopedBlob("task_gamma_cur_multiplier"),
             )
 
             xent = net.Mul(
@@ -256,74 +233,70 @@ class BatchLRLoss(ModelLayer):
         if self.jsd_fuse:
             jsd = net.BernoulliJSD(
                 [self.input_record.prediction(), label],
-                net.NextScopedBlob('jsd'),
+                net.NextScopedBlob("jsd"),
             )
             if self.homotopy_weighting:
                 self.update_weight(net)
             loss = net.WeightedSum(
                 [xent, self.xent_weight, jsd, self.jsd_weight],
-                net.NextScopedBlob('loss'),
+                net.NextScopedBlob("loss"),
             )
         else:
             loss = xent
 
-        if 'log_variance' in self.input_record.fields:
+        if "log_variance" in self.input_record.fields:
             # mean (0.5 * exp(-s) * loss + 0.5 * penalty * s)
             log_variance_blob = self.input_record.log_variance()
 
             log_variance_blob = net.ExpandDims(
-                log_variance_blob, net.NextScopedBlob('expanded_log_variance'),
-                dims=[1]
+                log_variance_blob, net.NextScopedBlob("expanded_log_variance"), dims=[1]
             )
 
             neg_log_variance_blob = net.Negative(
-                [log_variance_blob],
-                net.NextScopedBlob('neg_log_variance')
+                [log_variance_blob], net.NextScopedBlob("neg_log_variance")
             )
 
             # enforce less than 88 to avoid OverflowError
             neg_log_variance_blob = net.Clip(
                 [neg_log_variance_blob],
-                net.NextScopedBlob('clipped_neg_log_variance'),
-                max=88.0
+                net.NextScopedBlob("clipped_neg_log_variance"),
+                max=88.0,
             )
 
             exp_neg_log_variance_blob = net.Exp(
-                [neg_log_variance_blob],
-                net.NextScopedBlob('exp_neg_log_variance')
+                [neg_log_variance_blob], net.NextScopedBlob("exp_neg_log_variance")
             )
 
             exp_neg_log_variance_loss_blob = net.Mul(
                 [exp_neg_log_variance_blob, loss],
-                net.NextScopedBlob('exp_neg_log_variance_loss')
+                net.NextScopedBlob("exp_neg_log_variance_loss"),
             )
 
             penalized_uncertainty = net.Scale(
-                log_variance_blob, net.NextScopedBlob("penalized_unceratinty"),
-                scale=float(self.uncertainty_penalty)
+                log_variance_blob,
+                net.NextScopedBlob("penalized_unceratinty"),
+                scale=float(self.uncertainty_penalty),
             )
 
             loss_2x = net.Add(
                 [exp_neg_log_variance_loss_blob, penalized_uncertainty],
-                net.NextScopedBlob('loss')
+                net.NextScopedBlob("loss"),
             )
             loss = net.Scale(loss_2x, net.NextScopedBlob("loss"), scale=0.5)
 
-        if 'weight' in self.input_record.fields:
+        if "weight" in self.input_record.fields:
             weight_blob = self.input_record.weight()
             if self.input_record.weight.field_type().base != np.float32:
                 weight_blob = net.Cast(
-                    weight_blob,
-                    weight_blob + '_float32',
-                    to=core.DataType.FLOAT
+                    weight_blob, weight_blob + "_float32", to=core.DataType.FLOAT
                 )
             weight_blob = net.StopGradient(
                 [weight_blob],
-                [net.NextScopedBlob('weight_stop_gradient')],
+                [net.NextScopedBlob("weight_stop_gradient")],
             )
             loss = net.Mul(
                 [loss, weight_blob],
-                net.NextScopedBlob('weighted_cross_entropy'),
+                net.NextScopedBlob("weighted_cross_entropy"),
             )
 
         if self.average_loss:

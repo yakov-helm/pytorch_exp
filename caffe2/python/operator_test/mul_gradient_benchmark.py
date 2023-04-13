@@ -1,8 +1,3 @@
-
-
-
-
-
 import argparse
 import numpy as np
 
@@ -28,23 +23,20 @@ def benchmark_mul_gradient(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="benchmark for MulGradient.")
+    parser = argparse.ArgumentParser(description="benchmark for MulGradient.")
+    parser.add_argument("-m", type=int, default=9508, help="The number of rows of A")
+    parser.add_argument("-n", type=int, default=80, help="The number of columns of A")
     parser.add_argument(
-        '-m', type=int, default=9508,
-        help="The number of rows of A")
+        "-i", "--iteration", type=int, default=100, help="The number of iterations."
+    )
     parser.add_argument(
-        "-n", type=int, default=80,
-        help="The number of columns of A")
-    parser.add_argument(
-        '-i', "--iteration", type=int, default=100,
-        help="The number of iterations.")
-    parser.add_argument(
-        "--inplace",
-        action='store_true', help="Whether to perform the op in-place.")
+        "--inplace", action="store_true", help="Whether to perform the op in-place."
+    )
     parser.add_argument(
         "--allow-broadcast-fastpath",
-        action='store_true', help="Whether the broadcast fastpath is enabled.")
+        action="store_true",
+        help="Whether the broadcast fastpath is enabled.",
+    )
     args, extra_args = parser.parse_known_args()
-    core.GlobalInit(['python'] + extra_args)
+    core.GlobalInit(["python"] + extra_args)
     benchmark_mul_gradient(args)
