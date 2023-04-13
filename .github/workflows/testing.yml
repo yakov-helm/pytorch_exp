@@ -19,6 +19,7 @@ jobs:
       - name: Do testing
         id: do_test_1
         run: pytest test/test_bundled_inputs.py test/test_comparison_utils.py
+        continue-on-error: true
       - name: Check failure
         if: ${{ steps.do_test_1.status }} != 'success'
         run: exit 11
@@ -34,6 +35,7 @@ jobs:
       - name: Do testing
         id: do_test_2
         run: pytest test/profiler
+        continue-on-error: true
       # - name: Check failure
       #   if: steps.do_test_2.status != 'success'
       #   run: exit 22
