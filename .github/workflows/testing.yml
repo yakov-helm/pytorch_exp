@@ -19,10 +19,10 @@ jobs:
       - name: Do testing
         id: do_test_1
         run: pytest test/test_bundled_inputs.py test/test_comparison_utils.py
-        continue-on-error: true
-      - name: Check failure
-        if: ${{ steps.do_test_1.status }} != 'success'
-        run: exit 11
+      #   continue-on-error: true
+      # - name: Check failure
+      #   if: ${{ steps.do_test_1.status }} != 'success'
+      #   run: exit 11
   
   another-py-test:
     runs-on: self-hosted
@@ -34,7 +34,8 @@ jobs:
           pip install expecttest
       - name: Do testing
         id: do_test_2
-        run: pytest test1.py test/profiler
+        run: pytest test/profiler test1.py
+      #   continue-on-error: true
       # - name: Check failure
       #   if: steps.do_test_2.status != 'success'
       #   run: exit 22
