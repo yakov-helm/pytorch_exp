@@ -34,7 +34,7 @@ jobs:
           pip install expecttest
       - name: Do testing
         id: do_test_2
-        run: pytest test/profiler test1.py
+        run: pytest test1.py test/profiler
       # - name: Check failure
       #   if: steps.do_test_2.status != 'success'
       #   run: exit 22
