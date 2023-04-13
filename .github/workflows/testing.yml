@@ -34,6 +34,6 @@ jobs:
       - name: Do testing
         id: do_test
         run: pytest test/profiler
-      - name: Check failures
-        if: steps.do_test.status != "success"
-        run: exit 1
+      # - name: Check failures
+      #   if: steps.do_test.status != "success"
+      #   run: exit 1
