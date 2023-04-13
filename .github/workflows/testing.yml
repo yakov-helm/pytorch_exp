@@ -21,7 +21,7 @@ jobs:
         run: pytest test/test_bundled_inputs.py test/test_comparison_utils.py
       - name: Check failure
         if: steps.do_test_1.status == 'failure'
-        run: exit 1
+        run: exit 11
   
   another-py-test:
     runs-on: self-hosted
@@ -34,3 +34,6 @@ jobs:
       - name: Do testing
         id: do_test_2
         run: pytest test/profiler
+      - name: Check failure
+        if: steps.do_test_2.status == 'failure'
+        run: exit 22
